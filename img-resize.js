@@ -60,9 +60,9 @@ function getStats(src, format, urlPath, width, height, includeWidthInFilename) {
 	}
 }
 
-function sortByWidthDescending(files = []) {
+function sortByWidthAscending(files = []) {
 	return files.sort((a, b) => {
-		return b.width - a.width;
+		return a.width - b.width;
 	});
 }
 
@@ -75,7 +75,7 @@ function transformRawFiles(files = []) {
 		byType[file.format].push(file);
 	}
 	for(let type in byType) {
-		byType[type] = sortByWidthDescending(byType[type]);
+		byType[type] = sortByWidthAscending(byType[type]);
 	}
 	return byType;
 }
