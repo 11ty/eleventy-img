@@ -18,7 +18,7 @@ const globalOptions = {
 };
 
 const MIME_TYPES = {
-	"jpeg": "image/jpg",
+	"jpeg": "image/jpeg",
 	"webp": "image/webp",
 	"png": "image/png"
 };
