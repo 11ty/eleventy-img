@@ -10,7 +10,7 @@ const imageSize = require("image-size");
 const sharp = require("sharp");
 const debug = require("debug")("EleventyImgResize");
 
-const FetchImage = require("./fetch");
+const EleventyCacheAssets = require("@11ty/eleventy-cache-assets");
 
 const globalOptions = {
 	src: null,
@@ -150,11 +150,14 @@ function isFullUrl(url) {
 /* Combine it all together */
 async function image(src, opts) {
 	if(typeof src === "string" && isFullUrl(src)) {
-		// fetch remote image
-		let fetch = new FetchImage();
-		let buffer = await fetch.fetchBufferFromUrl(src, opts);
-		opts.sourceUrl = src;
 
+		// fetch remote image
+		let buffer = await await EleventyCacheAssets(src, {
+			duration: opts.cacheDuration,
+			type: "buffer"
+		});
+
+		opts.sourceUrl = src;
 		return resizeImage(buffer, opts);
 	}
 
@@ -175,10 +178,6 @@ async function queueImage(src, opts) {
 
 	// create the output dir
 	await fs.ensureDir(options.outputDir);
-
-	if(options.cacheDirectory) {
-		await fs.ensureDir(options.cacheDirectory);
-	}
 
 	return queue.add(() => image(src, options));
 }
