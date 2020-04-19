@@ -2,11 +2,15 @@
 
 const path = require("path");
 const fs = require("fs-extra");
+const { URL } = require("url");
+
 const shorthash = require("short-hash");
 const {default: PQueue} = require("p-queue");
 const imageSize = require("image-size");
 const sharp = require("sharp");
 const debug = require("debug")("EleventyImgResize");
+
+// const FetchImage = require("./fetch");
 
 const globalOptions = {
 	src: null,
@@ -52,8 +56,8 @@ function getStats(src, format, urlPath, width, height, includeWidthInFilename) {
 		format: format,
 		width: width,
 		height: height,
-		// size
-		// outputPath
+		// size // only after processing
+		// outputPath // only after processing
 		url: url,
 		sourceType: MIME_TYPES[format],
 		srcset: `${url} ${width}w`
@@ -79,6 +83,11 @@ function transformRawFiles(files = []) {
 	}
 	return byType;
 }
+
+// async function fetchImage(url) {
+// 	let fetch = new FetchImage();
+// 	return fetch.fetchBufferFromUrl(url);
+// }
 
 async function resizeImage(src, options = {}) {
 	fs.ensureDir(options.outputDir);
@@ -127,36 +136,28 @@ async function resizeImage(src, options = {}) {
 	return Promise.all(outputFilePromises).then(files => transformRawFiles(files));
 }
 
-let queue = new PQueue({
-	concurrency: globalOptions.concurrency
-});
-queue.on("active", () => {
-	debug( `Concurrency: ${queue.concurrency}, Size: ${queue.size}, Pending: ${queue.pending}` );
-});
+/* `statsSync` doesn’t generate any files, but will tell you where
+ * the asynchronously generated files will end up! This is useful
+ * in synchronous-only template environments where you need the
+ * image URLs synchronously but can’t rely on the files being in
+ * the correct location yet.
+ */
 
-async function queueResizeImage(src, opts) {
-	let mergedOptions = Object.assign({}, globalOptions, opts);
-	return queue.add(() => resizeImage(src, mergedOptions));
-}
-
-module.exports = queueResizeImage;
-
-module.exports.statsSync = function(src, opts) {
+function _statsSync(src, originalWidth, originalHeight, opts) {
 	let options = Object.assign({}, globalOptions, opts);
 
 	let results = [];
 	let formats = getFormatsArray(options.formats);
-	let originalDimensions = imageSize(src);
 
 	for(let format of formats) {
 		for(let width of options.widths) {
 			let hasWidth = !!width;
 			let height;
 			if(!width) {
-				width = originalDimensions.width;
-				height = originalDimensions.height;
+				width = originalWidth;
+				height = originalHeight;
 			} else {
-				height = Math.floor(width * originalDimensions.height / originalDimensions.width);
+				height = Math.floor(width * originalHeight / originalWidth);
 			}
 
 			results.push(getStats(src, format, options.urlPath, width, height, hasWidth));
@@ -165,3 +166,29 @@ module.exports.statsSync = function(src, opts) {
 
 	return transformRawFiles(results);
 };
+
+function statsSync(src, opts) {
+	let originalDimensions = imageSize(src);
+	return _statsSync(src, originalDimensions.width, originalDimensions.height, opts);
+}
+
+function statsByDimensionsSync(src, width, height, opts) {
+	return _statsSync(src, width, height, opts);
+}
+
+/* Queue */
+let queue = new PQueue({
+	concurrency: globalOptions.concurrency
+});
+queue.on("active", () => {
+	debug( `Concurrency: ${queue.concurrency}, Size: ${queue.size}, Pending: ${queue.pending}` );
+});
+
+async function queueImage(src, opts) {
+	let mergedOptions = Object.assign({}, globalOptions, opts);
+	return queue.add(() => resizeImage(src, mergedOptions));
+}
+
+module.exports = queueImage;
+module.exports.statsSync = statsSync;
+module.exports.statsByDimensionsSync = statsByDimensionsSync;
