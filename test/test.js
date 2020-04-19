@@ -1,20 +1,20 @@
 const test = require("ava");
-const eleventyImageResize = require("../");
+const eleventyImage = require("../");
 
 test("Sync with jpeg input", t => {
-	let stats = eleventyImageResize.statsSync("./test/bio-2017.jpg");
+	let stats = eleventyImage.statsSync("./test/bio-2017.jpg");
 	t.is(stats.webp.length, 1);
 	t.is(stats.jpeg.length, 1);
 });
 
 test("Sync by dimension with jpeg input", t => {
-	let stats = eleventyImageResize.statsByDimensionsSync("./test/bio-2017.jpg", 1280, 853);
+	let stats = eleventyImage.statsByDimensionsSync("./test/bio-2017.jpg", 1280, 853);
 	t.is(stats.webp.length, 1);
 	t.is(stats.jpeg.length, 1);
 });
 
 test("Sync with widths", t => {
-	let stats = eleventyImageResize.statsSync("./test/bio-2017.jpg", {
+	let stats = eleventyImage.statsSync("./test/bio-2017.jpg", {
 		widths: [300]
 	});
 	t.is(stats.webp.length, 1);
@@ -24,7 +24,7 @@ test("Sync with widths", t => {
 });
 
 test("Sync by dimension with widths", t => {
-	let stats = eleventyImageResize.statsByDimensionsSync("./test/bio-2017.jpg", 1280, 853, {
+	let stats = eleventyImage.statsByDimensionsSync("./test/bio-2017.jpg", 1280, 853, {
 		widths: [300]
 	});
 	t.is(stats.webp.length, 1);
@@ -34,7 +34,7 @@ test("Sync by dimension with widths", t => {
 });
 
 test("Sync with two widths", t => {
-	let stats = eleventyImageResize.statsSync("./test/bio-2017.jpg", {
+	let stats = eleventyImage.statsSync("./test/bio-2017.jpg", {
 		widths: [300, 500]
 	});
 	t.is(stats.webp.length, 2);
@@ -46,7 +46,7 @@ test("Sync with two widths", t => {
 });
 
 test("Sync by dimension with two widths", t => {
-	let stats = eleventyImageResize.statsByDimensionsSync("./test/bio-2017.jpg", 1280, 853, {
+	let stats = eleventyImage.statsByDimensionsSync("./test/bio-2017.jpg", 1280, 853, {
 		widths: [300, 500]
 	});
 	t.is(stats.webp.length, 2);
@@ -59,7 +59,7 @@ test("Sync by dimension with two widths", t => {
 
 
 test("Sync with null width", t => {
-	let stats = eleventyImageResize.statsSync("./test/bio-2017.jpg", {
+	let stats = eleventyImage.statsSync("./test/bio-2017.jpg", {
 		widths: [300, null]
 	});
 	t.is(stats.webp.length, 2);
@@ -75,7 +75,7 @@ test("Sync with null width", t => {
 });
 
 test("Sync by dimension with null width", t => {
-	let stats = eleventyImageResize.statsByDimensionsSync("./test/bio-2017.jpg", 1280, 853, {
+	let stats = eleventyImage.statsByDimensionsSync("./test/bio-2017.jpg", 1280, 853, {
 		widths: [300, null]
 	});
 	t.is(stats.webp.length, 2);

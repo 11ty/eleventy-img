@@ -10,7 +10,7 @@ const imageSize = require("image-size");
 const sharp = require("sharp");
 const debug = require("debug")("EleventyImgResize");
 
-// const FetchImage = require("./fetch");
+const FetchImage = require("./fetch");
 
 const globalOptions = {
 	src: null,
@@ -64,12 +64,6 @@ function getStats(src, format, urlPath, width, height, includeWidthInFilename) {
 	}
 }
 
-function sortByWidthAscending(files = []) {
-	return files.sort((a, b) => {
-		return a.width - b.width;
-	});
-}
-
 function transformRawFiles(files = []) {
 	let byType = {};
 	for(let file of files) {
@@ -79,34 +73,39 @@ function transformRawFiles(files = []) {
 		byType[file.format].push(file);
 	}
 	for(let type in byType) {
-		byType[type] = sortByWidthAscending(byType[type]);
+		// sort by width, ascending (for `srcset`)
+		byType[type].sort((a, b) => {
+			return a.width - b.width;
+		})
 	}
 	return byType;
 }
 
-// async function fetchImage(url) {
-// 	let fetch = new FetchImage();
-// 	return fetch.fetchBufferFromUrl(url);
-// }
-
+// src should be a file path to an image or a buffer
 async function resizeImage(src, options = {}) {
-	fs.ensureDir(options.outputDir);
-
-	let formats = getFormatsArray(options.formats);
-	let img = sharp(src, {
+	let sharpImage = sharp(src, {
 		failOnError: false,
 		// TODO how to handle higher resolution source images
 		// density: 72
 	});
 
-	let metadata = await img.metadata();
+	if(typeof src !== "string" && options.sourceUrl) {
+		src = options.sourceUrl;
+	} else {
+		throw new Error(`Expected options.sourceUrl in resizeImage when using Buffer as input.`);
+	}
+
+	// must find the image format from the metadata
+	// extensions lie or may not be present in the src url
+	let metadata = await sharpImage.metadata();
 	let outputFilePromises = [];
 
+	let formats = getFormatsArray(options.formats);
 	for(let format of formats) {
 		for(let width of options.widths) {
 			let hasWidth = !!width;
 			// Set format
-			let imageFormat = img.clone();
+			let imageFormat = sharpImage.clone();
 			if(metadata.format !== format) {
 				imageFormat.toFormat(format);
 			}
@@ -176,6 +175,29 @@ function statsByDimensionsSync(src, width, height, opts) {
 	return _statsSync(src, width, height, opts);
 }
 
+function isFullUrl(url) {
+	try {
+		new URL(url);
+		return true;
+	} catch(e) {
+		// invalid url OR local path
+		return false;
+	}
+}
+
+/* Combine it all together */
+async function image(src, opts) {
+	if(typeof src === "string" && isFullUrl(src)) {
+		let fetch = new FetchImage();
+		let buffer = await fetch.fetchBufferFromUrl(src);
+		opts.sourceUrl = src;
+		return resizeImage(buffer, opts);
+	}
+
+	// use file path
+	return resizeImage(src, opts);
+}
+
 /* Queue */
 let queue = new PQueue({
 	concurrency: globalOptions.concurrency
@@ -185,8 +207,12 @@ queue.on("active", () => {
 });
 
 async function queueImage(src, opts) {
-	let mergedOptions = Object.assign({}, globalOptions, opts);
-	return queue.add(() => resizeImage(src, mergedOptions));
+	let options = Object.assign({}, globalOptions, opts);
+
+	// create the output dir
+	await fs.ensureDir(options.outputDir);
+
+	return queue.add(() => image(src, options));
 }
 
 module.exports = queueImage;
