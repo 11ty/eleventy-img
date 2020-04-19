@@ -18,7 +18,9 @@ const globalOptions = {
 	formats: ["webp", "jpeg"], //"png"
 	concurrency: 10,
 	urlPath: "/img/",
-	outputDir: "img/"
+	outputDir: "img/",
+	cacheDirectory: ".cache/",
+	cacheDuration: "1d"
 };
 
 const MIME_TYPES = {
@@ -135,6 +137,56 @@ async function resizeImage(src, options = {}) {
 	return Promise.all(outputFilePromises).then(files => transformRawFiles(files));
 }
 
+function isFullUrl(url) {
+	try {
+		new URL(url);
+		return true;
+	} catch(e) {
+		// invalid url OR local path
+		return false;
+	}
+}
+
+/* Combine it all together */
+async function image(src, opts) {
+	if(typeof src === "string" && isFullUrl(src)) {
+		// fetch remote image
+		let fetch = new FetchImage();
+		let buffer = await fetch.fetchBufferFromUrl(src, opts);
+		opts.sourceUrl = src;
+
+		return resizeImage(buffer, opts);
+	}
+
+	// use file path to local image
+	return resizeImage(src, opts);
+}
+
+/* Queue */
+let queue = new PQueue({
+	concurrency: globalOptions.concurrency
+});
+queue.on("active", () => {
+	debug( `Concurrency: ${queue.concurrency}, Size: ${queue.size}, Pending: ${queue.pending}` );
+});
+
+async function queueImage(src, opts) {
+	let options = Object.assign({}, globalOptions, opts);
+
+	// create the output dir
+	await fs.ensureDir(options.outputDir);
+
+	if(options.cacheDirectory) {
+		await fs.ensureDir(options.cacheDirectory);
+	}
+
+	return queue.add(() => image(src, options));
+}
+
+module.exports = queueImage;
+
+
+
 /* `statsSync` doesn’t generate any files, but will tell you where
  * the asynchronously generated files will end up! This is useful
  * in synchronous-only template environments where you need the
@@ -175,46 +227,5 @@ function statsByDimensionsSync(src, width, height, opts) {
 	return _statsSync(src, width, height, opts);
 }
 
-function isFullUrl(url) {
-	try {
-		new URL(url);
-		return true;
-	} catch(e) {
-		// invalid url OR local path
-		return false;
-	}
-}
-
-/* Combine it all together */
-async function image(src, opts) {
-	if(typeof src === "string" && isFullUrl(src)) {
-		let fetch = new FetchImage();
-		let buffer = await fetch.fetchBufferFromUrl(src);
-		opts.sourceUrl = src;
-		return resizeImage(buffer, opts);
-	}
-
-	// use file path
-	return resizeImage(src, opts);
-}
-
-/* Queue */
-let queue = new PQueue({
-	concurrency: globalOptions.concurrency
-});
-queue.on("active", () => {
-	debug( `Concurrency: ${queue.concurrency}, Size: ${queue.size}, Pending: ${queue.pending}` );
-});
-
-async function queueImage(src, opts) {
-	let options = Object.assign({}, globalOptions, opts);
-
-	// create the output dir
-	await fs.ensureDir(options.outputDir);
-
-	return queue.add(() => image(src, options));
-}
-
-module.exports = queueImage;
 module.exports.statsSync = statsSync;
 module.exports.statsByDimensionsSync = statsByDimensionsSync;
