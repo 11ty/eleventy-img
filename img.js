@@ -153,6 +153,8 @@ async function image(src, opts) {
 		throw new Error("`src` is a required argument to the eleventy-img utility (can be a string file path, string URL, or buffer).");
 	}
 
+	opts.sourceUrl = src;
+
 	if(typeof src === "string" && isFullUrl(src)) {
 
 		// fetch remote image
@@ -161,7 +163,6 @@ async function image(src, opts) {
 			type: "buffer"
 		});
 
-		opts.sourceUrl = src;
 		return resizeImage(buffer, opts);
 	}
 
