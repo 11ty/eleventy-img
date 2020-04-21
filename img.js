@@ -91,7 +91,7 @@ async function resizeImage(src, options = {}) {
 		// density: 72
 	});
 
-	if(!src) {
+	if(typeof src !== "string") {
 		if(options.sourceUrl) {
 			src = options.sourceUrl;
 		} else {
