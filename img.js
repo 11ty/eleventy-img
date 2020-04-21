@@ -91,10 +91,12 @@ async function resizeImage(src, options = {}) {
 		// density: 72
 	});
 
-	if(typeof src !== "string" && options.sourceUrl) {
-		src = options.sourceUrl;
-	} else {
-		throw new Error(`Expected options.sourceUrl in resizeImage when using Buffer as input.`);
+	if(!src) {
+		if(options.sourceUrl) {
+			src = options.sourceUrl;
+		} else {
+			throw new Error(`Expected options.sourceUrl in resizeImage when using Buffer as input.`);
+		}
 	}
 
 	// must find the image format from the metadata
@@ -153,16 +155,14 @@ async function image(src, opts) {
 		throw new Error("`src` is a required argument to the eleventy-img utility (can be a string file path, string URL, or buffer).");
 	}
 
-	opts.sourceUrl = src;
-
 	if(typeof src === "string" && isFullUrl(src)) {
-
 		// fetch remote image
 		let buffer = await await CacheAsset(src, {
 			duration: opts.cacheDuration,
 			type: "buffer"
 		});
 
+		opts.sourceUrl = src;
 		return resizeImage(buffer, opts);
 	}
 
