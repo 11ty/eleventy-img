@@ -11,9 +11,11 @@ npm install @11ty/eleventy-img
 ## Usage
 
 ```js
+const Image = require("@11ty/eleventy-img");
 module.exports = function(eleventyConfig) {
   eleventyConfig.addJavaScriptFunction("responsiveImage", function(src, options) {
-    return imgResize(src, options);
+    // returns Promise
+    return Image(src, options);
   });
 };
 ```
@@ -25,18 +27,17 @@ module.exports = function(eleventyConfig) {
 	// Path to image file
 	src: null,
 
-	// Array of widths, use falsy value to fall back to native image size
+	// Array of widths
+  // Optional: use falsy value to fall back to native image size
 	widths: [null],
 
 	// Pass any format supported by sharp
 	formats: ["webp", "jpeg"], //"png"
 
-	concurrency: 10,
-
-	// pathPrefix
+	// the directory in the image URLs <img src="/img/MY_IMAGE.png">
 	urlPath: "/img/",
 
-	// Directory to write to
+	// the path to the directory on the file system to write the image files to disk
 	outputDir: "img/"
 }
 ```
@@ -80,4 +81,11 @@ Use this object to generate your responsive image markup.
        srcset: '/img/9b186f9b-350.jpeg 350w',
        outputPath: 'img/9b186f9b-350.jpeg',
        size: 29101 } ] }
+```
+
+### Change Global Plugin Concurrency
+
+```js
+const Image = require("@11ty/eleventy-img");
+Image.concurrency = 4; // default is 10
 ```
