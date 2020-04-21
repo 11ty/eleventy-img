@@ -8,9 +8,9 @@ const shorthash = require("short-hash");
 const {default: PQueue} = require("p-queue");
 const imageSize = require("image-size");
 const sharp = require("sharp");
-const debug = require("debug")("EleventyImgResize");
+const debug = require("debug")("EleventyImg");
 
-const EleventyCacheAssets = require("@11ty/eleventy-cache-assets");
+const CacheAsset = require("@11ty/eleventy-cache-assets");
 
 const globalOptions = {
 	src: null,
@@ -149,10 +149,14 @@ function isFullUrl(url) {
 
 /* Combine it all together */
 async function image(src, opts) {
+	if(!src) {
+		throw new Error("`src` is a required argument to the eleventy-img utility (can be a string file path, string URL, or buffer).");
+	}
+
 	if(typeof src === "string" && isFullUrl(src)) {
 
 		// fetch remote image
-		let buffer = await await EleventyCacheAssets(src, {
+		let buffer = await await CacheAsset(src, {
 			duration: opts.cacheDuration,
 			type: "buffer"
 		});
@@ -184,6 +188,14 @@ async function queueImage(src, opts) {
 
 module.exports = queueImage;
 
+Object.defineProperty(module.exports, "concurrency", {
+	get: function() {
+		return queue.concurrency;
+	},
+	set: function(concurrency) {
+		queue.concurrency = concurrency;
+	},
+});
 
 
 /* `statsSync` doesn’t generate any files, but will tell you where
