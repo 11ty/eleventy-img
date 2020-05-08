@@ -2,6 +2,14 @@
 
 Low level utility to perform build-time image transformations.
 
+## Features
+
+* Optimizes and resizes images for you, automatically. Can output multiple image sizes. Keeps original image aspect ratios intact. Never upscales images larger than original size.
+* Can output multiple formats (you’ll probably use a combination of `webp`, `png`, `jpeg` but works with any supported image type in `sharp`).
+* Makes it easy to add `width` and `height` attributes for [proper aspect ratio mapping](https://developer.mozilla.org/en-US/docs/Web/Media/images/aspect_ratio_mapping).
+* Download remote images and cache them locally using [`eleventy-cache-assets`](https://github.com/11ty/eleventy-cache-assets). Make your HTML point to local images so you won’t see broken image URLs in the future.
+* Control concurrency of image processing.
+
 ## Installation
 
 ```
@@ -20,7 +28,34 @@ module.exports = function(eleventyConfig) {
 };
 ```
 
-### Example, Output an Optimized Image with Width/Height Attributes
+### Options List
+
+Defaults values are shown:
+
+```js
+{
+  // Array of widths
+  // Optional: use falsy value to fall back to native image size
+  widths: [null],
+
+  // Pass any format supported by sharp
+  formats: ["webp", "jpeg"], //"png"
+
+  // the directory in the image URLs <img src="/img/MY_IMAGE.png">
+  urlPath: "/img/",
+
+  // the path to the directory on the file system to write the image files to disk
+  outputDir: "img/",
+
+  // eleventy-cache-assets
+  // If a remote image URL, this is the amount of time before it downloads a new fresh copy from the remote server
+  cacheDuration: "1d"
+}
+```
+
+## Examples
+
+### Output an Optimized Image with Width/Height Attributes
 
 * Requires `async`, make sure you’re using this in Liquid, 11ty.js, or Nunjucks (use an async shortcode).
 
@@ -47,7 +82,7 @@ module.exports = function(eleventyConfig) {
 };
 ```
 
-### Example, Output Optimized Multi-Format, Multi-Size Responsive Images using `<picture>`
+### Output Optimized Multi-Format, Multi-Size Responsive Images using `<picture>`
 
 ```js
 const Image = require("@11ty/eleventy-img");
@@ -78,26 +113,7 @@ module.exports = function(eleventyConfig) {
 };
 ```
 
-### Full Option List
-
-```js
-{
-  // Array of widths
-  // Optional: use falsy value to fall back to native image size
-  widths: [null],
-
-  // Pass any format supported by sharp
-  formats: ["webp", "jpeg"], //"png"
-
-  // the directory in the image URLs <img src="/img/MY_IMAGE.png">
-  urlPath: "/img/",
-
-  // the path to the directory on the file system to write the image files to disk
-  outputDir: "img/"
-}
-```
-
-### Sample return object
+## Sample return object
 
 Use this object to generate your responsive image markup.
 
