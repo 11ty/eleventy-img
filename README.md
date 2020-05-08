@@ -13,20 +13,43 @@ npm install @11ty/eleventy-img
 ```js
 const Image = require("@11ty/eleventy-img");
 module.exports = function(eleventyConfig) {
-  eleventyConfig.addJavaScriptFunction("responsiveImage", function(src, options) {
+  eleventyConfig.addJavaScriptFunction("myResponsiveImage", function(src, options) {
     // returns Promise
     return Image(src, options);
   });
 };
 ```
 
-### Options
+### Example, Output an Optimized Image with Width/Height Attributes
+
+* Requires `async`, make sure you’re using this in Liquid, 11ty.js, or Nunjucks (use an async shortcode).
+
+```js
+const Image = require("@11ty/eleventy-img");
+module.exports = function(eleventyConfig) {
+  eleventyConfig.addJavaScriptFunction("myImage", async function(src, alt, outputFormat = "jpeg") {
+    // returns Promise
+    let stats = await Image(src, {
+      formats: [outputFormat],
+      widths: [null]
+    });
+
+    let props = stats[outputFormat].pop();
+
+    if(alt === undefined) {
+      // You bet we throw an error on missing alt (alt="" works okay)
+      throw new Error(`Missing \`alt\` on myImage from: ${src}`);
+    }
+
+    return `<img src="${props.src}" width="${props.width}" height="${props.height}" alt="${alt}">`;
+  });
+};
+```
+
+### Full Option List
 
 ```js
 {
-	// Path to image file
-	src: null,
-
 	// Array of widths
   // Optional: use falsy value to fall back to native image size
 	widths: [null],
