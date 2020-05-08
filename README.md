@@ -49,26 +49,29 @@ module.exports = function(eleventyConfig) {
 ### Example, Output Optimized Multi-Format, Multi-Size Responsive Images using `<picture>`
 
 ```js
-eleventyConfig.addLiquidShortcode("myResponsiveImage", async function(src, alt, options) {
-    let stats = await Image(src, options);
-    let lowestSrc = stats.jpeg[0];
-    let sizes = "100vw"; // Make sure you customize this!
+const Image = require("@11ty/eleventy-img");
+module.exports = function(eleventyConfig) {
+  eleventyConfig.addLiquidShortcode("myResponsiveImage", async function(src, alt, options) {
+      let stats = await Image(src, options);
+      let lowestSrc = stats.jpeg[0];
+      let sizes = "100vw"; // Make sure you customize this!
 
-    if(alt === undefined) {
-      // You bet we throw an error on missing alt (alt="" works okay)
-      throw new Error(`Missing \`alt\` on myImage from: ${src}`);
-    }
+      if(alt === undefined) {
+        // You bet we throw an error on missing alt (alt="" works okay)
+        throw new Error(`Missing \`alt\` on myImage from: ${src}`);
+      }
 
-    return `<picture>
-  <source type="image/webp" srcset="${stats.webp.map(entry => `${entry.url} ${entry.width}w`).join(", ")}" sizes="${sizes}">
-  <source type="image/jpeg" srcset="${stats.jpeg.map(entry => `${entry.url} ${entry.width}w`).join(", ")}" sizes="${sizes}">
-  <img
-    alt="${alt}"
-    src="${lowestSrc.url}"
-    width="${lowestSrc.width}"
-    height="${lowestSrc.height}">
-</picture>`;
-  });
+      return `<picture>
+    <source type="image/webp" srcset="${stats.webp.map(entry => `${entry.url} ${entry.width}w`).join(", ")}" sizes="${sizes}">
+    <source type="image/jpeg" srcset="${stats.jpeg.map(entry => `${entry.url} ${entry.width}w`).join(", ")}" sizes="${sizes}">
+    <img
+      alt="${alt}"
+      src="${lowestSrc.url}"
+      width="${lowestSrc.width}"
+      height="${lowestSrc.height}">
+  </picture>`;
+    });
+};
 ```
 
 ### Full Option List
