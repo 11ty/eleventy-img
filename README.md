@@ -67,7 +67,10 @@ module.exports = function(eleventyConfig) {
     // returns Promise
     let stats = await Image(src, {
       formats: [outputFormat],
+      // This uses the original image width
       widths: [null]
+      // widths: [200] // output 200px maxwidth
+      // widths: [200, null] // output 200px and original width
     });
 
     let props = stats[outputFormat].pop();
