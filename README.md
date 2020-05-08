@@ -46,7 +46,7 @@ module.exports = function(eleventyConfig) {
 };
 ```
 
-### Example, Output Optimized Multi-Format, Multi-Size Responsive Images using <picture>
+### Example, Output Optimized Multi-Format, Multi-Size Responsive Images using `<picture>`
 
 ```js
 eleventyConfig.addLiquidShortcode("myResponsiveImage", async function(src, alt, options) {
