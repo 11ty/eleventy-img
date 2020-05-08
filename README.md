@@ -60,7 +60,7 @@ module.exports = function(eleventyConfig) {
 
       if(alt === undefined) {
         // You bet we throw an error on missing alt (alt="" works okay)
-        throw new Error(`Missing \`alt\` on myImage from: ${src}`);
+        throw new Error(`Missing \`alt\` on myResponsiveImage from: ${src}`);
       }
 
       // Iterate over formats and widths
