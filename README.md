@@ -61,15 +61,17 @@ module.exports = function(eleventyConfig) {
         throw new Error(`Missing \`alt\` on myImage from: ${src}`);
       }
 
+      // Iterate over formats and widths
       return `<picture>
-    <source type="image/webp" srcset="${stats.webp.map(entry => `${entry.url} ${entry.width}w`).join(", ")}" sizes="${sizes}">
-    <source type="image/jpeg" srcset="${stats.jpeg.map(entry => `${entry.url} ${entry.width}w`).join(", ")}" sizes="${sizes}">
-    <img
-      alt="${alt}"
-      src="${lowestSrc.url}"
-      width="${lowestSrc.width}"
-      height="${lowestSrc.height}">
-  </picture>`;
+        ${Object.keys(stats).map(stat => {
+          return `  <source type="image/${stat[0].format}" srcset="${stat.map(entry => `${entry.url} ${entry.width}w`).join(", ")}" sizes="${sizes}">`;
+        }).join("\n")}
+  <img
+    alt="${alt}"
+    src="${lowestSrc.url}"
+    width="${lowestSrc.width}"
+    height="${lowestSrc.height}">
+</picture>`;
     });
 };
 ```
