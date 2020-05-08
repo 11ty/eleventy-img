@@ -50,18 +50,18 @@ module.exports = function(eleventyConfig) {
 
 ```js
 {
-	// Array of widths
+  // Array of widths
   // Optional: use falsy value to fall back to native image size
-	widths: [null],
+  widths: [null],
 
-	// Pass any format supported by sharp
-	formats: ["webp", "jpeg"], //"png"
+  // Pass any format supported by sharp
+  formats: ["webp", "jpeg"], //"png"
 
-	// the directory in the image URLs <img src="/img/MY_IMAGE.png">
-	urlPath: "/img/",
+  // the directory in the image URLs <img src="/img/MY_IMAGE.png">
+  urlPath: "/img/",
 
-	// the path to the directory on the file system to write the image files to disk
-	outputDir: "img/"
+  // the path to the directory on the file system to write the image files to disk
+  outputDir: "img/"
 }
 ```
 
