@@ -63,8 +63,8 @@ module.exports = function(eleventyConfig) {
 
       // Iterate over formats and widths
       return `<picture>
-        ${Object.keys(stats).map(stat => {
-          return `  <source type="image/${stat[0].format}" srcset="${stat.map(entry => `${entry.url} ${entry.width}w`).join(", ")}" sizes="${sizes}">`;
+        ${Object.values(stats).map(imageFormat => {
+          return `  <source type="image/${imageFormat[0].format}" srcset="${imageFormat.map(entry => `${entry.url} ${entry.width}w`).join(", ")}" sizes="${sizes}">`;
         }).join("\n")}
   <img
     alt="${alt}"
