@@ -27,6 +27,7 @@ module.exports = function(eleventyConfig) {
 ```js
 const Image = require("@11ty/eleventy-img");
 module.exports = function(eleventyConfig) {
+  // works also with addLiquidShortcode or addNunjucksAsyncShortcode
   eleventyConfig.addJavaScriptFunction("myImage", async function(src, alt, outputFormat = "jpeg") {
     // returns Promise
     let stats = await Image(src, {
@@ -51,7 +52,8 @@ module.exports = function(eleventyConfig) {
 ```js
 const Image = require("@11ty/eleventy-img");
 module.exports = function(eleventyConfig) {
-  eleventyConfig.addLiquidShortcode("myResponsiveImage", async function(src, alt, options) {
+  // works also with addLiquidShortcode or addNunjucksAsyncShortcode
+  eleventyConfig.addJavaScriptFunction("myResponsiveImage", async function(src, alt, options) {
       let stats = await Image(src, options);
       let lowestSrc = stats.jpeg[0];
       let sizes = "100vw"; // Make sure you customize this!
