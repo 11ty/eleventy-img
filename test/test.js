@@ -89,3 +89,80 @@ test("Sync by dimension with null width", t => {
 	t.is(stats.jpeg[1].width, 1280);
 	t.is(stats.jpeg[1].height, 853);
 });
+
+test("Try to use a width larger than original", async t => {
+	let stats = await eleventyImage("./test/bio-2017.jpg", {
+		widths: [1500],
+		formats: ["jpeg"],
+		outputDir: "./test/img/"
+	});
+	t.is(stats.jpeg.length, 1);
+	t.is(stats.jpeg[0].outputPath, "test/img/97854483.jpeg");
+	t.is(stats.jpeg[0].width, 1280);
+});
+
+test("Try to use a width larger than original (two sizes)", async t => {
+	let stats = await eleventyImage("./test/bio-2017.jpg", {
+		widths: [1500, 2000],
+		formats: ["jpeg"],
+		outputDir: "./test/img/"
+	});
+	t.is(stats.jpeg.length, 1);
+	t.is(stats.jpeg[0].outputPath, "test/img/97854483.jpeg");
+	t.is(stats.jpeg[0].width, 1280);
+});
+
+test("Try to use a width larger than original (with a null in there)", async t => {
+	let stats = await eleventyImage("./test/bio-2017.jpg", {
+		widths: [1500, null],
+		formats: ["jpeg"],
+		outputDir: "./test/img/"
+	});
+	t.is(stats.jpeg.length, 1);
+	t.is(stats.jpeg[0].outputPath, "test/img/97854483.jpeg");
+	t.is(stats.jpeg[0].width, 1280);
+});
+
+test("Just falsy width", async t => {
+	let stats = await eleventyImage("./test/bio-2017.jpg", {
+		widths: [null],
+		formats: ["jpeg"],
+		outputDir: "./test/img/"
+	});
+	t.is(stats.jpeg.length, 1);
+	t.is(stats.jpeg[0].outputPath, "test/img/97854483.jpeg");
+	t.is(stats.jpeg[0].width, 1280);
+});
+
+test("Use exact same width as original", async t => {
+	let stats = await eleventyImage("./test/bio-2017.jpg", {
+		widths: [1280],
+		formats: ["jpeg"],
+		outputDir: "./test/img/"
+	});
+	t.is(stats.jpeg.length, 1);
+	t.is(stats.jpeg[0].outputPath, "test/img/97854483.jpeg"); // no width in filename
+	t.is(stats.jpeg[0].width, 1280);
+});
+
+test("Try to use a width larger than original (statsSync)", t => {
+	let stats = eleventyImage.statsSync("./test/bio-2017.jpg", {
+		widths: [1500],
+		formats: ["jpeg"]
+	});
+
+	t.is(stats.jpeg.length, 1);
+	t.is(stats.jpeg[0].url, "/img/97854483.jpeg");
+	t.is(stats.jpeg[0].width, 1280);
+});
+
+test("Use exact same width as original (statsSync)", t => {
+	let stats = eleventyImage.statsSync("./test/bio-2017.jpg", {
+		widths: [1280],
+		formats: ["jpeg"]
+	});
+
+	t.is(stats.jpeg.length, 1);
+	t.is(stats.jpeg[0].url, "/img/97854483.jpeg"); // no width in filename
+	t.is(stats.jpeg[0].width, 1280);
+});

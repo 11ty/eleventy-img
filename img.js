@@ -47,7 +47,7 @@ function getFilename(src, width, format) {
 		return `${id}-${width}.${format}`;
 	}
 
-	return outputFilename = `${id}.${format}`;
+	return `${id}.${format}`;
 }
 
 function getStats(src, format, urlPath, width, height, includeWidthInFilename) {
@@ -99,13 +99,14 @@ async function resizeImage(src, options = {}) {
 		}
 	}
 
-	// must find the image format from the metadata
-	// extensions lie or may not be present in the src url
+	// Must find the image format from the metadata
+	// File extensions lie or may not be present in the src url!
 	let metadata = await sharpImage.metadata();
 	let outputFilePromises = [];
 
 	let formats = getFormatsArray(options.formats);
 	for(let format of formats) {
+		let hasAtLeastOneValidMaxWidth = false;
 		for(let width of options.widths) {
 			let hasWidth = !!width;
 			// Set format
@@ -114,15 +115,31 @@ async function resizeImage(src, options = {}) {
 				imageFormat.toFormat(format);
 			}
 
-			// Set width
-			if(hasWidth) {
-				imageFormat.resize({
-					width: width,
-					withoutEnlargement: true
-				});
+			// skip this width because it’s larger than the original and we already
+			// have at least one output image size that works
+			if(hasAtLeastOneValidMaxWidth && (!width || width > metadata.width)) {
+				continue;
 			}
 
-			let outputFilename = getFilename(src, width , format);
+			// Resize the image
+			if(!width) {
+				hasAtLeastOneValidMaxWidth = true;
+			} else {
+				if(width >= metadata.width) {
+					// don’t reassign width if it’s falsy
+					width = null;
+					hasWidth = false;
+					hasAtLeastOneValidMaxWidth = true;
+				} else {
+					imageFormat.resize({
+						width: width,
+						withoutEnlargement: true
+					});
+				}
+			}
+
+
+			let outputFilename = getFilename(src, width, format);
 			let outputPath = path.join(options.outputDir, outputFilename);
 			outputFilePromises.push(imageFormat.toFile(outputPath).then(data => {
 				let stats = getStats(src, format, options.urlPath, data.width, data.height, hasWidth);
@@ -213,15 +230,28 @@ function _statsSync(src, originalWidth, originalHeight, opts) {
 	let formats = getFormatsArray(options.formats);
 
 	for(let format of formats) {
+		let hasAtLeastOneValidMaxWidth = false;
 		for(let width of options.widths) {
 			let hasWidth = !!width;
 			let height;
+
+			if(hasAtLeastOneValidMaxWidth && (!width || width > originalWidth)) {
+				continue;
+			}
+
 			if(!width) {
 				width = originalWidth;
 				height = originalHeight;
+				hasAtLeastOneValidMaxWidth = true;
 			} else {
+				if(width >= originalWidth) {
+					width = originalWidth;
+					hasWidth = false;
+					hasAtLeastOneValidMaxWidth = true;
+				}
 				height = Math.floor(width * originalHeight / originalWidth);
 			}
+
 
 			results.push(getStats(src, format, options.urlPath, width, height, hasWidth));
 		}
