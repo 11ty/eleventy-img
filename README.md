@@ -80,7 +80,7 @@ module.exports = function(eleventyConfig) {
       throw new Error(`Missing \`alt\` on myImage from: ${src}`);
     }
 
-    return `<img src="${props.src}" width="${props.width}" height="${props.height}" alt="${alt}">`;
+    return `<img src="${props.url}" width="${props.width}" height="${props.height}" alt="${alt}">`;
   });
 };
 ```
