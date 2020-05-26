@@ -38,6 +38,10 @@ Defaults values are shown:
   // Optional: use falsy value to fall back to native image size
   widths: [null],
 
+  // Array of heights
+  // Optional: use falsy value to fall back to native image size
+  heights: [null],
+
   // Pass any format supported by sharp
   formats: ["webp", "jpeg"], //"png"
 

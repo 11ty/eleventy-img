@@ -15,6 +15,7 @@ const CacheAsset = require("@11ty/eleventy-cache-assets");
 const globalOptions = {
 	src: null,
 	widths: [null],
+	heights: [null],
 	formats: ["webp", "jpeg"], //"png"
 	concurrency: 10,
 	urlPath: "/img/",
@@ -24,6 +25,7 @@ const globalOptions = {
 };
 
 const MIME_TYPES = {
+	"jpg": "image/jpeg",
 	"jpeg": "image/jpeg",
 	"webp": "image/webp",
 	"png": "image/png"
@@ -107,8 +109,14 @@ async function resizeImage(src, options = {}) {
 	let formats = getFormatsArray(options.formats);
 	for(let format of formats) {
 		let hasAtLeastOneValidMaxWidth = false;
-		for(let width of options.widths) {
+		for(let widthKey in options.widths) {
+			let width = options.widths[widthKey];
 			let hasWidth = !!width;
+			// heights length should be same length with widths
+			if (options.heights && options.heights[0] != null && options.heights.length != options.widths.length) {
+				throw new Error("if `heights` is set. it should has same with length of width.");
+			}
+			let height = options.heights[widthKey];
 			// Set format
 			let imageFormat = sharpImage.clone();
 			if(metadata.format !== format) {
@@ -133,6 +141,7 @@ async function resizeImage(src, options = {}) {
 				} else {
 					imageFormat.resize({
 						width: width,
+						height: height,
 						withoutEnlargement: true
 					});
 				}
@@ -231,8 +240,13 @@ function _statsSync(src, originalWidth, originalHeight, opts) {
 
 	for(let format of formats) {
 		let hasAtLeastOneValidMaxWidth = false;
-		for(let width of options.widths) {
+		for(let widthKey in options.widths) {
+			let width = options.widths[widthKey];
 			let hasWidth = !!width;
+			// heights length should be same length with widths
+			if (options.heights && options.heights[0] != null && options.heights.length != options.widths.length) {
+				throw new Error("if `heights` is set. it should has same with length of width.");
+			}
 			let height;
 
 			if(hasAtLeastOneValidMaxWidth && (!width || width > originalWidth)) {
@@ -249,7 +263,7 @@ function _statsSync(src, originalWidth, originalHeight, opts) {
 					hasWidth = false;
 					hasAtLeastOneValidMaxWidth = true;
 				}
-				height = Math.floor(width * originalHeight / originalWidth);
+				height = options.heights[widthKey] || Math.floor(width * originalHeight / originalWidth);
 			}
 
 

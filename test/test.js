@@ -166,3 +166,39 @@ test("Use exact same width as original (statsSync)", t => {
 	t.is(stats.jpeg[0].url, "/img/97854483.jpeg"); // no width in filename
 	t.is(stats.jpeg[0].width, 1280);
 });
+
+test("Try to crop with widths and heights options", async t => {
+	let stats = await eleventyImage("./test/bio-2017.jpg", {
+		widths: [225, 100],
+		heights: [400, 200],
+		formats: ["jpeg"],
+		outputDir: "./test/img/"
+	});
+	t.is(stats.jpeg.length, 2);
+	t.is(stats.jpeg[0].outputPath, "test/img/97854483-100.jpeg");
+	t.is(stats.jpeg[0].width, 100);
+	t.is(stats.jpeg[0].height, 200);
+	t.is(stats.jpeg[1].outputPath, "test/img/97854483-225.jpeg");
+	t.is(stats.jpeg[1].width, 225);
+	t.is(stats.jpeg[1].height, 400);
+});
+
+test("Try to crop with widths and heights are not balance scenario 1", async t => {
+	let stats = await t.throwsAsync(() => eleventyImage("./test/bio-2017.jpg", {
+		widths: [225, 100],
+		heights: [400],
+		formats: ["jpeg"],
+		outputDir: "./test/img/"
+	}));
+	t.is(stats.message, 'if `heights` is set. it should has same with length of width.');
+});
+
+test("Try to crop with widths and heights are not balance scenario 2", async t => {
+	let stats = await t.throwsAsync(() => eleventyImage("./test/bio-2017.jpg", {
+		widths: [225, 100],
+		heights: [400, 20, 30],
+		formats: ["jpeg"],
+		outputDir: "./test/img/"
+	}));
+	t.is(stats.message, 'if `heights` is set. it should has same with length of width.');
+});
