@@ -167,6 +167,17 @@ test("Use exact same width as original (statsSync)", t => {
 	t.is(stats.jpeg[0].width, 1280);
 });
 
+test("Try to add mime type jpg", async t => {
+	let stats = await eleventyImage("./test/bio-2017.jpg", {
+		widths: [225, 100],
+		formats: ["jpg"],
+		outputDir: "./test/img/"
+	});
+	t.is(stats.jpg.length, 2);
+	t.is(stats.jpg[0].outputPath, "test/img/97854483-100.jpg");
+	t.is(stats.jpg[1].outputPath, "test/img/97854483-225.jpg");
+});
+
 test("Try to crop with widths and heights options", async t => {
 	let stats = await eleventyImage("./test/bio-2017.jpg", {
 		widths: [225, 100],
