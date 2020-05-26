@@ -42,6 +42,10 @@ Defaults values are shown:
   // Optional: use falsy value to fall back to native image size
   heights: [null],
 
+  // to crop image use array pair from widths and heights
+  // widths: [1600, 160, 80],
+  // heights: [900, 90, 45]
+
   // Pass any format supported by sharp
   formats: ["webp", "jpeg"], //"png"
 
