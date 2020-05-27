@@ -2,9 +2,9 @@ const test = require("ava");
 const eleventyImage = require("../");
 
 test("Sync with jpeg input", t => {
-	let stats = eleventyImage.statsSync("./test/bio-2017.jpg");
-	t.is(stats.webp.length, 1);
-	t.is(stats.jpeg.length, 1);
+  let stats = eleventyImage.statsSync("./test/bio-2017.jpg");
+  t.is(stats.webp.length, 1);
+  t.is(stats.jpeg.length, 1);
 });
 
 test("Sync by dimension with jpeg input", t => {
@@ -165,4 +165,41 @@ test("Use exact same width as original (statsSync)", t => {
 	t.is(stats.jpeg.length, 1);
 	t.is(stats.jpeg[0].url, "/img/97854483.jpeg"); // no width in filename
 	t.is(stats.jpeg[0].width, 1280);
+});
+
+test("Use a different output directory", async t => {
+	let stats = await eleventyImage("./test/bio-2017.jpg", {
+		formats: ["jpeg"],
+    dir: {
+      output: "sample/"
+    }
+	});
+	t.is(stats.jpeg.length, 1);
+	t.is(stats.jpeg[0].outputPath, "sample/img/97854483.jpeg");
+	t.is(stats.jpeg[0].src, "/img/97854483.jpeg");
+});
+
+test("Use a different img src directory", async t => {
+	let stats = await eleventyImage("./test/bio-2017.jpg", {
+		formats: ["jpeg"],
+    dir: {
+      imgSrc: "/images/"
+    }
+	});
+	t.is(stats.jpeg.length, 1);
+	t.is(stats.jpeg[0].outputPath, "images/97854483.jpeg");
+	t.is(stats.jpeg[0].src, "/images/97854483.jpeg");
+});
+
+test("Use a different img src and output directory", async t => {
+	let stats = await eleventyImage("./test/bio-2017.jpg", {
+		formats: ["jpeg"],
+    dir: {
+      imgSrc: "/images/",
+      output: "sample/"
+    }
+	});
+	t.is(stats.jpeg.length, 1);
+	t.is(stats.jpeg[0].outputPath, "sample/images/97854483.jpeg");
+	t.is(stats.jpeg[0].src, "/images/97854483.jpeg");
 });

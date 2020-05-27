@@ -1,5 +1,7 @@
 node_modules
+images/
 test/img/
 sample/img/
+sample/images/
 sample/.cache/
 package-lock.json

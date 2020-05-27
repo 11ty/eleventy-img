@@ -41,11 +41,12 @@ Defaults values are shown:
   // Pass any format supported by sharp
   formats: ["webp", "jpeg"], //"png"
 
-  // the directory in the image URLs <img src="/img/MY_IMAGE.png">
-  urlPath: "/img/",
-
-  // the path to the directory on the file system to write the image files to disk
-  outputDir: "img/",
+  dir: {
+    // the file system directory to write the image files to disk
+    output: "./",
+    // the directory in the image src URLs <img src="/img/MY_IMAGE.png">
+    imgSrc: "/img/"
+  },
 
   // eleventy-cache-assets
   // If a remote image URL, this is the amount of time before it downloads a new fresh copy from the remote server
@@ -55,9 +56,39 @@ Defaults values are shown:
 
 ## Examples
 
-### Output an Optimized Image with Width/Height Attributes
+> Requires `async`, make sure you’re using this in Liquid, 11ty.js, or Nunjucks (use an async shortcode).
 
-* Requires `async`, make sure you’re using this in Liquid, 11ty.js, or Nunjucks (use an async shortcode).
+### Specifying Output and Image Source Directories
+
+```js
+const Image = require("@11ty/eleventy-img");
+module.exports = function(eleventyConfig) {
+  // works also with addLiquidShortcode or addNunjucksAsyncShortcode
+  eleventyConfig.addJavaScriptFunction("myImage", async function(src, alt, outputFormat = "jpeg") {
+    if(alt === undefined) {
+      // You bet we throw an error on missing alt (alt="" works okay)
+      throw new Error(`Missing \`alt\` on myImage from: ${src}`);
+    }
+
+    // returns Promise
+    let stats = await Image(src, {
+      formats: [outputFormat],
+      dir: {
+        // Set the file system directory for saving images (_site/images/)
+        output: "_site/",
+        // Set the output img src directory (<img src="/images/MY_IMAGE.jpeg" alt="my pic">)
+        imgSrc: "/images/"
+      }
+    });
+
+    let props = stats[outputFormat].pop();
+
+    return `<img src="${props.src}" width="${props.width}" height="${props.height}" alt="${alt}">`;
+  });
+};
+```
+
+### Output an Optimized Image with Width/Height Attributes
 
 ```js
 const Image = require("@11ty/eleventy-img");

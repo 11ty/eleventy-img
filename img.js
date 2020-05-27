@@ -142,6 +142,7 @@ async function resizeImage(src, options = {}) {
 
 			let outputFilename = getFilename(src, width, format);
 			let outputPath = path.join(options.outputDir, outputFilename);
+
 			outputFilePromises.push(imageFormat.toFile(outputPath).then(data => {
 				let stats = getStats(src, format, options.urlPath, data.width, data.height, hasWidth);
 				stats.outputPath = outputPath;
@@ -196,8 +197,43 @@ queue.on("active", () => {
 	debug( `Concurrency: ${queue.concurrency}, Size: ${queue.size}, Pending: ${queue.pending}` );
 });
 
+/*
+ * Merge dir options (imgSrc and output) into urlPath and outputDir
+ * TODO: deprecate outputDir and urlPath?
+ */
+function getOptions(opts) {
+	if(opts === undefined) {
+		return Object.assign({}, globalOptions);
+	}
+
+	/*
+	 * Make sure outputDir is not pointing to file system root dir
+	 */
+	function setDirLocal(dirString) {
+		return dirString.replace(/^\//, './');
+	}
+
+	const newOpts = Object.assign({}, opts);
+
+	if(opts.dir !== undefined) {
+		if(opts.dir.imgSrc !== undefined) {
+			newOpts.urlPath = opts.dir.imgSrc;
+			// set initial outputDir value (may be overwritten below)
+			newOpts.outputDir = setDirLocal(opts.dir.imgSrc);
+		}
+		if(opts.dir.output !== undefined) {
+			// combine dir.output and dir.imgSrc into outputDir
+			newOpts.outputDir = path.join(setDirLocal(opts.dir.output), (newOpts.urlPath || globalOptions.urlPath));
+		}
+		// cleanup before merging with global options
+		delete newOpts.dir;
+	}
+
+	return Object.assign({}, globalOptions, newOpts);
+}
+
 async function queueImage(src, opts) {
-	let options = Object.assign({}, globalOptions, opts);
+	let options = Object.assign({}, getOptions(opts));
 
 	// create the output dir
 	await fs.ensureDir(options.outputDir);
@@ -225,8 +261,7 @@ Object.defineProperty(module.exports, "concurrency", {
  */
 
 function _statsSync(src, originalWidth, originalHeight, opts) {
-	let options = Object.assign({}, globalOptions, opts);
-
+	let options = Object.assign({}, getOptions(opts));
 	let results = [];
 	let formats = getFormatsArray(options.formats);
 
