@@ -60,8 +60,9 @@ function getStats(src, format, urlPath, width, height, includeWidthInFilename) {
 		height: height,
 		// size // only after processing
 		// outputPath // only after processing
-		url: url,
+		url: url, // deprecate?
 		sourceType: MIME_TYPES[format],
+		src: url,
 		srcset: `${url} ${width}w`
 	}
 }

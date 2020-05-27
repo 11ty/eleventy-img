@@ -80,7 +80,7 @@ module.exports = function(eleventyConfig) {
 
     let props = stats[outputFormat].pop();
 
-    return `<img src="${props.url}" width="${props.width}" height="${props.height}" alt="${alt}">`;
+    return `<img src="${props.src}" width="${props.width}" height="${props.height}" alt="${alt}">`;
   });
 };
 ```
@@ -104,11 +104,11 @@ module.exports = function(eleventyConfig) {
     // Iterate over formats and widths
     return `<picture>
       ${Object.values(stats).map(imageFormat => {
-        return `  <source type="image/${imageFormat[0].format}" srcset="${imageFormat.map(entry => `${entry.url} ${entry.width}w`).join(", ")}" sizes="${sizes}">`;
+        return `  <source type="image/${imageFormat[0].format}" srcset="${imageFormat.map(entry => `${entry.src} ${entry.width}w`).join(", ")}" sizes="${sizes}">`;
       }).join("\n")}
         <img
           alt="${alt}"
-          src="${lowestSrc.url}"
+          src="${lowestSrc.src}"
           width="${lowestSrc.width}"
           height="${lowestSrc.height}">
       </picture>`;
@@ -125,16 +125,16 @@ Use this object to generate your responsive image markup.
    [ { format: 'webp',
        width: 1280,
        height: 853,
-       url: '/img/9b186f9b.webp',
        sourceType: 'image/webp',
+       src: '/img/9b186f9b.webp',
        srcset: '/img/9b186f9b.webp 1280w',
        outputPath: 'img/9b186f9b.webp',
        size: 213802 },
      { format: 'webp',
        width: 350,
        height: 233,
-       url: '/img/9b186f9b-350.webp',
        sourceType: 'image/webp',
+       src: '/img/9b186f9b-350.webp',
        srcset: '/img/9b186f9b-350.webp 350w',
        outputPath: 'img/9b186f9b-350.webp',
        size: 27288 } ],
@@ -142,16 +142,16 @@ Use this object to generate your responsive image markup.
    [ { format: 'jpeg',
        width: 1280,
        height: 853,
-       url: '/img/9b186f9b.jpeg',
        sourceType: 'image/jpg',
+       src: '/img/9b186f9b.jpeg',
        srcset: '/img/9b186f9b.jpeg 1280w',
        outputPath: 'img/9b186f9b.jpeg',
        size: 276231 },
      { format: 'jpeg',
        width: 350,
        height: 233,
-       url: '/img/9b186f9b-350.jpeg',
        sourceType: 'image/jpg',
+       src: '/img/9b186f9b-350.jpeg',
        srcset: '/img/9b186f9b-350.jpeg 350w',
        outputPath: 'img/9b186f9b-350.jpeg',
        size: 29101 } ] }
