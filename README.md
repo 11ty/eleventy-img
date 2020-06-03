@@ -38,13 +38,9 @@ Defaults values are shown:
   // Optional: use falsy value to fall back to native image size
   widths: [null],
 
-  // Array of heights
-  // Optional: use falsy value to fall back to native image size
-  heights: [null],
-
-  // to crop image use array pair from widths and heights
-  // widths: [1600, 160, 80],
-  // heights: [900, 90, 45]
+  // Array of crops
+  // Optional: use falsy value to skip cropping
+  crops: null, // ["1600x900", "160x90"] or [ { width: 1600, height: 900 }, { width: 160, height: 90 } ]
 
   // Pass any format supported by sharp
   formats: ["webp", "jpeg"], //"png"

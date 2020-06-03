@@ -167,49 +167,96 @@ test("Use exact same width as original (statsSync)", t => {
 	t.is(stats.jpeg[0].width, 1280);
 });
 
-test("Try to add mime type jpg", async t => {
+test("Use crop feature case 1", async t => {
 	let stats = await eleventyImage("./test/bio-2017.jpg", {
-		widths: [225, 100],
-		formats: ["jpg"],
+		crops: ["160x90"],
+		formats: ["jpeg"],
 		outputDir: "./test/img/"
 	});
-	t.is(stats.jpg.length, 2);
-	t.is(stats.jpg[0].outputPath, "test/img/97854483-100.jpg");
-	t.is(stats.jpg[1].outputPath, "test/img/97854483-225.jpg");
+	t.is(stats.jpeg.length, 1);
 });
 
-test("Try to crop with widths and heights options", async t => {
+test("Use crop feature case 2 (ignore image larger than original)", async t => {
 	let stats = await eleventyImage("./test/bio-2017.jpg", {
-		widths: [225, 100],
-		heights: [400, 200],
+		crops: ["1600x900", "160x90"],
+		formats: ["jpeg"],
+		outputDir: "./test/img/"
+	});
+	t.is(stats.jpeg.length, 1);
+	t.is(stats.jpeg[0].outputPath, "test/img/97854483-160x90.jpeg"); // no width in filename
+	t.is(stats.jpeg[0].width, 160);
+	t.is(stats.jpeg[0].height, 90);
+});
+
+test("Use crop feature case 3 (ignore image larger than original)", async t => {
+	let stats = await eleventyImage("./test/bio-2017.jpg", {
+		crops: [{
+			width: 1600, 
+			height: 900
+		}, {
+			width: 160, 
+			height: 90
+		}],
+		formats: ["jpeg"],
+		outputDir: "./test/img/"
+	});
+	t.is(stats.jpeg.length, 1);
+	t.is(stats.jpeg[0].outputPath, "test/img/97854483-160x90.jpeg"); // no width in filename
+	t.is(stats.jpeg[0].width, 160);
+	t.is(stats.jpeg[0].height, 90);
+});
+
+test("Use crop feature case 4", async t => {
+	let stats = await eleventyImage("./test/bio-2017.jpg", {
+		crops: [{
+			width: 800, 
+			height: 600
+		}, {
+			width: 160, 
+			height: 90
+		}],
 		formats: ["jpeg"],
 		outputDir: "./test/img/"
 	});
 	t.is(stats.jpeg.length, 2);
-	t.is(stats.jpeg[0].outputPath, "test/img/97854483-100.jpeg");
-	t.is(stats.jpeg[0].width, 100);
-	t.is(stats.jpeg[0].height, 200);
-	t.is(stats.jpeg[1].outputPath, "test/img/97854483-225.jpeg");
-	t.is(stats.jpeg[1].width, 225);
-	t.is(stats.jpeg[1].height, 400);
+	t.is(stats.jpeg[0].outputPath, "test/img/97854483-160x90.jpeg"); // no width in filename
+	t.is(stats.jpeg[0].width, 160);
+	t.is(stats.jpeg[0].height, 90);
+	t.is(stats.jpeg[1].outputPath, "test/img/97854483-800x600.jpeg"); // no width in filename
+	t.is(stats.jpeg[1].width, 800);
+	t.is(stats.jpeg[1].height, 600);
 });
 
-test("Try to crop with widths and heights are not balance scenario 1", async t => {
-	let stats = await t.throwsAsync(() => eleventyImage("./test/bio-2017.jpg", {
-		widths: [225, 100],
-		heights: [400],
-		formats: ["jpeg"],
-		outputDir: "./test/img/"
-	}));
-	t.is(stats.message, 'if `heights` is set. it should has same with length of width.');
+test("Sync with crop feature case 1", t => {
+	let stats = eleventyImage.statsSync("./test/bio-2017.jpg", {
+		crops: [{
+			width: 800, 
+			height: 600
+		}, {
+			width: 160, 
+			height: 90
+		}]
+	});
+	t.is(stats.webp.length, 2);
+	t.is(stats.webp[0].width, 160);
+	t.is(stats.webp[0].height, 90);
+	t.is(stats.webp[1].width, 800);
+	t.is(stats.webp[1].height, 600);
+	t.is(stats.jpeg.length, 2);
+	t.is(stats.jpeg[0].width, 160);
+	t.is(stats.jpeg[0].height, 90);
+	t.is(stats.jpeg[1].width, 800);
+	t.is(stats.jpeg[1].height, 600);
 });
 
-test("Try to crop with widths and heights are not balance scenario 2", async t => {
-	let stats = await t.throwsAsync(() => eleventyImage("./test/bio-2017.jpg", {
-		widths: [225, 100],
-		heights: [400, 20, 30],
-		formats: ["jpeg"],
-		outputDir: "./test/img/"
-	}));
-	t.is(stats.message, 'if `heights` is set. it should has same with length of width.');
+test("Sync with crop feature case 2 (ignore image larger than original)", t => {
+	let stats = eleventyImage.statsSync("./test/bio-2017.jpg", {
+		crops: ["1600x900", "160x90"]
+	});
+	t.is(stats.webp.length, 1);
+	t.is(stats.webp[0].width, 160);
+	t.is(stats.webp[0].height, 90);
+	t.is(stats.jpeg.length, 1);
+	t.is(stats.jpeg[0].width, 160);
+	t.is(stats.jpeg[0].height, 90);
 });
