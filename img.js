@@ -19,8 +19,13 @@ const globalOptions = {
 	concurrency: 10,
 	urlPath: "/img/",
 	outputDir: "img/",
-	cacheDirectory: ".cache/",
-	cacheDuration: "1d"
+	cacheDuration: "1d", // deprecated, use cacheOptions.duration
+	cacheOptions: {
+		// duration: "1d",
+		// directory: ".cache",
+		// removeUrlQueryParams: false,
+		// fetchOptions: {},
+	},
 };
 
 const MIME_TYPES = {
@@ -174,10 +179,10 @@ async function image(src, opts) {
 
 	if(typeof src === "string" && isFullUrl(src)) {
 		// fetch remote image
-		let buffer = await await CacheAsset(src, {
+		let buffer = await await CacheAsset(src, Object.assign({
 			duration: opts.cacheDuration,
 			type: "buffer"
-		});
+		}, opts.cacheOptions));
 
 		opts.sourceUrl = src;
 		return resizeImage(buffer, opts);
