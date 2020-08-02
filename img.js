@@ -26,6 +26,13 @@ const globalOptions = {
 		// removeUrlQueryParams: false,
 		// fetchOptions: {},
 	},
+	filenameFormat: function (id, src, width, format, options) {
+		if (width) {
+			return `${id}-${width}.${format}`;
+		}
+
+		return `${id}.${format}`;
+	}
 };
 
 const MIME_TYPES = {
@@ -45,10 +52,13 @@ function getFormatsArray(formats) {
 	return [];
 }
 
-function getFilename(src, width, format) {
+function getFilename(src, width, format, options = {}) {
 	let id = shorthash(src);
+	if (typeof options.filenameFormat === 'function') {
+		return options.filenameFormat(id, src, width, format, options);
+	}
 
-	if(width) {
+	if (width) {
 		return `${id}-${width}.${format}`;
 	}
 
@@ -144,7 +154,7 @@ async function resizeImage(src, options = {}) {
 			}
 
 
-			let outputFilename = getFilename(src, width, format);
+			let outputFilename = getFilename(src, width, format, options);
 			let outputPath = path.join(options.outputDir, outputFilename);
 			outputFilePromises.push(imageFormat.toFile(outputPath).then(data => {
 				let stats = getStats(src, format, options.urlPath, data.width, data.height, hasWidth);
