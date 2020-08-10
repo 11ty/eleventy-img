@@ -4,11 +4,19 @@ Low level utility to perform build-time image transformations.
 
 ## Features
 
-* Optimizes and resizes images for you, automatically. Can output multiple image sizes. Keeps original image aspect ratios intact. Never upscales images larger than original size.
-* Can output multiple formats (you’ll probably use a combination of `webp`, `png`, `jpeg` but works with any supported image type in [sharp](https://sharp.pixelplumbing.com/api-input#metadata)).
-* Makes it easy to add `width` and `height` attributes to `img` elements for [proper aspect ratio mapping](https://developer.mozilla.org/en-US/docs/Web/Media/images/aspect_ratio_mapping).
-* Download remote images and cache them locally using [eleventy-cache-assets](https://github.com/11ty/eleventy-cache-assets). Make your HTML point to local images so you won’t see broken image URLs in the future.
-* Control concurrency of image processing.
+* Optimize and resize images, automatically.
+  * Can output multiple image sizes.
+  * Keeps original image aspect ratios intact.
+  * Never upscales images larger than original size.
+* Output multiple image formats.
+  * The [sharp](https://sharp.pixelplumbing.com/) image processor supports `jpeg`, `png`, `webp`, `raw`, and `tiff`.
+  * Incoming `gif` and `svg` images are converted to `png`.
+* Cache remote images locally using [eleventy-cache-assets](https://github.com/11ty/eleventy-cache-assets).
+  * Use "local" images in your HTML to prevent broken image URLs.
+  * Manage the [cache duration](https://github.com/11ty/eleventy-cache-assets#change-the-cache-duration).
+* Get image output data (see [sample return object](#sample-return-object)).
+  * Use the image dimension values to set the `width` and `height` attributes on `<img>` elements for [proper aspect ratio mapping](https://developer.mozilla.org/en-US/docs/Web/Media/images/aspect_ratio_mapping).
+* Manage image processing concurrency.
 
 ## Installation
 
@@ -43,7 +51,7 @@ Defaults values are shown:
   // widths: [200, null] // output 200px and original width
 
   // output image formats
-  formats: ["webp", "jpeg"], // also supported by sharp: "png", "gif", "svg"
+  formats: ["webp", "jpeg"], // also supported by sharp: "png", "raw", "tiff"
 
   // image directory for img element's src attribute (<img src="/img/MY_IMAGE.jpeg">)
   urlPath: "/img/",
@@ -53,7 +61,7 @@ Defaults values are shown:
 
   // eleventy-cache-assets options (available in eleventy-img 0.3.0+)
   cacheOptions: {
-    // if a remote image URL, this is the amount of time before it downloads a new fresh copy from the remote server
+    // if a remote image URL, this is the amount of time before it fetches a fresh copy
     duration: "1d",
     // project-relative path to the cache directory
     directory: ".cache",
@@ -119,10 +127,10 @@ module.exports = function(eleventyConfig) {
 <!-- dist/index.html -->
 
 <div>
-  <img src="/images/3d00b40-96.jpeg" width="50" height="50" alt="photo of my cat">
+  <img src="/images/3d00b40-50.jpeg" width="50" height="50" alt="photo of my cat">
 </div>
 <div>
-  <img src="/images/2311v21-75.jpeg" width="50" height="50" alt="photo of my dog">
+  <img src="/images/2311v21-50.jpeg" width="50" height="50" alt="photo of my dog">
 </div>
 ```
 
@@ -185,12 +193,12 @@ module.exports = function(eleventyConfig) {
 <div>
   <picture>
     <source type="image/jpeg" srcset="/images/3d00b40-96.jpeg 100w" sizes="100vw">
-    <img src="/images/3d00b40-96.jpeg" width="100" height="100" alt="photo of my cat">
+    <img src="/images/3d00b40.jpeg" width="100" height="100" alt="photo of my cat">
 </div>
 <div>
   <picture>
     <source type="image/jpeg" srcset="/images/2311v21-75.jpeg 100w" sizes="100vw">
-    <img src="/images/2311v21-75.jpeg" width="100" height="100" alt="photo of my dog">
+    <img src="/images/2311v21.jpeg" width="100" height="100" alt="photo of my dog">
 </div>
 ```
 
