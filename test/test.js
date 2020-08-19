@@ -34,6 +34,7 @@ test("Sync by dimension with widths", t => {
 	t.is(stats.jpeg[0].width, 300);
 });
 
+
 test("Sync with two widths", t => {
 	let stats = eleventyImage.statsSync("./test/bio-2017.jpg", {
 		widths: [300, 500]
@@ -168,14 +169,27 @@ test("Use exact same width as original (statsSync)", t => {
 	t.is(stats.jpeg[0].width, 1280);
 });
 
+test("Unavatar test", t => {
+	let stats = eleventyImage.statsByDimensionsSync("https://unavatar.now.sh/twitter/zachleat?fallback=false", 400, 400, {
+		widths: [75]
+	});
+
+	t.is(stats.webp.length, 1);
+	t.is(stats.webp[0].width, 75);
+	t.is(stats.webp[0].height, 75);
+	t.is(stats.jpeg.length, 1);
+	t.is(stats.jpeg[0].width, 75);
+	t.is(stats.jpeg[0].height, 75);
+});
+
 test("Use custom function to define file names", async (t) => {
 	let stats = await eleventyImage("./test/bio-2017.jpg", {
 		widths: [600, 1280],
 		formats: ["jpeg"],
 		outputDir: "./test/img/",
 		filenameFormat: function (id, src, width, format, options) {
-			const ext = path.extname(src)
-			const name = path.basename(src, ext)
+			const ext = path.extname(src);
+			const name = path.basename(src, ext);
 			
 			if (width) {
 				return `${name}-${id}-${width}.${format}`;
@@ -189,4 +203,4 @@ test("Use custom function to define file names", async (t) => {
 	t.is(stats.jpeg[0].width, 600);
 	t.is(stats.jpeg[1].outputPath, "test/img/bio-2017-97854483.jpeg");
 	t.is(stats.jpeg[1].width, 1280);
-})
+});
