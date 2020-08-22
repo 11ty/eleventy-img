@@ -51,11 +51,22 @@ Defaults values are shown:
   // the path to the directory on the file system to write the image files to disk
   outputDir: "img/",
 
-  // eleventy-cache-assets
-  // If a remote image URL, this is the amount of time before it downloads a new fresh copy from the remote server
-  cacheDuration: "1d"
+  // eleventy-cache-assets Options
+  // Available in 0.3.0 and newer.
+  cacheOptions: {
+    // If a remote image URL, this is the amount of time before it downloads a new fresh copy from the remote server
+    duration: "1d",
+
+    directory: ".cache",
+
+    removeUrlQueryParams: false,
+  },
+
+  cacheDuration: "1d", // deprecated, use cacheOptions above
 }
 ```
+
+See all [relevant `eleventy-cache-assets` options in its documentation](https://github.com/11ty/eleventy-cache-assets/blob/master/README.md#options).
 
 ## Examples
 

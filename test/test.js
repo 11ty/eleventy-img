@@ -33,6 +33,7 @@ test("Sync by dimension with widths", t => {
 	t.is(stats.jpeg[0].width, 300);
 });
 
+
 test("Sync with two widths", t => {
 	let stats = eleventyImage.statsSync("./test/bio-2017.jpg", {
 		widths: [300, 500]
@@ -259,4 +260,17 @@ test("Sync with crop feature case 2 (ignore image larger than original)", t => {
 	t.is(stats.jpeg.length, 1);
 	t.is(stats.jpeg[0].width, 160);
 	t.is(stats.jpeg[0].height, 90);
+});
+
+test("Unavatar test", t => {
+	let stats = eleventyImage.statsByDimensionsSync("https://unavatar.now.sh/twitter/zachleat?fallback=false", 400, 400, {
+		widths: [75]
+	});
+
+	t.is(stats.webp.length, 1);
+	t.is(stats.webp[0].width, 75);
+	t.is(stats.webp[0].height, 75);
+	t.is(stats.jpeg.length, 1);
+	t.is(stats.jpeg[0].width, 75);
+	t.is(stats.jpeg[0].height, 75);
 });
