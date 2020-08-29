@@ -194,11 +194,13 @@ module.exports = function(eleventyConfig) {
   <picture>
     <source type="image/jpeg" srcset="/images/3d00b40-96.jpeg 100w" sizes="100vw">
     <img src="/images/3d00b40.jpeg" width="100" height="100" alt="photo of my cat">
+  </picture>
 </div>
 <div>
   <picture>
     <source type="image/jpeg" srcset="/images/2311v21-75.jpeg 100w" sizes="100vw">
     <img src="/images/2311v21.jpeg" width="100" height="100" alt="photo of my dog">
+  </picture>
 </div>
 ```
 
