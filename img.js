@@ -30,63 +30,63 @@ const globalOptions = {
 };
 
 const MIME_TYPES = {
-	"jpeg": "image/jpeg",
-	"webp": "image/webp",
-	"png": "image/png"
+  "jpeg": "image/jpeg",
+  "webp": "image/webp",
+  "png": "image/png"
 };
 
 function getFormatsArray(formats) {
-	if(formats && formats.length) {
-		if(typeof formats === "string") {
-			formats = formats.split(",");
-		}
-		return formats;
-	}
+  if(formats && formats.length) {
+    if(typeof formats === "string") {
+      formats = formats.split(",");
+    }
+    return formats;
+  }
 
-	return [];
+  return [];
 }
 
 function getFilename(src, width, format) {
-	let id = shorthash(src);
+  let id = shorthash(src);
 
-	if(width) {
-		return `${id}-${width}.${format}`;
-	}
+  if(width) {
+    return `${id}-${width}.${format}`;
+  }
 
-	return `${id}.${format}`;
+  return `${id}.${format}`;
 }
 
 function getStats(src, format, urlPath, width, height, includeWidthInFilename) {
-	let outputFilename = getFilename(src, includeWidthInFilename ? width : false, format);
-	let url = path.join(urlPath, outputFilename);
+  let outputFilename = getFilename(src, includeWidthInFilename ? width : false, format);
+  let url = path.join(urlPath, outputFilename);
 
-	return {
-		format: format,
-		width: width,
-		height: height,
-		// size // only after processing
-		// outputPath // only after processing
-		url: url,
-		sourceType: MIME_TYPES[format],
-		srcset: `${url} ${width}w`
-	}
+  return {
+    format: format,
+    width: width,
+    height: height,
+    // size // only after processing
+    // outputPath // only after processing
+    url: url,
+    sourceType: MIME_TYPES[format],
+    srcset: `${url} ${width}w`
+  }
 }
 
 function transformRawFiles(files = []) {
-	let byType = {};
-	for(let file of files) {
-		if(!byType[file.format]) {
-			byType[file.format] = [];
-		}
-		byType[file.format].push(file);
-	}
-	for(let type in byType) {
-		// sort by width, ascending (for `srcset`)
-		byType[type].sort((a, b) => {
-			return a.width - b.width;
-		})
-	}
-	return byType;
+  let byType = {};
+  for(let file of files) {
+    if(!byType[file.format]) {
+      byType[file.format] = [];
+    }
+    byType[file.format].push(file);
+  }
+  for(let type in byType) {
+    // sort by width, ascending (for `srcset`)
+    byType[type].sort((a, b) => {
+      return a.width - b.width;
+    })
+  }
+  return byType;
 }
 
 // src should be a file path to an image or a buffer
@@ -221,62 +221,62 @@ function _normalizeCrop(options) {
 }
 
 function isFullUrl(url) {
-	try {
-		new URL(url);
-		return true;
-	} catch(e) {
-		// invalid url OR local path
-		return false;
-	}
+  try {
+    new URL(url);
+    return true;
+  } catch(e) {
+    // invalid url OR local path
+    return false;
+  }
 }
 
 /* Combine it all together */
 async function image(src, opts) {
-	if(!src) {
-		throw new Error("`src` is a required argument to the eleventy-img utility (can be a string file path, string URL, or buffer).");
-	}
+  if(!src) {
+    throw new Error("`src` is a required argument to the eleventy-img utility (can be a string file path, string URL, or buffer).");
+  }
 
-	if(typeof src === "string" && isFullUrl(src)) {
-		// fetch remote image
-		let buffer = await await CacheAsset(src, Object.assign({
-			duration: opts.cacheDuration,
-			type: "buffer"
-		}, opts.cacheOptions));
+  if(typeof src === "string" && isFullUrl(src)) {
+    // fetch remote image
+    let buffer = await await CacheAsset(src, Object.assign({
+      duration: opts.cacheDuration,
+      type: "buffer"
+    }, opts.cacheOptions));
 
-		opts.sourceUrl = src;
-		return resizeImage(buffer, opts);
-	}
+    opts.sourceUrl = src;
+    return resizeImage(buffer, opts);
+  }
 
-	// use file path to local image
-	return resizeImage(src, opts);
+  // use file path to local image
+  return resizeImage(src, opts);
 }
 
 /* Queue */
 let queue = new PQueue({
-	concurrency: globalOptions.concurrency
+  concurrency: globalOptions.concurrency
 });
 queue.on("active", () => {
-	debug( `Concurrency: ${queue.concurrency}, Size: ${queue.size}, Pending: ${queue.pending}` );
+  debug( `Concurrency: ${queue.concurrency}, Size: ${queue.size}, Pending: ${queue.pending}` );
 });
 
 async function queueImage(src, opts) {
-	let options = Object.assign({}, globalOptions, opts);
+  let options = Object.assign({}, globalOptions, opts);
 
-	// create the output dir
-	await fs.ensureDir(options.outputDir);
+  // create the output dir
+  await fs.ensureDir(options.outputDir);
 
-	return queue.add(() => image(src, options));
+  return queue.add(() => image(src, options));
 }
 
 module.exports = queueImage;
 
 Object.defineProperty(module.exports, "concurrency", {
-	get: function() {
-		return queue.concurrency;
-	},
-	set: function(concurrency) {
-		queue.concurrency = concurrency;
-	},
+  get: function() {
+    return queue.concurrency;
+  },
+  set: function(concurrency) {
+    queue.concurrency = concurrency;
+  },
 });
 
 
@@ -335,12 +335,12 @@ function _statsSync(src, originalWidth, originalHeight, opts) {
 };
 
 function statsSync(src, opts) {
-	let originalDimensions = imageSize(src);
-	return _statsSync(src, originalDimensions.width, originalDimensions.height, opts);
+  let originalDimensions = imageSize(src);
+  return _statsSync(src, originalDimensions.width, originalDimensions.height, opts);
 }
 
 function statsByDimensionsSync(src, width, height, opts) {
-	return _statsSync(src, width, height, opts);
+  return _statsSync(src, width, height, opts);
 }
 
 module.exports.statsSync = statsSync;
