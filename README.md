@@ -54,10 +54,11 @@ Defaults values are shown:
   formats: ["webp", "jpeg"], // also supported by sharp: "png", "raw", "tiff"
 
   dir: {
-    // the file system directory to write the image files to disk
-    output: "./",
-    // the directory in the image src URLs <img src="/img/MY_IMAGE.png">
-    imgSrc: "/img/",
+    // directory for the image src URLs
+    imgSrc: "/img/", // <img src="/img/MY_IMAGE.png">
+    // project-relative directory to write the image files
+    output: "./", // ./img/
+    // ^ note that the actual file system path is a concatenation of dir.output and dir.imgSrc
   },
 
   // eleventy-cache-assets options (available in eleventy-img 0.3.0+)
@@ -80,7 +81,9 @@ See all [relevant `eleventy-cache-assets` options in its documentation](https://
 
 > Requires `async`, make sure you’re using this in Liquid, 11ty.js, or Nunjucks (use an async shortcode).
 
-### Specifying Output and Image Source Directories
+### Specifying Image Source and Output Directories
+
+#### Input for Specified Directories
 
 ```js
 const Image = require("@11ty/eleventy-img");
@@ -96,11 +99,9 @@ module.exports = function(eleventyConfig) {
     let stats = await Image(src, {
       formats: [outputFormat],
       dir: {
-        // Set the file system directory for saving images (_site/images/)
+        imgSrc: "/assets/img/",
         output: "_site/",
-        // Set the output img src directory (<img src="/images/MY_IMAGE.jpeg" alt="my pic">)
-        imgSrc: "/images/"
-      }
+      },
     });
 
     let props = stats[outputFormat].pop();
@@ -108,6 +109,44 @@ module.exports = function(eleventyConfig) {
     return `<img src="${props.src}" width="${props.width}" height="${props.height}" alt="${alt}">`;
   });
 };
+```
+
+```html
+<!-- src/index.njk -->
+
+<div>
+  {% myImage "./src/images/cat.jpg", "photo of my cat" %}
+</div>
+<div>
+  {% myImage "https://my_site.com/assets/img/dog.jpg", "photo of my dog" %}
+</div>
+```
+
+#### Output for Specified Directories
+
+```sh
+# project file system
+
+├─ .eleventy.js
+┊
+├─ _site
+│  ├─ assets
+│  │  ├─ css
+│  │  ├─ img
+│  │  │  ├─ 2311v21.jpeg
+│  │  │  └─ 3d00b40.jpeg
+┊  ┊  ┊
+```
+
+```html
+<!-- dist/index.html -->
+
+<div>
+  <img src="/assets/img/3d00b40.jpeg" width="50" height="50" alt="photo of my cat">
+</div>
+<div>
+  <img src="/assets/img/2311v21.jpeg" width="50" height="50" alt="photo of my dog">
+</div>
 ```
 
 ### Output Optimized Images with Width/Height Attributes
@@ -130,8 +169,6 @@ module.exports = function(eleventyConfig) {
     let stats = await Image(src, {
       widths: [50],
       formats: [outputFormat],
-      urlPath: "/images/",
-      outputDir: "./dist/images/",
     });
 
     let props = stats[outputFormat].pop();
@@ -158,10 +195,10 @@ module.exports = function(eleventyConfig) {
 <!-- dist/index.html -->
 
 <div>
-  <img src="/images/3d00b40-50.jpeg" width="50" height="50" alt="photo of my cat">
+  <img src="/img/3d00b40-50.jpeg" width="50" height="50" alt="photo of my cat">
 </div>
 <div>
-  <img src="/images/2311v21-50.jpeg" width="50" height="50" alt="photo of my dog">
+  <img src="/img/2311v21-50.jpeg" width="50" height="50" alt="photo of my dog">
 </div>
 ```
 
@@ -184,8 +221,6 @@ module.exports = function(eleventyConfig) {
     let stats = await Image(src, {
       widths: [null],
       formats: [outputFormat],
-      urlPath: "/images/",
-      outputDir: "./dist/images/",
     });
     let lowestSrc = stats[outputFormat][0];
     let sizes = "100vw"; // Make sure you customize this!
@@ -196,7 +231,7 @@ module.exports = function(eleventyConfig) {
         return `  <source type="image/${imageFormat[0].format}" srcset="${imageFormat.map(entry => `${entry.src} ${entry.width}w`).join(", ")}" sizes="${sizes}">`;
       }).join("\n")}
         <img
-          src="${lowestSrc.url}"
+          src="${lowestSrc.src}"
           width="${lowestSrc.width}"
           height="${lowestSrc.height}"
           alt="${alt}">
@@ -223,13 +258,15 @@ module.exports = function(eleventyConfig) {
 
 <div>
   <picture>
-    <source type="image/jpeg" srcset="/images/3d00b40-96.jpeg 100w" sizes="100vw">
-    <img src="/images/3d00b40.jpeg" width="100" height="100" alt="photo of my cat">
+    <source type="image/jpeg" srcset="/img/3d00b40-96.jpeg 100w" sizes="100vw">
+    <img src="/img/3d00b40.jpeg" width="100" height="100" alt="photo of my cat">
+  </picture>
 </div>
 <div>
   <picture>
-    <source type="image/jpeg" srcset="/images/2311v21-75.jpeg 100w" sizes="100vw">
-    <img src="/images/2311v21.jpeg" width="100" height="100" alt="photo of my dog">
+    <source type="image/jpeg" srcset="/img/2311v21-75.jpeg 100w" sizes="100vw">
+    <img src="/img/2311v21.jpeg" width="100" height="100" alt="photo of my dog">
+  </picture>
 </div>
 ```
 
@@ -238,40 +275,50 @@ module.exports = function(eleventyConfig) {
 Use this object to generate your responsive image markup.
 
 ```js
-{ webp:
-   [ { format: 'webp',
-       width: 1280,
-       height: 853,
-       sourceType: 'image/webp',
-       src: '/img/9b186f9b.webp',
-       srcset: '/img/9b186f9b.webp 1280w',
-       outputPath: 'img/9b186f9b.webp',
-       size: 213802 },
-     { format: 'webp',
-       width: 350,
-       height: 233,
-       sourceType: 'image/webp',
-       src: '/img/9b186f9b-350.webp',
-       srcset: '/img/9b186f9b-350.webp 350w',
-       outputPath: 'img/9b186f9b-350.webp',
-       size: 27288 } ],
-  jpeg:
-   [ { format: 'jpeg',
-       width: 1280,
-       height: 853,
-       sourceType: 'image/jpg',
-       src: '/img/9b186f9b.jpeg',
-       srcset: '/img/9b186f9b.jpeg 1280w',
-       outputPath: 'img/9b186f9b.jpeg',
-       size: 276231 },
-     { format: 'jpeg',
-       width: 350,
-       height: 233,
-       sourceType: 'image/jpg',
-       src: '/img/9b186f9b-350.jpeg',
-       srcset: '/img/9b186f9b-350.jpeg 350w',
-       outputPath: 'img/9b186f9b-350.jpeg',
-       size: 29101 } ] }
+{
+  webp: [
+    {
+      format: 'webp',
+      width: 1280,
+      height: 853,
+      sourceType: 'image/webp',
+      src: '/img/9b186f9b.webp',
+      srcset: '/img/9b186f9b.webp 1280w',
+      outputPath: 'img/9b186f9b.webp',
+      size: 213802
+    }, {
+      format: 'webp',
+      width: 350,
+      height: 233,
+      sourceType: 'image/webp',
+      src: '/img/9b186f9b-350.webp',
+      srcset: '/img/9b186f9b-350.webp 350w',
+      outputPath: 'img/9b186f9b-350.webp',
+      size: 27288
+    }
+  ],
+  jpeg: [
+    {
+      format: 'jpeg',
+      width: 1280,
+      height: 853,
+      sourceType: 'image/jpg',
+      src: '/img/9b186f9b.jpeg',
+      srcset: '/img/9b186f9b.jpeg 1280w',
+      outputPath: 'img/9b186f9b.jpeg',
+      size: 276231
+    }, {
+      format: 'jpeg',
+      width: 350,
+      height: 233,
+      sourceType: 'image/jpg',
+      src: '/img/9b186f9b-350.jpeg',
+      srcset: '/img/9b186f9b-350.jpeg 350w',
+      outputPath: 'img/9b186f9b-350.jpeg',
+      size: 29101
+    }
+  ]
+}
 ```
 
 ### Change Global Plugin Concurrency

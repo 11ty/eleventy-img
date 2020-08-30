@@ -56,20 +56,20 @@ function getFilename(src, width, format) {
 }
 
 function getStats(src, format, urlPath, width, height, includeWidthInFilename) {
-	let outputFilename = getFilename(src, includeWidthInFilename ? width : false, format);
-	let url = path.join(urlPath, outputFilename);
+  let outputFilename = getFilename(src, includeWidthInFilename ? width : false, format);
+  let url = path.join(urlPath, outputFilename);
 
-	return {
-		format: format,
-		width: width,
-		height: height,
-		// size // only after processing
-		// outputPath // only after processing
-		url: url, // deprecate?
-		sourceType: MIME_TYPES[format],
-		src: url,
-		srcset: `${url} ${width}w`
-	}
+  return {
+    format: format,
+    width: width,
+    height: height,
+    // size // only after processing
+    // outputPath // only after processing
+    url: url, // deprecate?
+    sourceType: MIME_TYPES[format],
+    src: url,
+    srcset: `${url} ${width}w`
+  }
 }
 
 function transformRawFiles(files = []) {
@@ -91,76 +91,75 @@ function transformRawFiles(files = []) {
 
 // src should be a file path to an image or a buffer
 async function resizeImage(src, options = {}) {
-	let sharpImage = sharp(src, {
-		failOnError: false,
-		// TODO how to handle higher resolution source images
-		// density: 72
-	});
+  let sharpImage = sharp(src, {
+    failOnError: false,
+    // TODO how to handle higher resolution source images
+    // density: 72
+  });
 
-	if(typeof src !== "string") {
-		if(options.sourceUrl) {
-			src = options.sourceUrl;
-		} else {
-			throw new Error(`Expected options.sourceUrl in resizeImage when using Buffer as input.`);
-		}
-	}
+  if(typeof src !== "string") {
+    if(options.sourceUrl) {
+      src = options.sourceUrl;
+    } else {
+      throw new Error(`Expected options.sourceUrl in resizeImage when using Buffer as input.`);
+    }
+  }
 
-	// Must find the image format from the metadata
-	// File extensions lie or may not be present in the src url!
-	let metadata = await sharpImage.metadata();
-	let outputFilePromises = [];
+  // Must find the image format from the metadata
+  // File extensions lie or may not be present in the src url!
+  let metadata = await sharpImage.metadata();
+  let outputFilePromises = [];
 
-	let formats = getFormatsArray(options.formats);
-	for(let format of formats) {
-		let hasAtLeastOneValidMaxWidth = false;
-		for(let width of options.widths) {
-			let hasWidth = !!width;
-			// Set format
-			let imageFormat = sharpImage.clone();
-			if(metadata.format !== format) {
-				imageFormat.toFormat(format);
-			}
+  let formats = getFormatsArray(options.formats);
+  for(let format of formats) {
+    let hasAtLeastOneValidMaxWidth = false;
+    for(let width of options.widths) {
+      let hasWidth = !!width;
+      // Set format
+      let imageFormat = sharpImage.clone();
+      if(metadata.format !== format) {
+        imageFormat.toFormat(format);
+      }
 
-			// skip this width because it’s larger than the original and we already
-			// have at least one output image size that works
-			if(hasAtLeastOneValidMaxWidth && (!width || width > metadata.width)) {
-				continue;
-			}
+      // skip this width because it’s larger than the original and we already
+      // have at least one output image size that works
+      if(hasAtLeastOneValidMaxWidth && (!width || width > metadata.width)) {
+        continue;
+      }
 
-			// Resize the image
-			if(!width) {
-				hasAtLeastOneValidMaxWidth = true;
-			} else {
-				if(width >= metadata.width) {
-					// don’t reassign width if it’s falsy
-					width = null;
-					hasWidth = false;
-					hasAtLeastOneValidMaxWidth = true;
-				} else {
-					imageFormat.resize({
-						width: width,
-						withoutEnlargement: true
-					});
-				}
-			}
+      // Resize the image
+      if(!width) {
+        hasAtLeastOneValidMaxWidth = true;
+      } else {
+        if(width >= metadata.width) {
+          // don’t reassign width if it’s falsy
+          width = null;
+          hasWidth = false;
+          hasAtLeastOneValidMaxWidth = true;
+        } else {
+          imageFormat.resize({
+            width: width,
+            withoutEnlargement: true
+          });
+        }
+      }
 
+      let outputFilename = getFilename(src, width, format);
+      let outputPath = path.join(options.outputDir, outputFilename);
 
-			let outputFilename = getFilename(src, width, format);
-			let outputPath = path.join(options.outputDir, outputFilename);
+      outputFilePromises.push(imageFormat.toFile(outputPath).then(data => {
+        let stats = getStats(src, format, options.urlPath, data.width, data.height, hasWidth);
+        stats.outputPath = outputPath;
+        stats.size = data.size;
 
-			outputFilePromises.push(imageFormat.toFile(outputPath).then(data => {
-				let stats = getStats(src, format, options.urlPath, data.width, data.height, hasWidth);
-				stats.outputPath = outputPath;
-				stats.size = data.size;
+        return stats;
+      }));
 
-				return stats;
-			}));
+      debug( "Writing %o", outputPath );
+    }
+  }
 
-			debug( "Writing %o", outputPath );
-		}
-	}
-
-	return Promise.all(outputFilePromises).then(files => transformRawFiles(files));
+  return Promise.all(outputFilePromises).then(files => transformRawFiles(files));
 }
 
 function isFullUrl(url) {
@@ -207,38 +206,38 @@ queue.on("active", () => {
  * TODO: deprecate outputDir and urlPath?
  */
 function getOptions(opts) {
-	if(opts === undefined) {
-		return Object.assign({}, globalOptions);
-	}
+  if(opts === undefined) {
+    return Object.assign({}, globalOptions);
+  }
 
-	/*
-	 * Make sure outputDir is not pointing to file system root dir
-	 */
-	function setDirLocal(dirString) {
-		return dirString.replace(/^\//, './');
-	}
+  /*
+   * Make sure outputDir is not pointing to file system root dir
+   */
+  function setDirLocal(dirString) {
+    return dirString.replace(/^\//, './');
+  }
 
-	const newOpts = Object.assign({}, opts);
+  const newOpts = Object.assign({}, opts);
 
-	if(opts.dir !== undefined) {
-		if(opts.dir.imgSrc !== undefined) {
-			newOpts.urlPath = opts.dir.imgSrc;
-			// set initial outputDir value (may be overwritten below)
-			newOpts.outputDir = setDirLocal(opts.dir.imgSrc);
-		}
-		if(opts.dir.output !== undefined) {
-			// combine dir.output and dir.imgSrc into outputDir
-			newOpts.outputDir = path.join(setDirLocal(opts.dir.output), (newOpts.urlPath || globalOptions.urlPath));
-		}
-		// cleanup before merging with global options
-		delete newOpts.dir;
-	}
+  if(opts.dir !== undefined) {
+    if(opts.dir.imgSrc !== undefined) {
+      newOpts.urlPath = opts.dir.imgSrc;
+      // set initial outputDir value (may be overwritten below)
+      newOpts.outputDir = setDirLocal(opts.dir.imgSrc);
+    }
+    if(opts.dir.output !== undefined) {
+      // combine dir.output and dir.imgSrc into outputDir
+      newOpts.outputDir = path.join(setDirLocal(opts.dir.output), (newOpts.urlPath || globalOptions.urlPath));
+    }
+    // cleanup before merging with global options
+    delete newOpts.dir;
+  }
 
-	return Object.assign({}, globalOptions, newOpts);
+  return Object.assign({}, globalOptions, newOpts);
 }
 
 async function queueImage(src, opts) {
-	let options = Object.assign({}, getOptions(opts));
+  let options = Object.assign({}, getOptions(opts));
 
   // create the output dir
   await fs.ensureDir(options.outputDir);
@@ -266,39 +265,39 @@ Object.defineProperty(module.exports, "concurrency", {
  */
 
 function _statsSync(src, originalWidth, originalHeight, opts) {
-	let options = Object.assign({}, getOptions(opts));
-	let results = [];
-	let formats = getFormatsArray(options.formats);
+  let options = Object.assign({}, getOptions(opts));
+  let results = [];
+  let formats = getFormatsArray(options.formats);
 
-	for(let format of formats) {
-		let hasAtLeastOneValidMaxWidth = false;
-		for(let width of options.widths) {
-			let hasWidth = !!width;
-			let height;
+  for(let format of formats) {
+    let hasAtLeastOneValidMaxWidth = false;
+    for(let width of options.widths) {
+      let hasWidth = !!width;
+      let height;
 
-			if(hasAtLeastOneValidMaxWidth && (!width || width > originalWidth)) {
-				continue;
-			}
+      if(hasAtLeastOneValidMaxWidth && (!width || width > originalWidth)) {
+        continue;
+      }
 
-			if(!width) {
-				width = originalWidth;
-				height = originalHeight;
-				hasAtLeastOneValidMaxWidth = true;
-			} else {
-				if(width >= originalWidth) {
-					width = originalWidth;
-					hasWidth = false;
-					hasAtLeastOneValidMaxWidth = true;
-				}
-				height = Math.floor(width * originalHeight / originalWidth);
-			}
+      if(!width) {
+        width = originalWidth;
+        height = originalHeight;
+        hasAtLeastOneValidMaxWidth = true;
+      } else {
+        if(width >= originalWidth) {
+          width = originalWidth;
+          hasWidth = false;
+          hasAtLeastOneValidMaxWidth = true;
+        }
+        height = Math.floor(width * originalHeight / originalWidth);
+      }
 
 
-			results.push(getStats(src, format, options.urlPath, width, height, hasWidth));
-		}
-	}
+      results.push(getStats(src, format, options.urlPath, width, height, hasWidth));
+    }
+  }
 
-	return transformRawFiles(results);
+  return transformRawFiles(results);
 };
 
 function statsSync(src, opts) {
