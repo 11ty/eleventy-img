@@ -180,3 +180,13 @@ test("Unavatar test", t => {
   t.is(stats.jpeg[0].width, 75);
   t.is(stats.jpeg[0].height, 75);
 });
+
+test("Set urlPath and outputDir", async t => {
+	let stats = await eleventyImage("./test/bio-2017.jpg", {
+		formats: ["jpeg"],
+    urlPath: "/images/",
+    outputDir: "./sample/images/"
+	});
+	t.is(stats.jpeg[0].url, "/images/97854483.jpeg");
+	t.is(stats.jpeg[0].outputPath, "sample/images/97854483.jpeg");
+});
