@@ -295,43 +295,43 @@ Use this object to generate your responsive image markup.
 {
   webp: [
     {
-      format: 'webp',
+      format: "webp",
       width: 1280,
       height: 853,
-      sourceType: 'image/webp',
-      url: '/img/9b186f9b.webp',
-      srcset: '/img/9b186f9b.webp 1280w',
-      outputPath: 'img/9b186f9b.webp',
+      sourceType: "image/webp",
+      url: "/img/9b186f9b.webp",
+      srcset: "/img/9b186f9b.webp 1280w",
+      outputPath: "img/9b186f9b.webp",
       size: 213802
     }, {
-      format: 'webp',
+      format: "webp",
       width: 350,
       height: 233,
-      sourceType: 'image/webp',
-      url: '/img/9b186f9b-350.webp',
-      srcset: '/img/9b186f9b-350.webp 350w',
-      outputPath: 'img/9b186f9b-350.webp',
+      sourceType: "image/webp",
+      url: "/img/9b186f9b-350.webp",
+      srcset: "/img/9b186f9b-350.webp 350w",
+      outputPath: "img/9b186f9b-350.webp",
       size: 27288
     }
   ],
   jpeg: [
     {
-      format: 'jpeg',
+      format: "jpeg",
       width: 1280,
       height: 853,
-      sourceType: 'image/jpg',
-      url: '/img/9b186f9b.jpeg',
-      srcset: '/img/9b186f9b.jpeg 1280w',
-      outputPath: 'img/9b186f9b.jpeg',
+      sourceType: "image/jpg",
+      url: "/img/9b186f9b.jpeg",
+      srcset: "/img/9b186f9b.jpeg 1280w",
+      outputPath: "img/9b186f9b.jpeg",
       size: 276231
     }, {
-      format: 'jpeg',
+      format: "jpeg",
       width: 350,
       height: 233,
-      sourceType: 'image/jpg',
-      url: '/img/9b186f9b-350.jpeg',
-      srcset: '/img/9b186f9b-350.jpeg 350w',
-      outputPath: 'img/9b186f9b-350.jpeg',
+      sourceType: "image/jpg",
+      url: "/img/9b186f9b-350.jpeg",
+      srcset: "/img/9b186f9b-350.jpeg 350w",
+      outputPath: "img/9b186f9b-350.jpeg",
       size: 29101
     }
   ]
