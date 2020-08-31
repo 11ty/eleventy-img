@@ -17,6 +17,7 @@ const globalOptions = {
   widths: [null],
   formats: ["webp", "jpeg"], //"png"
   concurrency: 10,
+  placeholder: false,
   urlPath: "/img/",
   outputDir: "img/",
   cacheDuration: "1d", // deprecated, use cacheOptions.duration
@@ -96,6 +97,18 @@ async function resizeImage(src, options = {}) {
     // density: 72
   });
 
+  let placeholder = "";
+  if (options.placeholder) {
+    placeholder = await sharp(src)
+      .resize({
+        width: 25,
+        height: 25,
+        fit: sharp.fit.inside,
+      })
+      .blur()
+      .toBuffer();
+  }
+
   if(typeof src !== "string") {
     if(options.sourceUrl) {
       src = options.sourceUrl;
@@ -158,7 +171,12 @@ async function resizeImage(src, options = {}) {
     }
   }
 
-  return Promise.all(outputFilePromises).then(files => transformRawFiles(files));
+  return {
+    ...(options.placeholder ? { placeholder: `data:image/png;base64,${placeholder.toString('base64')}` } : {}),
+    ...(await Promise.all(outputFilePromises).then(files => transformRawFiles(files)))
+  }
+
+
 }
 
 function isFullUrl(url) {

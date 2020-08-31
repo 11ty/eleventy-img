@@ -180,3 +180,15 @@ test("Unavatar test", t => {
   t.is(stats.jpeg[0].width, 75);
   t.is(stats.jpeg[0].height, 75);
 });
+
+
+test("Base64 placeholder option", async (t) => {
+  let stats = await eleventyImage("./test/bio-2017.jpg", {
+    placeholder: true,
+  });
+
+  t.regex(
+    stats.placeholder,
+    new RegExp("^((?:data:image/png;base64,)?[A-Za-z0-9+/]{4})*([A-Za-z0-9+/]{4}|[A-Za-z0-9+/]{3}=|[A-Za-z0-9+/]{2}==)$")
+  );
+});
