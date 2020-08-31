@@ -205,7 +205,7 @@ queue.on("active", () => {
  * Build the output directory path from the independent dir options (dir.imgSrc and dir.output)
  */
 function getOptions(opts) {
-  if(opts === undefined || opts.dir === undefined) {
+  if(opts === undefined) {
     return Object.assign({}, globalOptions);
   }
 
@@ -216,19 +216,21 @@ function getOptions(opts) {
 
   let options = Object.assign({}, opts);
 
-  if(opts.dir.imgSrc !== undefined) {
-    options.urlPath = opts.dir.imgSrc;
-    // set initial outputDir value (may be overwritten below)
-    options.outputDir = setOutputRootDir(opts.dir.imgSrc);
-  }
+  if(opts.dir !== undefined) {
+    if(opts.dir.imgSrc !== undefined) {
+      options.urlPath = opts.dir.imgSrc;
+      // set initial outputDir value (may be overwritten below)
+      options.outputDir = setOutputRootDir(opts.dir.imgSrc);
+    }
 
-  if(opts.dir.output !== undefined) {
-    // combine dir.output and dir.imgSrc into outputDir
-    options.outputDir = path.join(setOutputRootDir(opts.dir.output), (options.urlPath || globalOptions.urlPath));
-  }
+    if(opts.dir.output !== undefined) {
+      // combine dir.output and dir.imgSrc into outputDir
+      options.outputDir = path.join(setOutputRootDir(opts.dir.output), (options.urlPath || globalOptions.urlPath));
+    }
 
-  // cleanup before merging with global options
-  delete options.dir;
+    // cleanup before merging with global options
+    delete options.dir;
+  }
 
   return Object.assign({}, globalOptions, options);
 }
