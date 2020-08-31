@@ -202,38 +202,35 @@ queue.on("active", () => {
 });
 
 /*
- * Merge dir options (imgSrc and output) into urlPath and outputDir
- * TODO: deprecate outputDir and urlPath?
+ * Build the output directory path from the independent dir options (dir.imgSrc and dir.output)
  */
 function getOptions(opts) {
-  if(opts === undefined) {
+  if(opts === undefined || opts.dir === undefined) {
     return Object.assign({}, globalOptions);
   }
 
-  /*
-   * Make sure outputDir is not pointing to file system root dir
-   */
-  function setDirLocal(dirString) {
-    return dirString.replace(/^\//, './');
+  // Set project-relative output root directory
+  function setOutputRootDir(directory) {
+    return path.join('./', directory);
   }
 
-  const newOpts = Object.assign({}, opts);
+  let options = Object.assign({}, opts);
 
-  if(opts.dir !== undefined) {
-    if(opts.dir.imgSrc !== undefined) {
-      newOpts.urlPath = opts.dir.imgSrc;
-      // set initial outputDir value (may be overwritten below)
-      newOpts.outputDir = setDirLocal(opts.dir.imgSrc);
-    }
-    if(opts.dir.output !== undefined) {
-      // combine dir.output and dir.imgSrc into outputDir
-      newOpts.outputDir = path.join(setDirLocal(opts.dir.output), (newOpts.urlPath || globalOptions.urlPath));
-    }
-    // cleanup before merging with global options
-    delete newOpts.dir;
+  if(opts.dir.imgSrc !== undefined) {
+    options.urlPath = opts.dir.imgSrc;
+    // set initial outputDir value (may be overwritten below)
+    options.outputDir = setOutputRootDir(opts.dir.imgSrc);
   }
 
-  return Object.assign({}, globalOptions, newOpts);
+  if(opts.dir.output !== undefined) {
+    // combine dir.output and dir.imgSrc into outputDir
+    options.outputDir = path.join(setOutputRootDir(opts.dir.output), (options.urlPath || globalOptions.urlPath));
+  }
+
+  // cleanup before merging with global options
+  delete options.dir;
+
+  return Object.assign({}, globalOptions, options);
 }
 
 async function queueImage(src, opts) {
