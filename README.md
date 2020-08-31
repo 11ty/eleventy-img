@@ -31,9 +31,16 @@ npm install @11ty/eleventy-img
 
 const Image = require("@11ty/eleventy-img");
 module.exports = function(eleventyConfig) {
-  eleventyConfig.addJavaScriptFunction("myImage", function(src, alt, options) {
+  eleventyConfig.addJavaScriptFunction("myImagePromise", function(src, alt, options) {
     // returns Promise
     return Image(src, options);
+  });
+
+  eleventyConfig.addJavaScriptFunction("myImage", async function(src, alt, options) {
+    let stats = await Image(src, options);
+    let props = stats['jpeg'].pop();
+    // returns String
+    return `<img src="${props.url} alt="${alt}">`;
   });
 };
 ```
@@ -87,9 +94,9 @@ Image.concurrency = 4; // default is 10
 
 ## Examples
 
-> IMPORTANT: Use `async` shortcodes for [11ty.js](https://www.11ty.dev/docs/languages/javascript/#asynchronous-javascript-template-functions) and [Nunjucks](https://www.11ty.dev/docs/languages/nunjucks/#asynchronous-shortcodes) template engines ([Liquid](https://www.11ty.dev/docs/languages/liquid/#asynchronous-shortcodes) shortcodes are async by default).
+> NOTE: The examples below use the [Nunjucks](https://www.11ty.dev/docs/languages/nunjucks/#asynchronous-shortcodes) `async` shortcodes (the [JavaScript](https://www.11ty.dev/docs/languages/javascript/#asynchronous-javascript-template-functions) and [Liquid](https://www.11ty.dev/docs/languages/liquid/#asynchronous-shortcodes) template engines are async by default).
 
-### Specifying Image Source and Output Directories
+### Specify Image Source and Output Directories
 
 #### Input for Specified Directories
 
@@ -103,13 +110,11 @@ module.exports = function(eleventyConfig) {
       throw new Error(`Missing \`alt\` on myImage from: ${src}`);
     }
 
-    // returns Promise
     let stats = await Image(src, {
       formats: [outputFormat],
       urlPath: "/assets/img/",
       outputDir: "./_site/assets/img/",
     });
-
     let props = stats[outputFormat].pop();
 
     return `<img src="${props.url}" width="${props.width}" height="${props.height}" alt="${alt}">`;
@@ -171,12 +176,10 @@ module.exports = function(eleventyConfig) {
       throw new Error(`Missing \`alt\` on myImage from: ${src}`);
     }
 
-    // returns Promise
     let stats = await Image(src, {
       formats: [outputFormat],
       widths: [600],
     });
-
     let props = stats[outputFormat].pop();
 
     return `<img src="${props.url}" width="${props.width}" height="${props.height}" alt="${alt}">`;
@@ -196,6 +199,17 @@ module.exports = function(eleventyConfig) {
 ```
 
 #### Output for Specified Width
+
+```sh
+# project file system
+
+├─ .eleventy.js
+┊
+├─ img
+│  ├─ 2311v21-600.jpeg
+│  └─ 3d00b40-600.jpeg
+┊
+```
 
 ```html
 <!-- dist/index.html -->
@@ -233,14 +247,14 @@ module.exports = function(eleventyConfig) {
       widths: [400, 800, null],
     });
 
-    const sourceBlock = Object.values(stats).map((imageFormat) => `<source
+    let sourceBlock = Object.values(stats).map((imageFormat) => `<source
       type="image/${imageFormat[0].format}"
       srcset="${imageFormat.map((entry) => `${entry.url} ${entry.width}w`).join(', ')}"
       sizes="${sizes}">`)
       .join('\n');
     // Default output format should be listed last
-    const defaultSrc = stats[formats.slice(-1)][0];
-    const imgBlock = `<img
+    let defaultSrc = stats[formats.slice(-1)][0];
+    let imgBlock = `<img
       src="${defaultSrc.url}"
       width="${defaultSrc.width}"
       height="${defaultSrc.height}"
@@ -259,14 +273,35 @@ module.exports = function(eleventyConfig) {
 <!-- index.njk -->
 
 <div>
-  {% myResponsiveImage "./src/images/cat.jpg", "photo of my cat", "webp, jpeg" %}
+  {% myResponsiveImage "./src/images/cat.jpg", "photo of my cat", "webp,jpeg" %}
 </div>
 <div>
-  {% myResponsiveImage "https://my_site.com/assets/img/dog.jpg", "photo of my dog", "webp, jpeg" %}
+  {% myResponsiveImage "https://my_site.com/assets/img/dog.jpg", "photo of my dog", "webp,jpeg" %}
 </div>
 ```
 
 #### Output for Responsive Images
+
+```sh
+# project file system
+
+├─ .eleventy.js
+┊
+├─ img
+│  ├─ 2311v21.jpeg
+│  ├─ 2311v21.webp
+│  ├─ 2311v21-400.jpeg
+│  ├─ 2311v21-400.webp
+│  ├─ 2311v21-800.jpeg
+│  ├─ 2311v21-800.webp
+│  ├─ 3d00b40.jpeg
+│  ├─ 3d00b40.webp
+│  ├─ 3d00b40-400.jpeg
+│  ├─ 3d00b40-400.webp
+│  ├─ 3d00b40-800.jpeg
+│  └─ 3d00b40-800.webp
+┊
+```
 
 ```html
 <!-- dist/index.html -->
