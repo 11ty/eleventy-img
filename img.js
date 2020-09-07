@@ -15,7 +15,7 @@ const CacheAsset = require("@11ty/eleventy-cache-assets");
 const globalOptions = {
   src: null,
   widths: [null],
-  formats: ["webp", "jpeg"], //"png"
+  formats: ["webp", "jpeg"], // "png"
   concurrency: 10,
   urlPath: "/img/",
   outputDir: "img/",

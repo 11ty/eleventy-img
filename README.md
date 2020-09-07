@@ -73,6 +73,7 @@ Defaults values are shown:
   cacheOptions: {
     // if a remote image URL, this is the amount of time before it fetches a fresh copy
     duration: "1d",
+
     // project-relative path to the cache directory
     directory: ".cache",
 
