@@ -187,8 +187,12 @@ test("Use custom function to define file names", async (t) => {
   });
   t.is(stats.jpeg.length, 2);
   t.is(stats.jpeg[0].outputPath, "test/img/bio-2017-97854483-600.jpeg");
+  t.is(stats.jpeg[0].url, "/img/bio-2017-97854483-600.jpeg")
+  t.is(stats.jpeg[0].srcset, "/img/bio-2017-97854483-600.jpeg 600w");
   t.is(stats.jpeg[0].width, 600);
   t.is(stats.jpeg[1].outputPath, "test/img/bio-2017-97854483.jpeg");
+  t.is(stats.jpeg[1].url, "/img/bio-2017-97854483.jpeg");
+  t.is(stats.jpeg[1].srcset, "/img/bio-2017-97854483.jpeg 1280w");
   t.is(stats.jpeg[1].width, 1280);
 })
 
