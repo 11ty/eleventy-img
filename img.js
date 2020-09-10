@@ -65,8 +65,8 @@ function getFilename(src, width, format, options = {}) {
   return `${id}.${format}`;
 }
 
-function getStats(src, format, urlPath, width, height, includeWidthInFilename) {
-  let outputFilename = getFilename(src, includeWidthInFilename ? width : false, format);
+function getStats(src, format, urlPath, width, height, includeWidthInFilename, options = {}) {
+  let outputFilename = getFilename(src, includeWidthInFilename ? width : false, format, options);
   let url = path.join(urlPath, outputFilename);
 
   return {
@@ -157,7 +157,7 @@ async function resizeImage(src, options = {}) {
       let outputFilename = getFilename(src, width, format, options);
       let outputPath = path.join(options.outputDir, outputFilename);
       outputFilePromises.push(imageFormat.toFile(outputPath).then(data => {
-        let stats = getStats(src, format, options.urlPath, data.width, data.height, hasWidth);
+        let stats = getStats(src, format, options.urlPath, data.width, data.height, hasWidth, options);
         stats.outputPath = outputPath;
         stats.size = data.size;
 
