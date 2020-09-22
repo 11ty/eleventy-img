@@ -50,6 +50,10 @@ Defaults values are shown:
   // widths: [200]       // output 200px maxwidth
   // widths: [200, null] // output 200px and original width
 
+  // Array of crops
+  // Optional: use falsy value to skip cropping
+  crops: null, // ["1600x900", "160x90"] or [ { width: 1600, height: 900 }, { width: 160, height: 90 } ]
+
   // output image formats
   formats: ["webp", "jpeg"], // also supported by sharp: "png", "raw", "tiff"
 

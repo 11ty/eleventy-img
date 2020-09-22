@@ -13,19 +13,20 @@ const debug = require("debug")("EleventyImg");
 const CacheAsset = require("@11ty/eleventy-cache-assets");
 
 const globalOptions = {
-  src: null,
-  widths: [null],
-  formats: ["webp", "jpeg"], // "png"
-  concurrency: 10,
-  urlPath: "/img/",
-  outputDir: "img/",
-  cacheDuration: "1d", // deprecated, use cacheOptions.duration
-  cacheOptions: {
-    // duration: "1d",
-    // directory: ".cache",
-    // removeUrlQueryParams: false,
-    // fetchOptions: {},
-  },
+	src: null,
+	widths: [null],
+	crops: null,
+	formats: ["webp", "jpeg"], // "png"
+	concurrency: 10,
+	urlPath: "/img/",
+	outputDir: "img/",
+	cacheDuration: "1d", // deprecated, use cacheOptions.duration
+	cacheOptions: {
+		// duration: "1d",
+		// directory: ".cache",
+		// removeUrlQueryParams: false,
+		// fetchOptions: {},
+	},
 };
 
 const MIME_TYPES = {
@@ -90,75 +91,133 @@ function transformRawFiles(files = []) {
 
 // src should be a file path to an image or a buffer
 async function resizeImage(src, options = {}) {
-  let sharpImage = sharp(src, {
-    failOnError: false,
-    // TODO how to handle higher resolution source images
-    // density: 72
-  });
+	let sharpImage = sharp(src, {
+		failOnError: false,
+		// TODO how to handle higher resolution source images
+		// density: 72
+	});
 
-  if(typeof src !== "string") {
-    if(options.sourceUrl) {
-      src = options.sourceUrl;
-    } else {
-      throw new Error(`Expected options.sourceUrl in resizeImage when using Buffer as input.`);
-    }
-  }
+	if(typeof src !== "string") {
+		if(options.sourceUrl) {
+			src = options.sourceUrl;
+		} else {
+			throw new Error(`Expected options.sourceUrl in resizeImage when using Buffer as input.`);
+		}
+	}
 
-  // Must find the image format from the metadata
-  // File extensions lie or may not be present in the src url!
-  let metadata = await sharpImage.metadata();
-  let outputFilePromises = [];
+	// Must find the image format from the metadata
+	// File extensions lie or may not be present in the src url!
+	let metadata = await sharpImage.metadata();
+	let outputFilePromises = [];
 
-  let formats = getFormatsArray(options.formats);
-  for(let format of formats) {
-    let hasAtLeastOneValidMaxWidth = false;
-    for(let width of options.widths) {
-      let hasWidth = !!width;
-      // Set format
-      let imageFormat = sharpImage.clone();
-      if(metadata.format !== format) {
-        imageFormat.toFormat(format);
-      }
+	let formats = getFormatsArray(options.formats);
+	for(let format of formats) {
+		let hasAtLeastOneValidMaxWidth = false;
+		if (options.crops) {
+			let crops = _normalizeCrop(options.crops);
+			if (crops.length == 0) {
+				throw new Error(`Expected options.crops should be ["1600x900", "160x90"] or ${JSON.stringify([{ width: 1600, height: 900 }, { width: 160, height: 90 }], null, 2)}`);
+			}
+			for (let [width, height] of crops) {
+				let hasWidth = !!width;
+				// Set format
+				let imageFormat = sharpImage.clone();
+				if(metadata.format !== format) {
+					imageFormat.toFormat(format);
+				}
 
-      // skip this width because it’s larger than the original and we already
-      // have at least one output image size that works
-      if(hasAtLeastOneValidMaxWidth && (!width || width > metadata.width)) {
-        continue;
-      }
+				if(width > metadata.width || height > metadata.height) {
+					continue;
+				}
 
-      // Resize the image
-      if(!width) {
-        hasAtLeastOneValidMaxWidth = true;
-      } else {
-        if(width >= metadata.width) {
-          // don’t reassign width if it’s falsy
-          width = null;
-          hasWidth = false;
-          hasAtLeastOneValidMaxWidth = true;
-        } else {
-          imageFormat.resize({
-            width: width,
-            withoutEnlargement: true
-          });
-        }
-      }
+				imageFormat.resize({
+					width: width,
+					height: height,
+					withoutEnlargement: true
+				});
+
+				let outputFilename = getFilename(src, width + 'x' + height, format);
+				let outputPath = path.join(options.outputDir, outputFilename);
+				outputFilePromises.push(imageFormat.toFile(outputPath).then(data => {
+					let stats = getStats(src, format, options.urlPath, data.width, data.height, hasWidth);
+					stats.outputPath = outputPath;
+					stats.size = data.size;
+
+					return stats;
+				}));
+
+				debug( "Writing %o", outputPath );
+			}
+		} else {
+			for(let width of options.widths) {
+				let hasWidth = !!width;
+				// Set format
+				let imageFormat = sharpImage.clone();
+				if(metadata.format !== format) {
+					imageFormat.toFormat(format);
+				}
+
+				// skip this width because it’s larger than the original and we already
+				// have at least one output image size that works
+				if(hasAtLeastOneValidMaxWidth && (!width || width > metadata.width)) {
+					continue;
+				}
+
+				// Resize the image
+				if(!width) {
+					hasAtLeastOneValidMaxWidth = true;
+				} else {
+					if(width >= metadata.width) {
+						// don’t reassign width if it’s falsy
+						width = null;
+						hasWidth = false;
+						hasAtLeastOneValidMaxWidth = true;
+					} else {
+						imageFormat.resize({
+							width: width,
+							withoutEnlargement: true
+						});
+					}
+				}
 
 
-      let outputFilename = getFilename(src, width, format);
-      let outputPath = path.join(options.outputDir, outputFilename);
-      outputFilePromises.push(imageFormat.toFile(outputPath).then(data => {
-        let stats = getStats(src, format, options.urlPath, data.width, data.height, hasWidth);
-        stats.outputPath = outputPath;
-        stats.size = data.size;
+				let outputFilename = getFilename(src, width, format);
+				let outputPath = path.join(options.outputDir, outputFilename);
+				outputFilePromises.push(imageFormat.toFile(outputPath).then(data => {
+					let stats = getStats(src, format, options.urlPath, data.width, data.height, hasWidth);
+					stats.outputPath = outputPath;
+					stats.size = data.size;
 
-        return stats;
-      }));
+					return stats;
+				}));
 
-      debug( "Writing %o", outputPath );
-    }
-  }
+				debug( "Writing %o", outputPath );
+			}
+		}
+	}
 
-  return Promise.all(outputFilePromises).then(files => transformRawFiles(files));
+	return Promise.all(outputFilePromises).then(files => transformRawFiles(files));
+}
+
+function _normalizeCrop(options) {
+	if (options == null) return null;
+	let filteredOptions = options.map(function(config) {
+		if (typeof(config) == 'string') {
+			let val = config.split('x')
+			if (config.split('x').length != 2) {
+				return false;
+			}
+			return [parseInt(val[0]), parseInt(val[1])]
+		} else if (typeof(config) == 'object') {
+			let width = config.hasOwnProperty('width');
+			let height = config.hasOwnProperty('height');
+			if (width && height) {
+				return [parseInt(config.width), parseInt(config.height)];
+			}
+			return false;
+		}
+	})
+	return filteredOptions.filter(Boolean);
 }
 
 function isFullUrl(url) {
@@ -229,40 +288,50 @@ Object.defineProperty(module.exports, "concurrency", {
  */
 
 function _statsSync(src, originalWidth, originalHeight, opts) {
-  let options = Object.assign({}, globalOptions, opts);
+	let options = Object.assign({}, globalOptions, opts);
 
-  let results = [];
-  let formats = getFormatsArray(options.formats);
+	let results = [];
+	let formats = getFormatsArray(options.formats);
 
-  for(let format of formats) {
-    let hasAtLeastOneValidMaxWidth = false;
-    for(let width of options.widths) {
-      let hasWidth = !!width;
-      let height;
+	for(let format of formats) {
+		let hasAtLeastOneValidMaxWidth = false;
+		if (options.crops) {
+			let crops = _normalizeCrop(options.crops);
+			for (let [width, height] of crops) {
+				let hasWidth = !!width
+				if(width > originalWidth || height > originalWidth) {
+					continue;
+				}
+				results.push(getStats(src, format, options.urlPath, width, height, hasWidth));
+			}
+		} else {
+			for(let width of options.widths) {
+				let hasWidth = !!width;
+				let height;
+	
+				if(hasAtLeastOneValidMaxWidth && (!width || width > originalWidth)) {
+					continue;
+				}
+	
+				if(!width) {
+					width = originalWidth;
+					height = originalHeight;
+					hasAtLeastOneValidMaxWidth = true;
+				} else {
+					if(width >= originalWidth) {
+						width = originalWidth;
+						hasWidth = false;
+						hasAtLeastOneValidMaxWidth = true;
+					}
+					height = Math.floor(width * originalHeight / originalWidth);
+				}
+	
+				results.push(getStats(src, format, options.urlPath, width, height, hasWidth));
+			}
+		}
+	}
 
-      if(hasAtLeastOneValidMaxWidth && (!width || width > originalWidth)) {
-        continue;
-      }
-
-      if(!width) {
-        width = originalWidth;
-        height = originalHeight;
-        hasAtLeastOneValidMaxWidth = true;
-      } else {
-        if(width >= originalWidth) {
-          width = originalWidth;
-          hasWidth = false;
-          hasAtLeastOneValidMaxWidth = true;
-        }
-        height = Math.floor(width * originalHeight / originalWidth);
-      }
-
-
-      results.push(getStats(src, format, options.urlPath, width, height, hasWidth));
-    }
-  }
-
-  return transformRawFiles(results);
+	return transformRawFiles(results);
 };
 
 function statsSync(src, opts) {
