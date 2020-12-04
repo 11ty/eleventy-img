@@ -17,6 +17,13 @@ const eleventyImage = require("../");
     formats: ["svg"],
   })
 
+  // upscale svg issue #32
+  console.log( await eleventyImage(`https://www.netlify.com/v3/img/components/leaves.svg`, {
+    formats: ["png"],
+    widths: [2000],
+    svgShortCircuit: true,
+  }));
+
   let stats = await eleventyImage(`https://www.netlify.com/v3/img/components/leaves.svg`, {
     formats: ["svg", "webp", "jpeg", "png"],
     // formats: [null],

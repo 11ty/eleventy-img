@@ -254,3 +254,43 @@ test("Ask for svg output from a raster image (skipped)", async t => {
   t.notDeepEqual(stats, {});
   t.deepEqual(stats.svg, []);
 });
+
+test("Upscale an SVG, Issue #32", async t => {
+  let stats = await eleventyImage("./test/logo.svg", {
+    widths: [3000],
+    formats: ["png"],
+    outputDir: "./test/img/"
+  });
+
+  t.is(stats.png.length, 1);
+  t.not(stats.png[0].filename.substr(-9), "-3000.png"); // should not include width in filename
+  t.is(stats.png[0].width, 3000);
+  t.is(stats.png[0].height, 4179);
+});
+
+test("Upscale an SVG (disallowed in option), Issue #32", async t => {
+  let stats = await eleventyImage("./test/logo.svg", {
+    widths: [3000],
+    formats: ["png"],
+    outputDir: "./test/img/",
+    svgAllowUpscale: false
+  });
+
+  t.is(stats.png.length, 1);
+  t.not(stats.png[0].filename.substr(-9), "-3000.png"); // should not include width in filename
+  t.is(stats.png[0].width, 1569);
+  t.is(stats.png[0].height, 2186);
+});
+
+test("svgShortCircuit", async t => {
+  let stats = await eleventyImage("./test/logo.svg", {
+    widths: [null],
+    formats: ["svg", "png", "webp"],
+    outputDir: "./test/img/",
+    svgShortCircuit: true,
+  });
+
+  t.is(stats.svg.length, 1);
+  t.is(stats.png.length, 0);
+  t.is(stats.webp.length, 0);
+});

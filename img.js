@@ -20,6 +20,7 @@ const globalOptions = {
   urlPath: "/img/",
   outputDir: "img/",
   svgShortCircuit: false, // skip raster formats if SVG input is found
+  svgAllowUpscale: true,
   // overrideInputFormat: false, // internal, used to force svg output in statsSync et al
   sharpOptions: { // options passed to the Sharp constructor
     failOnError: false,
@@ -104,17 +105,17 @@ function getFullStats(src, metadata, opts) {
   let options = Object.assign({}, globalOptions, opts);
 
   let results = [];
-  let formats = getFormatsArray(options.formats);
+  let outputFormats = getFormatsArray(options.formats);
 
-  for(let format of formats) {
-    if(!format) {
-      format = metadata.format || options.overrideInputFormat;
+  for(let outputFormat of outputFormats) {
+    if(!outputFormat) {
+      outputFormat = metadata.format || options.overrideInputFormat;
     }
-    if(!format) {
+    if(!outputFormat) {
       throw new Error("When using statsSync or statsByDimensionsSync, `formats: [null]` to use the native image format is not supported.");
     }
 
-    if(format === "svg") {
+    if(outputFormat === "svg") {
       if((metadata.format || options.overrideInputFormat) === "svg") {
         let svgStats = getStats(src, "svg", options.urlPath, metadata.width, metadata.height, false, options);
         // Warning this is unfair for comparison because its uncompressed (no GZIP, etc)
@@ -135,8 +136,11 @@ function getFullStats(src, metadata, opts) {
       for(let width of options.widths) {
         let includeWidthInFilename = !!width;
         let height;
-
-        if(hasAtLeastOneValidMaxWidth && (!width || width > metadata.width)) {
+        if(hasAtLeastOneValidMaxWidth && (!width ||
+          (width > metadata.width &&
+            (!options.svgAllowUpscale || metadata.format !== "svg")
+          )
+        )) {
           continue;
         }
 
@@ -146,19 +150,21 @@ function getFullStats(src, metadata, opts) {
           hasAtLeastOneValidMaxWidth = true;
         } else {
           if(width >= metadata.width) {
-            width = metadata.width;
+            if(!options.svgAllowUpscale || metadata.format !== "svg") {
+              width = metadata.width;
+            }
             includeWidthInFilename = false;
             hasAtLeastOneValidMaxWidth = true;
           }
           height = Math.floor(width * metadata.height / metadata.width);
         }
 
-        results.push(getStats(src, format, options.urlPath, width, height, includeWidthInFilename, options));
+        results.push(getStats(src, outputFormat, options.urlPath, width, height, includeWidthInFilename, options));
       }
     }
   }
 
-  return transformRawFiles(results, formats);
+  return transformRawFiles(results, outputFormats);
 }
 
 function transformRawFiles(files = [], formats = []) {
@@ -199,24 +205,32 @@ async function resizeImage(src, options = {}) {
   let outputFilePromises = [];
 
   let fullStats = getFullStats(src, metadata, options);
-  for(let format in fullStats) {
-    for(let stat of fullStats[format]) {
-      if(format === "svg") {
-        let svgBuffer = sharpImage.options.input.buffer;
-        outputFilePromises.push(fs.writeFile(stat.outputPath, svgBuffer.toString("utf-8"), {
-          encoding: "utf8"
-        }).then(() => stat));
+  for(let outputFormat in fullStats) {
+    for(let stat of fullStats[outputFormat]) {
+      if(outputFormat === "svg") {
+        let sharpInput = sharpImage.options.input;
+        let svgBuffer = sharpInput.buffer;
+        if(!svgBuffer) { // local file system
+          outputFilePromises.push(fs.copyFile(sharpInput.file, stat.outputPath).then(() => stat));
+        } else {
+          outputFilePromises.push(fs.writeFile(stat.outputPath, svgBuffer.toString("utf-8"), {
+            encoding: "utf8"
+          }).then(() => stat));
+        }
       } else { // not SVG
         let imageFormat = sharpImage.clone();
-        if(format && metadata.format !== format) {
-          imageFormat.toFormat(format);
+        if(outputFormat && metadata.format !== outputFormat) {
+          imageFormat.toFormat(outputFormat);
         }
 
-        if(stat.width < metadata.width) {
-          imageFormat.resize({
-            width: stat.width,
-            withoutEnlargement: true
-          });
+        if(stat.width < metadata.width || (options.svgAllowUpscale && metadata.format === "svg")) {
+          let resizeOptions = {
+            width: stat.width
+          };
+          if(metadata.format !== "svg" || !options.svgAllowUpscale) {
+            resizeOptions.withoutEnlargement = true;
+          }
+          imageFormat.resize(resizeOptions);
         }
 
         outputFilePromises.push(imageFormat.toFile(stat.outputPath).then(data => {
