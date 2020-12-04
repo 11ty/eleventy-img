@@ -219,6 +219,7 @@ test("Use custom function to define file names", async (t) => {
       return `${name}-${id}.${format}`;
     }
   });
+
   t.is(stats.jpeg.length, 2);
   t.is(stats.jpeg[0].outputPath, "test/img/bio-2017-97854483-600.jpeg");
   t.is(stats.jpeg[0].url, "/img/bio-2017-97854483-600.jpeg")
@@ -241,4 +242,15 @@ test("Unavatar test", t => {
   t.is(stats.jpeg.length, 1);
   t.is(stats.jpeg[0].width, 75);
   t.is(stats.jpeg[0].height, 75);
+});
+
+test("Ask for svg output from a raster image (skipped)", async t => {
+  let stats = await eleventyImage("./test/bio-2017.jpg", {
+    widths: [null],
+    formats: ["svg"],
+    outputDir: "./test/img/"
+  });
+
+  t.notDeepEqual(stats, {});
+  t.deepEqual(stats.svg, []);
 });

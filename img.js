@@ -15,12 +15,16 @@ const CacheAsset = require("@11ty/eleventy-cache-assets");
 const globalOptions = {
   src: null,
   widths: [null],
-  formats: ["webp", "jpeg"], // "png"
+  formats: ["webp", "jpeg"], // "png", "svg"
   concurrency: 10,
   urlPath: "/img/",
   outputDir: "img/",
+  svgShortCircuit: false, // skip raster formats if SVG input is found
+  // overrideInputFormat: false, // internal, used to force svg output in statsSync et al
+  sharpOptions: { // options passed to the Sharp constructor
+    failOnError: false,
+  },
   cacheDuration: "1d", // deprecated, use cacheOptions.duration
-  svgShortCircuit: false, // skip raster formats if SVG is found
   cacheOptions: {
     // duration: "1d",
     // directory: ".cache",
@@ -86,16 +90,82 @@ function getStats(src, format, urlPath, width, height, includeWidthInFilename, o
     format: format,
     width: width,
     height: height,
-    // size // only after processing
-    // outputPath // only after processing
+    filename: outputFilename,
+    outputPath: path.join(options.outputDir, outputFilename),
     url: url,
     sourceType: MIME_TYPES[format],
-    srcset: `${url} ${width}w`
+    srcset: `${url} ${width}w`,
+    // size // only after processing
   };
 }
 
-function transformRawFiles(files = []) {
+// metadata so far: width, height, format
+function getFullStats(src, metadata, opts) {
+  let options = Object.assign({}, globalOptions, opts);
+
+  let results = [];
+  let formats = getFormatsArray(options.formats);
+
+  for(let format of formats) {
+    if(!format) {
+      format = metadata.format || options.overrideInputFormat;
+    }
+    if(!format) {
+      throw new Error("When using statsSync or statsByDimensionsSync, `formats: [null]` to use the native image format is not supported.");
+    }
+
+    if(format === "svg") {
+      if((metadata.format || options.overrideInputFormat) === "svg") {
+        let svgStats = getStats(src, "svg", options.urlPath, metadata.width, metadata.height, false, options);
+        // Warning this is unfair for comparison because its uncompressed (no GZIP, etc)
+        svgStats.size = metadata.size;
+        results.push(svgStats);
+
+        if(options.svgShortCircuit) {
+          break;
+        } else {
+          continue;
+        }
+      } else {
+        debug("Skipping: %o asked for SVG output but received raster input.", src);
+        continue;
+      }
+    } else { // not SVG
+      let hasAtLeastOneValidMaxWidth = false;
+      for(let width of options.widths) {
+        let includeWidthInFilename = !!width;
+        let height;
+
+        if(hasAtLeastOneValidMaxWidth && (!width || width > metadata.width)) {
+          continue;
+        }
+
+        if(!width) {
+          width = metadata.width;
+          height = metadata.height;
+          hasAtLeastOneValidMaxWidth = true;
+        } else {
+          if(width >= metadata.width) {
+            width = metadata.width;
+            includeWidthInFilename = false;
+            hasAtLeastOneValidMaxWidth = true;
+          }
+          height = Math.floor(width * metadata.height / metadata.width);
+        }
+
+        results.push(getStats(src, format, options.urlPath, width, height, includeWidthInFilename, options));
+      }
+    }
+  }
+
+  return transformRawFiles(results, formats);
+}
+
+function transformRawFiles(files = [], formats = []) {
   let byType = {};
+  for(let format of formats) {
+    byType[format] = [];
+  }
   for(let file of files) {
     if(!byType[file.format]) {
       byType[file.format] = [];
@@ -113,11 +183,7 @@ function transformRawFiles(files = []) {
 
 // src should be a file path to an image or a buffer
 async function resizeImage(src, options = {}) {
-  let sharpImage = sharp(src, {
-    failOnError: false,
-    // TODO how to handle higher resolution source images
-    // density: 72
-  });
+  let sharpImage = sharp(src, options.sharpOptions);
 
   if(typeof src !== "string") {
     if(options.sourceUrl) {
@@ -132,80 +198,38 @@ async function resizeImage(src, options = {}) {
   let metadata = await sharpImage.metadata();
   let outputFilePromises = [];
 
-  let formats = getFormatsArray(options.formats);
-  for(let format of formats) {
-    // output as SVG
-    if(format === "svg") {
-      // input file must be SVG otherwise we skip
-      if(metadata.format === "svg") {
+  let fullStats = getFullStats(src, metadata, options);
+  for(let format in fullStats) {
+    for(let stat of fullStats[format]) {
+      if(format === "svg") {
         let svgBuffer = sharpImage.options.input.buffer;
-        let outputFilename = getFilename(src, null, format);
-        let outputPath = path.join(options.outputDir, outputFilename);
-        outputFilePromises.push(fs.writeFile(outputPath, svgBuffer.toString("utf-8"), {
+        outputFilePromises.push(fs.writeFile(stat.outputPath, svgBuffer.toString("utf-8"), {
           encoding: "utf8"
-        }).then(async data => {
-          let svgStats = getStats(src, "svg", options.urlPath, metadata.width, metadata.height, false);
-          // Warning this is unfair for comparison because its uncompressed (no GZIP, etc)
-          svgStats.size = metadata.size;
-          svgStats.outputPath = outputPath;
-          return svgStats;
-        }));
-      }
-      if(options.svgShortCircuit) {
-        break;
-      } else {
-        continue;
-      }
-    }
+        }).then(() => stat));
+      } else { // not SVG
+        let imageFormat = sharpImage.clone();
+        if(format && metadata.format !== format) {
+          imageFormat.toFormat(format);
+        }
 
-    let hasAtLeastOneValidMaxWidth = false;
-    for(let width of options.widths) {
-      let hasWidth = !!width;
-      // Set format
-      let imageFormat = sharpImage.clone();
-      if(metadata.format !== format) {
-        imageFormat.toFormat(format);
-      }
-
-      // skip this width because it’s larger than the original and we already
-      // have at least one output image size that works
-      if(hasAtLeastOneValidMaxWidth && (!width || width > metadata.width)) {
-        continue;
-      }
-
-      // Resize the image
-      if(!width) {
-        hasAtLeastOneValidMaxWidth = true;
-      } else {
-        if(width >= metadata.width) {
-          // don’t reassign width if it’s falsy
-          width = null;
-          hasWidth = false;
-          hasAtLeastOneValidMaxWidth = true;
-        } else {
+        if(stat.width < metadata.width) {
           imageFormat.resize({
-            width: width,
+            width: stat.width,
             withoutEnlargement: true
           });
         }
+
+        outputFilePromises.push(imageFormat.toFile(stat.outputPath).then(data => {
+          stat.size = data.size;
+          return stat;
+        }));
+
       }
-
-
-      let outputFilename = getFilename(src, width, format, options);
-      let outputPath = path.join(options.outputDir, outputFilename);
-      outputFilePromises.push(imageFormat.toFile(outputPath).then(data => {
-        let stats = getStats(src, format, options.urlPath, data.width, data.height, hasWidth, options);
-        stats.outputPath = outputPath;
-        stats.size = data.size;
-
-        return stats;
-      }));
-
-      debug( "Writing %o", outputPath );
+      debug( "Wrote %o", stat.outputPath );
     }
   }
 
-  return Promise.all(outputFilePromises).then(files => transformRawFiles(files));
+  return Promise.all(outputFilePromises).then(files => transformRawFiles(files, Object.keys(fullStats)));
 }
 
 function isFullUrl(url) {
@@ -267,58 +291,20 @@ Object.defineProperty(module.exports, "concurrency", {
   },
 });
 
-
 /* `statsSync` doesn’t generate any files, but will tell you where
  * the asynchronously generated files will end up! This is useful
  * in synchronous-only template environments where you need the
  * image URLs synchronously but can’t rely on the files being in
  * the correct location yet.
  */
-
-function _statsSync(src, originalWidth, originalHeight, opts) {
-  let options = Object.assign({}, globalOptions, opts);
-
-  let results = [];
-  let formats = getFormatsArray(options.formats);
-
-  for(let format of formats) {
-    let hasAtLeastOneValidMaxWidth = false;
-    for(let width of options.widths) {
-      let hasWidth = !!width;
-      let height;
-
-      if(hasAtLeastOneValidMaxWidth && (!width || width > originalWidth)) {
-        continue;
-      }
-
-      if(!width) {
-        width = originalWidth;
-        height = originalHeight;
-        hasAtLeastOneValidMaxWidth = true;
-      } else {
-        if(width >= originalWidth) {
-          width = originalWidth;
-          hasWidth = false;
-          hasAtLeastOneValidMaxWidth = true;
-        }
-        height = Math.floor(width * originalHeight / originalWidth);
-      }
-
-
-      results.push(getStats(src, format, options.urlPath, width, height, hasWidth));
-    }
-  }
-
-  return transformRawFiles(results);
-}
-
 function statsSync(src, opts) {
-  let originalDimensions = imageSize(src);
-  return _statsSync(src, originalDimensions.width, originalDimensions.height, opts);
+  let dimensions = imageSize(src);
+  return getFullStats(src, dimensions, opts);
 }
 
 function statsByDimensionsSync(src, width, height, opts) {
-  return _statsSync(src, width, height, opts);
+  let dimensions = { width, height };
+  return getFullStats(src, dimensions, opts);
 }
 
 module.exports.statsSync = statsSync;

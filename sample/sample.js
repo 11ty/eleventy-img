@@ -8,12 +8,19 @@ const eleventyImage = require("../");
   // })
 
   // await eleventyImage(`https://unavatar.now.sh/twitter/zachleat?fallback=false`, {
-  //   widths: [75, null]
+  //   widths: [75, null],
+  //   formats: [null]
   // })
 
+  await eleventyImage(`https://unavatar.now.sh/twitter/zachleat?fallback=false`, {
+    widths: [null],
+    formats: ["svg"],
+  })
+
   let stats = await eleventyImage(`https://www.netlify.com/v3/img/components/leaves.svg`, {
-    // formats: [null],
     formats: ["svg", "webp", "jpeg", "png"],
+    // formats: [null],
+    widths: [400, 800, null],
     svgShortCircuit: true,
   });
   console.log( stats );
