@@ -9,7 +9,7 @@ Low level utility to perform build-time image transformations.
   * Keeps original image aspect ratios intact.
   * Never upscales images larger than original size.
 * Output multiple image formats.
-  * The [sharp](https://sharp.pixelplumbing.com/) image processor supports `jpeg`, `png`, `webp`, `raw`, and `tiff`.
+  * The [sharp](https://sharp.pixelplumbing.com/) image processor supports `jpeg`, `png`, and `webp`.
   * Incoming `gif` and `svg` images are converted to `png`.
 * Cache remote images locally using [eleventy-cache-assets](https://github.com/11ty/eleventy-cache-assets).
   * Use "local" images in your HTML to prevent broken image URLs.
@@ -51,7 +51,7 @@ Defaults values are shown:
   // widths: [200, null] // output 200px and original width
 
   // output image formats
-  formats: ["webp", "jpeg"], // also supported by sharp: "png", "raw", "tiff"
+  formats: ["webp", "jpeg"], // also supported by sharp: "png"
 
   // image directory for img element's src attribute (<img src="/img/MY_IMAGE.jpeg">)
   urlPath: "/img/",
@@ -78,9 +78,9 @@ See all [relevant `eleventy-cache-assets` options in its documentation](https://
 
 ## Examples
 
-### Output Optimized Images with Width/Height Attributes
+> > NOTE: The examples below use the [Nunjucks](https://www.11ty.dev/docs/languages/nunjucks/#asynchronous-shortcodes) `async` shortcodes (the [JavaScript](https://www.11ty.dev/docs/languages/javascript/#asynchronous-javascript-template-functions) and [Liquid](https://www.11ty.dev/docs/languages/liquid/#asynchronous-shortcodes) template engines are async by default).
 
-> Requires `async`, make sure you’re using this in Liquid, 11ty.js, or Nunjucks (use an async shortcode).
+### Output Optimized Images with Optional Paths and Width/Height Attributes
 
 #### Inputs for Optimized Images
 
@@ -96,14 +96,12 @@ module.exports = function(eleventyConfig) {
       throw new Error(`Missing \`alt\` on myImage from: ${src}`);
     }
 
-    // returns Promise
     let stats = await Image(src, {
-      widths: [50],
+      widths: [null],
       formats: [outputFormat],
       urlPath: "/images/",
-      outputDir: "./dist/images/",
+      outputDir: "./dist/images/"
     });
-
     let props = stats[outputFormat].pop();
 
     return `<img src="${props.url}" width="${props.width}" height="${props.height}" alt="${alt}">`;
@@ -128,10 +126,10 @@ module.exports = function(eleventyConfig) {
 <!-- dist/index.html -->
 
 <div>
-  <img src="/images/3d00b40-50.jpeg" width="50" height="50" alt="photo of my cat">
+  <img src="/images/9b186f9b.jpeg" width="1280" height="853" alt="photo of my cat">
 </div>
 <div>
-  <img src="/images/2311v21-50.jpeg" width="50" height="50" alt="photo of my dog">
+  <img src="/images/ez383a7m.jpeg" width="1280" height="853" alt="photo of my dog">
 </div>
 ```
 
@@ -145,17 +143,15 @@ module.exports = function(eleventyConfig) {
 const Image = require("@11ty/eleventy-img");
 module.exports = function(eleventyConfig) {
   // works also with addLiquidShortcode or addJavaScriptFunction
-  eleventyConfig.addNunjucksAsyncShortcode("myResponsiveImage", async function(src, alt, outputFormat = "jpeg") {
+  eleventyConfig.addNunjucksAsyncShortcode("myResponsiveImage", async function(src, alt) {
     if(alt === undefined) {
       // You bet we throw an error on missing alt (alt="" works okay)
       throw new Error(`Missing \`alt\` on myResponsiveImage from: ${src}`);
     }
 
     let stats = await Image(src, {
-      widths: [null],
-      formats: [outputFormat],
-      urlPath: "/images/",
-      outputDir: "./dist/images/",
+      widths: [350, null],
+      formats: ['webp', 'jpeg']
     });
     let lowestSrc = stats[outputFormat][0];
     let sizes = "100vw"; // Make sure you customize this!
@@ -189,18 +185,20 @@ module.exports = function(eleventyConfig) {
 #### Output for Responsive Images
 
 ```html
-<!-- dist/index.html -->
+<!-- index.html -->
 
 <div>
   <picture>
-    <source type="image/jpeg" srcset="/images/3d00b40-96.jpeg 100w" sizes="100vw">
-    <img src="/images/3d00b40.jpeg" width="100" height="100" alt="photo of my cat">
+    <source type="image/webp" srcset="/img/9b186f9b-350.webp 350w, /img/9b186f9b.webp 1280w" sizes="100vw">
+    <source type="image/jpeg" srcset="/img/9b186f9b-350.jpeg 350w, /img/9b186f9b.jpeg 1280w" sizes="100vw">
+    <img src="/img/9b186f9b-350.jpeg" width="350" height="233" alt="photo of my cat">
   </picture>
 </div>
 <div>
   <picture>
-    <source type="image/jpeg" srcset="/images/2311v21-75.jpeg 100w" sizes="100vw">
-    <img src="/images/2311v21.jpeg" width="100" height="100" alt="photo of my dog">
+    <source type="image/webp" srcset="/img/ez383a7m-350.webp 350w, /img/ez383a7m.webp 1280w" sizes="100vw">
+    <source type="image/jpeg" srcset="/img/ez383a7m-350.jpeg 350w, /img/ez383a7m.jpeg 1280w" sizes="100vw">
+    <img src="/img/ez383a7m-350.jpeg" width="350" height="233" alt="photo of my dog">
   </picture>
 </div>
 ```
