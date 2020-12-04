@@ -22,9 +22,7 @@ const globalOptions = {
   svgShortCircuit: false, // skip raster formats if SVG input is found
   svgAllowUpscale: true,
   // overrideInputFormat: false, // internal, used to force svg output in statsSync et al
-  sharpOptions: { // options passed to the Sharp constructor
-    failOnError: false,
-  },
+  sharpOptions: {}, // options passed to the Sharp constructor
   cacheDuration: "1d", // deprecated, use cacheOptions.duration
   cacheOptions: {
     // duration: "1d",
@@ -189,7 +187,9 @@ function transformRawFiles(files = [], formats = []) {
 
 // src should be a file path to an image or a buffer
 async function resizeImage(src, options = {}) {
-  let sharpImage = sharp(src, options.sharpOptions);
+  let sharpImage = sharp(src, Object.assign({
+    failOnError: false
+  }, options.sharpOptions));
 
   if(typeof src !== "string") {
     if(options.sourceUrl) {

@@ -5,12 +5,15 @@ Low level utility to perform build-time image transformations.
 ## Features
 
 * Optimize and resize images, automatically.
+  * Input types supported: `jpeg`, `png`, `webp`, `gif`, `tiff`, `svg`.
   * Can output multiple image sizes.
   * Keeps original image aspect ratios intact.
-  * Never upscales images larger than original size.
+  * Never upscales raster images larger than original size
+  * SVG files will upscale unless the `svgAllowUpscale` option is changed to `false`.
 * Output multiple image formats.
-  * The [sharp](https://sharp.pixelplumbing.com/) image processor supports `jpeg`, `png`, and `webp`.
-  * Incoming `gif` and `svg` images are converted to `png`.
+  * Output formats supported: `jpeg`, `png`, `webp`, `svg` (requires SVG input, otherwise it will be skipped)
+  * Uses the [sharp](https://sharp.pixelplumbing.com/) image processor.
+  * Note that `svg` input can be converted to raster format.
 * Cache remote images locally using [eleventy-cache-assets](https://github.com/11ty/eleventy-cache-assets).
   * Use "local" images in your HTML to prevent broken image URLs.
   * Manage the [cache duration](https://github.com/11ty/eleventy-cache-assets#change-the-cache-duration).
@@ -51,13 +54,27 @@ Defaults values are shown:
   // widths: [200, null] // output 200px and original width
 
   // output image formats
-  formats: ["webp", "jpeg"], // also supported by sharp: "png"
+  formats: ["webp", "jpeg"],
+  // also supported: "png" or "svg" (SVG output requires SVG input)
 
   // image directory for img element's src attribute (<img src="/img/MY_IMAGE.jpeg">)
   urlPath: "/img/",
 
   // project-relative path to the output image directory
   outputDir: "./img/",
+
+  // Eleventy Image v0.4.0+
+  // if SVG output is used, skip all of the raster outputs even if they’re specified in `formats`
+  svgShortCircuit: false,
+
+  // Eleventy Image v0.4.0+
+  // if SVG *input* is used, allow upscaling from original dimensions when converting to raster format.
+  svgAllowUpscale: true,
+
+  // Eleventy Image v0.4.0+
+  // Extra options to pass to the Sharp constructor
+  // https://sharp.pixelplumbing.com/api-constructor#parameters
+  sharpOptions: {},
 
   // eleventy-cache-assets options (available in eleventy-img 0.3.0+)
   cacheOptions: {
@@ -70,8 +87,7 @@ Defaults values are shown:
     removeUrlQueryParams: false,
   },
 
-  cacheDuration: "1d", // deprecated, use cacheOptions above
-
+  // Eleventy Image v0.4.0+
   // function to define custom filenames for the generated images
   filenameFormat: function (id, src, width, format, options) {
     // id: hash of the original image
