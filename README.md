@@ -179,7 +179,7 @@ module.exports = function(eleventyConfig) {
 <!-- index.njk -->
 
 <div>
-  {% myResponsiveImage "./src/images/cat.jpg", "photo of my cat"}
+  {% myResponsiveImage "./src/images/cat.jpg", "photo of my cat" %}
 </div>
 <div>
   {% myResponsiveImage "https://my_site.com/assets/img/dog.jpg", "photo of my dog" %}
