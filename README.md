@@ -71,6 +71,20 @@ Defaults values are shown:
   },
 
   cacheDuration: "1d", // deprecated, use cacheOptions above
+
+  // function to define custom filenames for the generated images
+  filenameFormat: function (id, src, width, format, options) {
+    // id: hash of the original image
+    // src: original image path
+    // width: current width in px
+    // format: current file format
+    // options: set of options passed to the Image call
+    if (width) {
+      return `${id}-${width}.${format}`;
+    }
+
+    return `${id}.${format}`;
+  }
 }
 ```
 
@@ -249,4 +263,33 @@ Use this object to generate your responsive image markup.
 ```js
 const Image = require("@11ty/eleventy-img");
 Image.concurrency = 4; // default is 10
+```
+
+### Generate custom filenames
+
+```js
+const path = require("path");
+const Image = require("@11ty/eleventy-img");
+
+let stats = await Image("./test/bio-2017.jpg", {
+  widths: [600, 1280],
+  formats: ["jpeg"],
+  outputDir: "./test/img/",
+  filenameFormat: function (id, src, width, format, options) {
+    const ext = path.extname(src)
+    const name = path.basename(src, ext)
+
+    if (width) {
+      return `${name}-${id}-${width}.${format}`;
+    }
+
+    return `${name}-${id}.${format}`;
+  }
+});
+
+// stats.jpeg.length -> 2
+// stats.jpeg[0].outputPath -> "test/img/bio-2017-97854483-600.jpeg"
+// stats.jpeg[0].width -> 600
+// stats.jpeg[1].outputPath -> "test/img/bio-2017-97854483.jpeg"
+// stats.jpeg[1].width -> 1280
 ```
