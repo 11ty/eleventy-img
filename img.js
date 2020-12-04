@@ -15,11 +15,12 @@ const CacheAsset = require("@11ty/eleventy-cache-assets");
 const globalOptions = {
   src: null,
   widths: [null],
-  formats: ["webp", "jpeg"], //"png"
+  formats: ["webp", "jpeg"], // "png"
   concurrency: 10,
   urlPath: "/img/",
   outputDir: "img/",
   cacheDuration: "1d", // deprecated, use cacheOptions.duration
+  svgShortCircuit: false, // skip raster formats if SVG is found
   cacheOptions: {
     // duration: "1d",
     // directory: ".cache",
@@ -31,7 +32,8 @@ const globalOptions = {
 const MIME_TYPES = {
   "jpeg": "image/jpeg",
   "webp": "image/webp",
-  "png": "image/png"
+  "png": "image/png",
+  "svg": "image/svg+xml",
 };
 
 function getFormatsArray(formats) {
@@ -39,6 +41,17 @@ function getFormatsArray(formats) {
     if(typeof formats === "string") {
       formats = formats.split(",");
     }
+
+    // svg must come first for possible short circuiting
+    formats.sort((a, b) => {
+      if(a === "svg") {
+        return -1;
+      } else if(b === "svg") {
+        return 1;
+      }
+      return 0;
+    });
+
     return formats;
   }
 
@@ -111,6 +124,30 @@ async function resizeImage(src, options = {}) {
 
   let formats = getFormatsArray(options.formats);
   for(let format of formats) {
+    // output as SVG
+    if(format === "svg") {
+      // input file must be SVG otherwise we skip
+      if(metadata.format === "svg") {
+        let svgBuffer = sharpImage.options.input.buffer;
+        let outputFilename = getFilename(src, null, format);
+        let outputPath = path.join(options.outputDir, outputFilename);
+        outputFilePromises.push(fs.writeFile(outputPath, svgBuffer.toString("utf-8"), {
+          encoding: "utf8"
+        }).then(async data => {
+          let svgStats = getStats(src, "svg", options.urlPath, metadata.width, metadata.height, false);
+          // Warning this is unfair for comparison because its uncompressed (no GZIP, etc)
+          svgStats.size = metadata.size;
+          svgStats.outputPath = outputPath;
+          return svgStats;
+        }));
+      }
+      if(options.svgShortCircuit) {
+        break;
+      } else {
+        continue;
+      }
+    }
+
     let hasAtLeastOneValidMaxWidth = false;
     for(let width of options.widths) {
       let hasWidth = !!width;
@@ -276,3 +313,4 @@ function statsByDimensionsSync(src, width, height, opts) {
 
 module.exports.statsSync = statsSync;
 module.exports.statsByDimensionsSync = statsByDimensionsSync;
+module.exports.getFormats = getFormatsArray;

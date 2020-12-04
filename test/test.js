@@ -1,6 +1,40 @@
 const test = require("ava");
 const eleventyImage = require("../");
 
+test("getFormats", t => {
+  let formats = eleventyImage.getFormats("webp,png");
+  t.is(formats.length, 2);
+  t.is(formats[0], "webp");
+  t.is(formats[1], "png");
+});
+
+test("getFormats (three) with svg reorder", t => {
+  let formats = eleventyImage.getFormats("webp,png,svg");
+  t.is(formats.length, 3);
+  // svg should be first
+  t.is(formats[0], "svg");
+  t.is(formats[1], "webp");
+  t.is(formats[2], "png");
+});
+
+test("getFormats (three) with svg reorder 2", t => {
+  let formats = eleventyImage.getFormats("webp,svg,png");
+  t.is(formats.length, 3);
+  // svg should be first
+  t.is(formats[0], "svg");
+  t.is(formats[1], "webp");
+  t.is(formats[2], "png");
+});
+
+test("getFormats (three) with svg no reorder", t => {
+  let formats = eleventyImage.getFormats("svg,webp,png");
+  t.is(formats.length, 3);
+  // svg should be first
+  t.is(formats[0], "svg");
+  t.is(formats[1], "webp");
+  t.is(formats[2], "png");
+});
+
 test("Sync with jpeg input", t => {
   let stats = eleventyImage.statsSync("./test/bio-2017.jpg");
   t.is(stats.webp.length, 1);
