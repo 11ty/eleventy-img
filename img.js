@@ -81,7 +81,7 @@ function getStats(src, format, urlPath, width, height, includeWidthInFilename) {
     url: url,
     sourceType: MIME_TYPES[format],
     srcset: `${url} ${width}w`
-  }
+  };
 }
 
 function transformRawFiles(files = []) {
@@ -96,7 +96,7 @@ function transformRawFiles(files = []) {
     // sort by width, ascending (for `srcset`)
     byType[type].sort((a, b) => {
       return a.width - b.width;
-    })
+    });
   }
   return byType;
 }
@@ -113,7 +113,7 @@ async function resizeImage(src, options = {}) {
     if(options.sourceUrl) {
       src = options.sourceUrl;
     } else {
-      throw new Error(`Expected options.sourceUrl in resizeImage when using Buffer as input.`);
+      throw new Error("Expected options.sourceUrl in resizeImage when using Buffer as input.");
     }
   }
 
@@ -300,7 +300,7 @@ function _statsSync(src, originalWidth, originalHeight, opts) {
   }
 
   return transformRawFiles(results);
-};
+}
 
 function statsSync(src, opts) {
   let originalDimensions = imageSize(src);

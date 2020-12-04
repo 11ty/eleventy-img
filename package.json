@@ -7,7 +7,7 @@
   },
   "main": "img.js",
   "scripts": {
-    "test": "ava",
+    "test": "eslint img.js test/**.js && ava",
     "sample": "cd sample && node sample.js"
   },
   "repository": {
@@ -45,7 +45,8 @@
     "short-hash": "^1.0.0"
   },
   "devDependencies": {
-    "ava": "^3.13.0"
+    "ava": "^3.13.0",
+    "eslint": "^7.7.0"
   },
   "ava": {
     "failFast": false,
