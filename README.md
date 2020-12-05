@@ -78,6 +78,15 @@ Defaults values are shown:
   // https://sharp.pixelplumbing.com/api-constructor#parameters
   sharpOptions: {},
 
+  // eleventy-img v0.4.2+
+  // Extra options to pass to the Sharp image format converter
+  // https://sharp.pixelplumbing.com/api-output#webp
+  sharpWebpOptions: {},
+  // https://sharp.pixelplumbing.com/api-output#png
+  sharpPngOptions: {},
+  // https://sharp.pixelplumbing.com/api-output#jpeg
+  sharpJpegOptions: {},
+
   // eleventy-img v0.3.0+
   // eleventy-cache-assets Options
   // https://github.com/11ty/eleventy-cache-assets/blob/master/README.md#options
