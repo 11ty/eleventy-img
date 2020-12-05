@@ -53,30 +53,34 @@ Defaults values are shown:
   // widths: [200]       // output 200px maxwidth
   // widths: [200, null] // output 200px and original width
 
-  // output image formats
+  // Output image formats
   formats: ["webp", "jpeg"],
-  // also supported: "png" or "svg" (SVG output requires SVG input)
+  // also: "png"
+  // also: "svg" (SVG output requires SVG input)
+  // "svg" requires eleventy-img v0.4.0+
 
-  // image directory for img element's src attribute (<img src="/img/MY_IMAGE.jpeg">)
+  // Image directory for img element's src attribute (<img src="/img/MY_IMAGE.jpeg">)
   urlPath: "/img/",
 
-  // project-relative path to the output image directory
+  // Project-relative path to the output image directory
   outputDir: "./img/",
 
-  // Eleventy Image v0.4.0+
-  // if SVG output is used, skip all of the raster outputs even if they’re specified in `formats`
+  // eleventy-img v0.4.0+
+  // if using SVG output (SVG input and `svg` in formats), skip all of the raster outputs even if they’re specified in `formats`
   svgShortCircuit: false,
 
-  // Eleventy Image v0.4.0+
+  // eleventy-img v0.4.0+
   // if SVG *input* is used, allow upscaling from original dimensions when converting to raster format.
   svgAllowUpscale: true,
 
-  // Eleventy Image v0.4.0+
+  // eleventy-img v0.4.0+
   // Extra options to pass to the Sharp constructor
   // https://sharp.pixelplumbing.com/api-constructor#parameters
   sharpOptions: {},
 
-  // eleventy-cache-assets options (available in eleventy-img 0.3.0+)
+  // eleventy-img v0.3.0+
+  // eleventy-cache-assets Options
+  // https://github.com/11ty/eleventy-cache-assets/blob/master/README.md#options
   cacheOptions: {
     // if a remote image URL, this is the amount of time before it fetches a fresh copy
     duration: "1d",
@@ -87,8 +91,8 @@ Defaults values are shown:
     removeUrlQueryParams: false,
   },
 
-  // Eleventy Image v0.4.0+
-  // function to define custom filenames for the generated images
+  // eleventy-img v0.4.0+
+  // Define custom filenames for generated images
   filenameFormat: function (id, src, width, format, options) {
     // id: hash of the original image
     // src: original image path
@@ -108,7 +112,7 @@ See all [relevant `eleventy-cache-assets` options in its documentation](https://
 
 ## Examples
 
-> > NOTE: The examples below use the [Nunjucks](https://www.11ty.dev/docs/languages/nunjucks/#asynchronous-shortcodes) `async` shortcodes (the [JavaScript](https://www.11ty.dev/docs/languages/javascript/#asynchronous-javascript-template-functions) and [Liquid](https://www.11ty.dev/docs/languages/liquid/#asynchronous-shortcodes) template engines are async by default).
+> NOTE: The examples below use the [Nunjucks](https://www.11ty.dev/docs/languages/nunjucks/#asynchronous-shortcodes) `async` shortcodes (the [JavaScript](https://www.11ty.dev/docs/languages/javascript/#asynchronous-javascript-template-functions) and [Liquid](https://www.11ty.dev/docs/languages/liquid/#asynchronous-shortcodes) template engines are async by default).
 
 ### Output Optimized Images with Optional Paths and Width/Height Attributes
 
@@ -189,7 +193,7 @@ module.exports = function(eleventyConfig) {
     // Iterate over formats and widths
     return `<picture>
       ${Object.values(stats).map(imageFormat => {
-        return `  <source type="image/${imageFormat[0].format}" srcset="${imageFormat.map(entry => `${entry.url} ${entry.width}w`).join(", ")}" sizes="${sizes}">`;
+        return `  <source type="image/${imageFormat[0].format}" srcset="${imageFormat.map(entry => entry.srcset).join(", ")}" sizes="${sizes}">`;
       }).join("\n")}
         <img
           src="${lowestSrc.url}"
@@ -303,9 +307,6 @@ let stats = await Image("./test/bio-2017.jpg", {
   }
 });
 
-// stats.jpeg.length -> 2
-// stats.jpeg[0].outputPath -> "test/img/bio-2017-97854483-600.jpeg"
-// stats.jpeg[0].width -> 600
-// stats.jpeg[1].outputPath -> "test/img/bio-2017-97854483.jpeg"
-// stats.jpeg[1].width -> 1280
+// Writes: "test/img/bio-2017-97854483-600.jpeg"
+// Writes: "test/img/bio-2017-97854483.jpeg"
 ```
