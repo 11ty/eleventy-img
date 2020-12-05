@@ -24,11 +24,17 @@ const eleventyImage = require("../");
     svgShortCircuit: true,
   }));
 
-  let stats = await eleventyImage(`https://www.netlify.com/v3/img/components/leaves.svg`, {
+  let leaves = await eleventyImage(`https://www.netlify.com/v3/img/components/leaves.svg`, {
     formats: ["svg", "webp", "jpeg", "png"],
     // formats: [null],
     widths: [400, 800, null],
     svgShortCircuit: true,
   });
-  console.log( stats );
+  console.log( leaves );
+
+  let mexicoFlag = await eleventyImage("../test/Flag_of_Mexico.svg", {
+    formats: ["svg", "webp", "png"],
+    widths: [1300, null],
+  });
+  console.log( mexicoFlag );
 })();
