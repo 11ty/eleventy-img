@@ -294,3 +294,26 @@ test("svgShortCircuit", async t => {
   t.is(stats.png.length, 0);
   t.is(stats.webp.length, 0);
 });
+
+
+test("getWidths", t => {
+  t.deepEqual(eleventyImage.getWidths(300, [null]), [300]); // want original
+  t.deepEqual(eleventyImage.getWidths(300, [600]), [300]); // want larger
+  t.deepEqual(eleventyImage.getWidths(300, [150]), [150]); // want smaller
+
+  t.deepEqual(eleventyImage.getWidths(300, [600, null]), [300]);
+  t.deepEqual(eleventyImage.getWidths(300, [null, 600]), [300]);
+  t.deepEqual(eleventyImage.getWidths(300, [150, null]), [150,300]);
+  t.deepEqual(eleventyImage.getWidths(300, [null, 150]), [150,300]);
+});
+
+test("getWidths allow upscaling", t => {
+  t.deepEqual(eleventyImage.getWidths(300, [null], true), [300]); // want original
+  t.deepEqual(eleventyImage.getWidths(300, [600], true), [600]); // want larger
+  t.deepEqual(eleventyImage.getWidths(300, [150], true), [150]); // want smaller
+
+  t.deepEqual(eleventyImage.getWidths(300, [600, null], true), [300, 600]);
+  t.deepEqual(eleventyImage.getWidths(300, [null, 600], true), [300, 600]);
+  t.deepEqual(eleventyImage.getWidths(300, [150, null], true), [150,300]);
+  t.deepEqual(eleventyImage.getWidths(300, [null, 150], true), [150,300]);
+});

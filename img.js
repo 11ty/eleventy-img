@@ -68,6 +68,16 @@ function getFormatsArray(formats) {
   return [];
 }
 
+function getValidWidths(originalWidth, widths = [], allowUpscale = false) {
+  let valid = widths.map(width => width ? width : originalWidth);
+  let filtered = valid.filter(width => allowUpscale || width <= originalWidth);
+  // if the only valid width was larger than the original (and no upscaling), then use the original width
+  if(valid.length > 0 && filtered.length === 0) {
+    filtered.push(originalWidth);
+  }
+  return filtered.sort((a, b) => a - b);
+}
+
 function getFilename(src, width, format, options = {}) {
   let id = shorthash(src);
   if (typeof options.filenameFormat === 'function') {
@@ -116,8 +126,15 @@ function getFullStats(src, metadata, opts) {
     if(outputFormat === "svg") {
       if((metadata.format || options.overrideInputFormat) === "svg") {
         let svgStats = getStats(src, "svg", options.urlPath, metadata.width, metadata.height, false, options);
+        // metadata.size is only available with Buffer input (remote urls)
         // Warning this is unfair for comparison because its uncompressed (no GZIP, etc)
-        svgStats.size = metadata.size;
+        if(metadata.size) {
+          svgStats.size = metadata.size;
+        } else {
+          // reading from the local file system
+          let fsStats = fs.statSync(src);
+          svgStats.size = fsStats.size;
+        }
         results.push(svgStats);
 
         if(options.svgShortCircuit) {
@@ -131,32 +148,16 @@ function getFullStats(src, metadata, opts) {
       }
     } else { // not SVG
       let hasAtLeastOneValidMaxWidth = false;
-      for(let width of options.widths) {
-        let includeWidthInFilename = !!width;
+      let widths = getValidWidths(metadata.width, options.widths, metadata.format === "svg" && options.svgAllowUpscale);
+      for(let width of widths) {
         let height;
-        if(hasAtLeastOneValidMaxWidth && (!width ||
-          (width > metadata.width &&
-            (!options.svgAllowUpscale || metadata.format !== "svg")
-          )
-        )) {
-          continue;
-        }
-
-        if(!width) {
-          width = metadata.width;
+        if(width === metadata.width) {
           height = metadata.height;
-          hasAtLeastOneValidMaxWidth = true;
         } else {
-          if(width >= metadata.width) {
-            if(!options.svgAllowUpscale || metadata.format !== "svg") {
-              width = metadata.width;
-            }
-            includeWidthInFilename = false;
-            hasAtLeastOneValidMaxWidth = true;
-          }
           height = Math.floor(width * metadata.height / metadata.width);
         }
 
+        let includeWidthInFilename = widths.length > 1 && width !== metadata.width;
         results.push(getStats(src, outputFormat, options.urlPath, width, height, includeWidthInFilename, options));
       }
     }
@@ -324,3 +325,4 @@ function statsByDimensionsSync(src, width, height, opts) {
 module.exports.statsSync = statsSync;
 module.exports.statsByDimensionsSync = statsByDimensionsSync;
 module.exports.getFormats = getFormatsArray;
+module.exports.getWidths = getValidWidths;
