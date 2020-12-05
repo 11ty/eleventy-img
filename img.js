@@ -23,6 +23,9 @@ const globalOptions = {
   svgAllowUpscale: true,
   // overrideInputFormat: false, // internal, used to force svg output in statsSync et al
   sharpOptions: {}, // options passed to the Sharp constructor
+  sharpWebpOptions: {}, // options passed to the Sharp webp output method
+  sharpPngOptions: {}, // options passed to the Sharp png output method
+  sharpJpegOptions: {}, // options passed to the Sharp jpeg output method
   cacheDuration: "1d", // deprecated, use cacheOptions.duration
   cacheOptions: {
     // duration: "1d",
@@ -186,6 +189,17 @@ function transformRawFiles(files = [], formats = []) {
   return byType;
 }
 
+function getSharpOptionsForFormat(format, options) {
+  if(format === "webp") {
+    return options.sharpWebpOptions;
+  } else if(format === "jpeg") {
+    return options.sharpJpegOptions;
+  } else if(format === "png") {
+    return options.sharpPngOptions;
+  }
+  return {};
+}
+
 // src should be a file path to an image or a buffer
 async function resizeImage(src, options = {}) {
   let sharpImage = sharp(src, Object.assign({
@@ -221,7 +235,8 @@ async function resizeImage(src, options = {}) {
       } else { // not SVG
         let imageFormat = sharpImage.clone();
         if(outputFormat && metadata.format !== outputFormat) {
-          imageFormat.toFormat(outputFormat);
+          let sharpFormatOptions = getSharpOptionsForFormat(outputFormat, options);
+          imageFormat.toFormat(outputFormat, sharpFormatOptions);
         }
 
         if(stat.width < metadata.width || (options.svgAllowUpscale && metadata.format === "svg")) {
