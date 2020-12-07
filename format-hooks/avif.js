@@ -19,9 +19,7 @@ module.exports = async function createAvif(sharpInstance) {
   const input = inputInfo.data;
   const info = inputInfo.info;
 
-  // console.log(
-  //   "Encoding avif image. If this is slow, consid caching images in git with ./persistimages.sh"
-  // );
+  // console.log( "eleventy-img: Careful! AVIF support is considered experimental and “crashy”." );
 
   // Initialize the WebAssembly Module
   return new Promise((resolve) => {
