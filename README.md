@@ -28,6 +28,8 @@ Core goals:
 
 ## Installation
 
+Available via [npm](https://www.npmjs.com/package/@11ty/eleventy-img).
+
 ```
 npm install @11ty/eleventy-img
 ```
