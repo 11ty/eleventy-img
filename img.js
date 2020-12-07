@@ -10,6 +10,8 @@ const imageSize = require("image-size");
 const sharp = require("sharp");
 const debug = require("debug")("EleventyImg");
 
+const avifHook = require("./format-hooks/avif");
+
 const CacheAsset = require("@11ty/eleventy-cache-assets");
 
 const globalOptions = {
@@ -26,6 +28,10 @@ const globalOptions = {
   sharpWebpOptions: {}, // options passed to the Sharp webp output method
   sharpPngOptions: {}, // options passed to the Sharp png output method
   sharpJpegOptions: {}, // options passed to the Sharp jpeg output method
+  extensions: {},
+  formatHooks: {
+    avif: avifHook
+  },
   cacheDuration: "1d", // deprecated, use cacheOptions.duration
   cacheOptions: {
     // duration: "1d",
@@ -47,6 +53,7 @@ const MIME_TYPES = {
   "webp": "image/webp",
   "png": "image/png",
   "svg": "image/svg+xml",
+  "avif": "image/avif",
 };
 
 function getFormatsArray(formats) {
@@ -99,7 +106,8 @@ function getFilename(src, width, format, options = {}) {
 }
 
 function getStats(src, format, urlPath, width, height, includeWidthInFilename, options = {}) {
-  let outputFilename = getFilename(src, includeWidthInFilename ? width : false, format, options);
+  let outputExtension = options.extensions[format] || format;
+  let outputFilename = getFilename(src, includeWidthInFilename ? width : false, outputExtension, options);
   let url = path.join(urlPath, outputFilename);
 
   return {
@@ -113,6 +121,12 @@ function getStats(src, format, urlPath, width, height, includeWidthInFilename, o
     srcset: `${url} ${width}w`,
     // size // only after processing
   };
+}
+
+function getFilesize(path) {
+  // reading from the local file system
+  let fsStats = fs.statSync(path);
+  return fsStats.size;
 }
 
 // metadata so far: width, height, format
@@ -138,9 +152,8 @@ function getFullStats(src, metadata, opts) {
         if(metadata.size) {
           svgStats.size = metadata.size;
         } else {
-          // reading from the local file system
-          let fsStats = fs.statSync(src);
-          svgStats.size = fsStats.size;
+          // reading from the local file system as fallback
+          svgStats.size = getFilesize(src);
         }
         results.push(svgStats);
 
@@ -237,12 +250,7 @@ async function resizeImage(src, options = {}) {
           }).then(() => stat));
         }
       } else { // not SVG
-        let imageFormat = sharpImage.clone();
-        if(outputFormat && metadata.format !== outputFormat) {
-          let sharpFormatOptions = getSharpOptionsForFormat(outputFormat, options);
-          imageFormat.toFormat(outputFormat, sharpFormatOptions);
-        }
-
+        let sharpInstance = sharpImage.clone();
         if(stat.width < metadata.width || (options.svgAllowUpscale && metadata.format === "svg")) {
           let resizeOptions = {
             width: stat.width
@@ -250,14 +258,27 @@ async function resizeImage(src, options = {}) {
           if(metadata.format !== "svg" || !options.svgAllowUpscale) {
             resizeOptions.withoutEnlargement = true;
           }
-          imageFormat.resize(resizeOptions);
+          sharpInstance.resize(resizeOptions);
         }
 
-        outputFilePromises.push(imageFormat.toFile(stat.outputPath).then(data => {
-          stat.size = data.size;
-          return stat;
-        }));
+        if(options.formatHooks && options.formatHooks[outputFormat]) {
+          // custom format hook
+          let hookResult = await options.formatHooks[outputFormat](sharpInstance);
+          outputFilePromises.push(fs.writeFile(stat.outputPath, hookResult).then(data => {
+            stat.size = hookResult.length;
+            return stat;
+          }));
+        } else {
+          if(outputFormat && metadata.format !== outputFormat) {
+            let sharpFormatOptions = getSharpOptionsForFormat(outputFormat, options);
+            sharpInstance.toFormat(outputFormat, sharpFormatOptions);
+          }
 
+          outputFilePromises.push(sharpInstance.toFile(stat.outputPath).then(data => {
+            stat.size = data.size;
+            return stat;
+          }));
+        }
       }
       debug( "Wrote %o", stat.outputPath );
     }
@@ -284,7 +305,7 @@ async function image(src, opts) {
 
   if(typeof src === "string" && isFullUrl(src)) {
     // fetch remote image
-    let buffer = await await CacheAsset(src, Object.assign({
+    let buffer = await CacheAsset(src, Object.assign({
       duration: opts.cacheDuration,
       type: "buffer"
     }, opts.cacheOptions));
