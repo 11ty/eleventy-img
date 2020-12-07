@@ -208,9 +208,9 @@ test("Use custom function to define file names", async (t) => {
     widths: [600, 1280],
     formats: ["jpeg"],
     outputDir: "./test/img/",
-    filenameFormat: function (id, src, width, format, options) {
-      const ext = path.extname(src)
-      const name = path.basename(src, ext)
+    filenameFormat: function (id, src, width, format) { // and options
+      const ext = path.extname(src);
+      const name = path.basename(src, ext);
 
       if (width) {
         return `${name}-${id}-${width}.${format}`;
@@ -222,14 +222,14 @@ test("Use custom function to define file names", async (t) => {
 
   t.is(stats.jpeg.length, 2);
   t.is(stats.jpeg[0].outputPath, "test/img/bio-2017-97854483-600.jpeg");
-  t.is(stats.jpeg[0].url, "/img/bio-2017-97854483-600.jpeg")
+  t.is(stats.jpeg[0].url, "/img/bio-2017-97854483-600.jpeg");
   t.is(stats.jpeg[0].srcset, "/img/bio-2017-97854483-600.jpeg 600w");
   t.is(stats.jpeg[0].width, 600);
   t.is(stats.jpeg[1].outputPath, "test/img/bio-2017-97854483.jpeg");
   t.is(stats.jpeg[1].url, "/img/bio-2017-97854483.jpeg");
   t.is(stats.jpeg[1].srcset, "/img/bio-2017-97854483.jpeg 1280w");
   t.is(stats.jpeg[1].width, 1280);
-})
+});
 
 test("Unavatar test", t => {
   let stats = eleventyImage.statsByDimensionsSync("https://unavatar.now.sh/twitter/zachleat?fallback=false", 400, 400, {

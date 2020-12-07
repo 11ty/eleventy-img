@@ -41,7 +41,7 @@ const globalOptions = {
     // removeUrlQueryParams: false,
     // fetchOptions: {},
   },
-  filenameFormat: function (id, src, width, format, options) {
+  filenameFormat: function (id, src, width, format) { // and options
     if (width) {
       return `${id}-${width}.${format}`;
     }
@@ -92,7 +92,7 @@ function getValidWidths(originalWidth, widths = [], allowUpscale = false) {
 
 function getFilename(src, width, format, options = {}) {
   let id = shorthash(src);
-  if (typeof options.filenameFormat === 'function') {
+  if (typeof options.filenameFormat === "function") {
     let filename = options.filenameFormat(id, src, width, format, options);
     // if options.filenameFormat returns falsy, use fallback filename
     if(filename) {
@@ -161,7 +161,6 @@ function getFullStats(src, metadata, opts) {
         continue;
       }
     } else { // not SVG
-      let hasAtLeastOneValidMaxWidth = false;
       let widths = getValidWidths(metadata.width, options.widths, metadata.format === "svg" && options.svgAllowUpscale);
       for(let width of widths) {
         let height;
@@ -247,10 +246,8 @@ async function resizeImage(src, options = {}) {
       if(options.formatHooks && options.formatHooks[outputFormat]) {
         let hookResult = await options.formatHooks[outputFormat].call(stat, sharpInstance);
         if(hookResult) {
-          outputFilePromises.push(fs.writeFile(stat.outputPath, hookResult).then(data => {
-            stat.size = hookResult.length;
-            return stat;
-          }));
+          stat.size = hookResult.length;
+          outputFilePromises.push(fs.writeFile(stat.outputPath, hookResult).then(() => stat));
         }
       } else { // not a format hook
         if(outputFormat && metadata.format !== outputFormat) {
