@@ -11,6 +11,7 @@ const sharp = require("sharp");
 const debug = require("debug")("EleventyImg");
 
 const avifHook = require("./format-hooks/avif");
+const svgHook = require("./format-hooks/svg");
 
 const CacheAsset = require("@11ty/eleventy-cache-assets");
 
@@ -30,7 +31,8 @@ const globalOptions = {
   sharpJpegOptions: {}, // options passed to the Sharp jpeg output method
   extensions: {},
   formatHooks: {
-    avif: avifHook
+    avif: avifHook,
+    svg: svgHook,
   },
   cacheDuration: "1d", // deprecated, use cacheOptions.duration
   cacheOptions: {
@@ -119,14 +121,9 @@ function getStats(src, format, urlPath, width, height, includeWidthInFilename, o
     url: url,
     sourceType: MIME_TYPES[format],
     srcset: `${url} ${width}w`,
+    // Not available in stats* functions below
     // size // only after processing
   };
-}
-
-function getFilesize(path) {
-  // reading from the local file system
-  let fsStats = fs.statSync(path);
-  return fsStats.size;
 }
 
 // metadata so far: width, height, format
@@ -148,12 +145,9 @@ function getFullStats(src, metadata, opts) {
       if((metadata.format || options.overrideInputFormat) === "svg") {
         let svgStats = getStats(src, "svg", options.urlPath, metadata.width, metadata.height, false, options);
         // metadata.size is only available with Buffer input (remote urls)
-        // Warning this is unfair for comparison because its uncompressed (no GZIP, etc)
         if(metadata.size) {
+          // Note this is unfair for comparison with raster formats because its uncompressed (no GZIP, etc)
           svgStats.size = metadata.size;
-        } else {
-          // reading from the local file system as fallback
-          svgStats.size = getFilesize(src);
         }
         results.push(svgStats);
 
@@ -239,46 +233,35 @@ async function resizeImage(src, options = {}) {
   let fullStats = getFullStats(src, metadata, options);
   for(let outputFormat in fullStats) {
     for(let stat of fullStats[outputFormat]) {
-      if(outputFormat === "svg") {
-        let sharpInput = sharpImage.options.input;
-        let svgBuffer = sharpInput.buffer;
-        if(!svgBuffer) { // local file system
-          outputFilePromises.push(fs.copyFile(sharpInput.file, stat.outputPath).then(() => stat));
-        } else {
-          outputFilePromises.push(fs.writeFile(stat.outputPath, svgBuffer.toString("utf-8"), {
-            encoding: "utf8"
-          }).then(() => stat));
+      let sharpInstance = sharpImage.clone();
+      if(stat.width < metadata.width || (options.svgAllowUpscale && metadata.format === "svg")) {
+        let resizeOptions = {
+          width: stat.width
+        };
+        if(metadata.format !== "svg" || !options.svgAllowUpscale) {
+          resizeOptions.withoutEnlargement = true;
         }
-      } else { // not SVG
-        let sharpInstance = sharpImage.clone();
-        if(stat.width < metadata.width || (options.svgAllowUpscale && metadata.format === "svg")) {
-          let resizeOptions = {
-            width: stat.width
-          };
-          if(metadata.format !== "svg" || !options.svgAllowUpscale) {
-            resizeOptions.withoutEnlargement = true;
-          }
-          sharpInstance.resize(resizeOptions);
-        }
+        sharpInstance.resize(resizeOptions);
+      }
 
-        if(options.formatHooks && options.formatHooks[outputFormat]) {
-          // custom format hook
-          let hookResult = await options.formatHooks[outputFormat](sharpInstance);
+      if(options.formatHooks && options.formatHooks[outputFormat]) {
+        let hookResult = await options.formatHooks[outputFormat].call(stat, sharpInstance);
+        if(hookResult) {
           outputFilePromises.push(fs.writeFile(stat.outputPath, hookResult).then(data => {
             stat.size = hookResult.length;
             return stat;
           }));
-        } else {
-          if(outputFormat && metadata.format !== outputFormat) {
-            let sharpFormatOptions = getSharpOptionsForFormat(outputFormat, options);
-            sharpInstance.toFormat(outputFormat, sharpFormatOptions);
-          }
-
-          outputFilePromises.push(sharpInstance.toFile(stat.outputPath).then(data => {
-            stat.size = data.size;
-            return stat;
-          }));
         }
+      } else { // not a format hook
+        if(outputFormat && metadata.format !== outputFormat) {
+          let sharpFormatOptions = getSharpOptionsForFormat(outputFormat, options);
+          sharpInstance.toFormat(outputFormat, sharpFormatOptions);
+        }
+
+        outputFilePromises.push(sharpInstance.toFile(stat.outputPath).then(data => {
+          stat.size = data.size;
+          return stat;
+        }));
       }
       debug( "Wrote %o", stat.outputPath );
     }

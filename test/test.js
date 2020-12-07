@@ -291,6 +291,7 @@ test("svgShortCircuit", async t => {
   });
 
   t.is(stats.svg.length, 1);
+  t.truthy(stats.svg[0].size);
   t.is(stats.png.length, 0);
   t.is(stats.webp.length, 0);
 });

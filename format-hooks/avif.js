@@ -9,6 +9,10 @@ defaultOptions.minQuantizerAlpha = 33;
 defaultOptions.maxQuantizerAlpha = 63;
 
 module.exports = async function createAvif(sharpInstance) {
+  if(!process.env.ELEVENTY_EXPERIMENTAL) {
+    console.log( `eleventy-img: Skipping ${this.outputPath}. AVIF support is experimental/unreliable and requires the ELEVENTY_EXPERIMENTAL environment variable.` );
+    return;
+  }
 
   const inputInfo = await sharpInstance
     .raw()
@@ -19,7 +23,6 @@ module.exports = async function createAvif(sharpInstance) {
   const input = inputInfo.data;
   const info = inputInfo.info;
 
-  // console.log( "eleventy-img: Careful! AVIF support is considered experimental and “crashy”." );
 
   // Initialize the WebAssembly Module
   return new Promise((resolve) => {
