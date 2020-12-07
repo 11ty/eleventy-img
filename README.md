@@ -59,10 +59,10 @@ Defaults values are shown:
   // widths: [200, null] // output 200px and original width
 
   // Output image formats
-  formats: ["webp", "jpeg"],
-  // also: "png"
-  // also: "svg" (SVG output requires SVG input)
-  // "svg" requires eleventy-img v0.4.0+
+  formats: ["webp", "jpeg"], // also supports: "png"
+
+  // eleventy-img v0.4.0+
+  // also supports: "svg" (SVG output requires SVG input)
 
   // Image directory for img element's src attribute (<img src="/img/MY_IMAGE.jpeg">)
   urlPath: "/img/",
