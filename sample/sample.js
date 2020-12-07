@@ -32,9 +32,18 @@ const eleventyImage = require("../");
   });
   console.log( leaves );
 
+  // AVIF requires ELEVENTY_EXPERIMENTAL
   let mexicoFlag = await eleventyImage("../test/Flag_of_Mexico.svg", {
-    formats: ["svg", "webp", "png"],
-    widths: [1300, null],
+    formats: ["svg", "avif"],
+    widths: [600, null],
   });
   console.log( mexicoFlag );
+
+  // AVIF requires ELEVENTY_EXPERIMENTAL
+  // let results = await eleventyImage("../test/bio-2017.jpg", {
+  //   formats: ["avif", "jpeg"],
+  //   widths: [400, 1280],
+  // });
+
+  // console.log( results );
 })();
