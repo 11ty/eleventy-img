@@ -84,7 +84,11 @@ function getValidWidths(originalWidth, widths = [], allowUpscale = false) {
 function getFilename(src, width, format, options = {}) {
   let id = shorthash(src);
   if (typeof options.filenameFormat === 'function') {
-    return options.filenameFormat(id, src, width, format, options);
+    let filename = options.filenameFormat(id, src, width, format, options);
+    // if options.filenameFormat returns falsy, use fallback filename
+    if(filename) {
+      return filename;
+    }
   }
 
   if (width) {
