@@ -1,6 +1,11 @@
 # eleventy-img
 
-Low level utility to perform build-time image transformations.
+Low level utility to perform build-time image caching, resizing, and format conversion of vector and raster images.
+
+Core goals:
+
+1. You maintain full control of your HTML—this plugin does not generate any markup. Use with `<picture>` or `<img>` or CSS `background-image`, or others! Works great to add `width` and `height` to your images!
+2. Does not require or rely on file extensions (like `.png` or `.jpg`) in URLs or local files, which may be missing or may be inaccurate.
 
 ## Features
 
