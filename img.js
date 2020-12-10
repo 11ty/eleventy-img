@@ -6,7 +6,7 @@ const { URL } = require("url");
 
 const shorthash = require("short-hash");
 const {default: PQueue} = require("p-queue");
-const imageSize = require("image-size");
+const getImageSize = require("image-size");
 const sharp = require("sharp");
 const debug = require("debug")("EleventyImg");
 
@@ -14,6 +14,14 @@ const avifHook = require("./format-hooks/avif");
 const svgHook = require("./format-hooks/svg");
 
 const CacheAsset = require("@11ty/eleventy-cache-assets");
+
+const filenameFormat = function(id, src, width, format) { // and options
+  if (width) {
+    return `${id}-${width}.${format}`;
+  }
+
+  return `${id}.${format}`;
+}
 
 const globalOptions = {
   src: null,
@@ -41,13 +49,7 @@ const globalOptions = {
     // removeUrlQueryParams: false,
     // fetchOptions: {},
   },
-  filenameFormat: function (id, src, width, format) { // and options
-    if (width) {
-      return `${id}-${width}.${format}`;
-    }
-
-    return `${id}.${format}`;
-  },
+  filenameFormat,
 };
 
 const MIME_TYPES = {
@@ -81,12 +83,18 @@ function getFormatsArray(formats) {
 }
 
 function getValidWidths(originalWidth, widths = [], allowUpscale = false) {
+  // replace any falsy values with the original width
   let valid = widths.map(width => width ? width : originalWidth);
+
+  // filter out large widths if upscaling is disabled
   let filtered = valid.filter(width => allowUpscale || width <= originalWidth);
+
   // if the only valid width was larger than the original (and no upscaling), then use the original width
   if(valid.length > 0 && filtered.length === 0) {
     filtered.push(originalWidth);
   }
+
+  // sort ascending
   return filtered.sort((a, b) => a - b);
 }
 
@@ -100,16 +108,12 @@ function getFilename(src, width, format, options = {}) {
     }
   }
 
-  if (width) {
-    return `${id}-${width}.${format}`;
-  }
-
-  return `${id}.${format}`;
+  return filenameFormat(id, src, width, format, options);
 }
 
-function getStats(src, format, urlPath, width, height, includeWidthInFilename, options = {}) {
+function getStats(src, format, urlPath, width, height, options = {}) {
   let outputExtension = options.extensions[format] || format;
-  let outputFilename = getFilename(src, includeWidthInFilename ? width : false, outputExtension, options);
+  let outputFilename = getFilename(src, width, outputExtension, options);
   let url = path.join(urlPath, outputFilename);
 
   return {
@@ -127,6 +131,7 @@ function getStats(src, format, urlPath, width, height, includeWidthInFilename, o
 }
 
 // metadata so far: width, height, format
+// src is used to calculate the output file names
 function getFullStats(src, metadata, opts) {
   let options = Object.assign({}, globalOptions, opts);
 
@@ -143,7 +148,7 @@ function getFullStats(src, metadata, opts) {
 
     if(outputFormat === "svg") {
       if((metadata.format || options.overrideInputFormat) === "svg") {
-        let svgStats = getStats(src, "svg", options.urlPath, metadata.width, metadata.height, false, options);
+        let svgStats = getStats(src, "svg", options.urlPath, metadata.width, metadata.height, options);
         // metadata.size is only available with Buffer input (remote urls)
         if(metadata.size) {
           // Note this is unfair for comparison with raster formats because its uncompressed (no GZIP, etc)
@@ -162,16 +167,14 @@ function getFullStats(src, metadata, opts) {
       }
     } else { // not SVG
       let widths = getValidWidths(metadata.width, options.widths, metadata.format === "svg" && options.svgAllowUpscale);
+      let index = 0;
       for(let width of widths) {
-        let height;
-        if(width === metadata.width) {
-          height = metadata.height;
-        } else {
-          height = Math.floor(width * metadata.height / metadata.width);
-        }
+        // Warning: if this is a guess via statsByDimensionsSync and that guess is wrong
+        // The aspect ratio will be wrong and any height/widths returned will be wrong!
+        let height = Math.floor(width * metadata.height / metadata.width);
 
-        let includeWidthInFilename = widths.length > 1 && width !== metadata.width;
-        results.push(getStats(src, outputFormat, options.urlPath, width, height, includeWidthInFilename, options));
+        results.push(getStats(src, outputFormat, options.urlPath, width, height, options));
+        index++;
       }
     }
   }
@@ -333,12 +336,12 @@ Object.defineProperty(module.exports, "concurrency", {
  * the correct location yet.
  */
 function statsSync(src, opts) {
-  let dimensions = imageSize(src);
+  let dimensions = getImageSize(src);
   return getFullStats(src, dimensions, opts);
 }
 
 function statsByDimensionsSync(src, width, height, opts) {
-  let dimensions = { width, height };
+  let dimensions = { width, height, guess: true };
   return getFullStats(src, dimensions, opts);
 }
 

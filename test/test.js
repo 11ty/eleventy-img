@@ -133,7 +133,7 @@ test("Try to use a width larger than original", async t => {
     outputDir: "./test/img/"
   });
   t.is(stats.jpeg.length, 1);
-  t.is(stats.jpeg[0].outputPath, "test/img/97854483.jpeg");
+  t.is(stats.jpeg[0].outputPath, "test/img/97854483-1280.jpeg");
   t.is(stats.jpeg[0].width, 1280);
 });
 
@@ -144,7 +144,7 @@ test("Try to use a width larger than original (two sizes)", async t => {
     outputDir: "./test/img/"
   });
   t.is(stats.jpeg.length, 1);
-  t.is(stats.jpeg[0].outputPath, "test/img/97854483.jpeg");
+  t.is(stats.jpeg[0].outputPath, "test/img/97854483-1280.jpeg");
   t.is(stats.jpeg[0].width, 1280);
 });
 
@@ -155,7 +155,7 @@ test("Try to use a width larger than original (with a null in there)", async t =
     outputDir: "./test/img/"
   });
   t.is(stats.jpeg.length, 1);
-  t.is(stats.jpeg[0].outputPath, "test/img/97854483.jpeg");
+  t.is(stats.jpeg[0].outputPath, "test/img/97854483-1280.jpeg");
   t.is(stats.jpeg[0].width, 1280);
 });
 
@@ -166,7 +166,7 @@ test("Just falsy width", async t => {
     outputDir: "./test/img/"
   });
   t.is(stats.jpeg.length, 1);
-  t.is(stats.jpeg[0].outputPath, "test/img/97854483.jpeg");
+  t.is(stats.jpeg[0].outputPath, "test/img/97854483-1280.jpeg");
   t.is(stats.jpeg[0].width, 1280);
 });
 
@@ -177,7 +177,8 @@ test("Use exact same width as original", async t => {
     outputDir: "./test/img/"
   });
   t.is(stats.jpeg.length, 1);
-  t.is(stats.jpeg[0].outputPath, "test/img/97854483.jpeg"); // no width in filename
+  // breaking change in 0.5: always use width in filename
+  t.is(stats.jpeg[0].outputPath, "test/img/97854483-1280.jpeg");
   t.is(stats.jpeg[0].width, 1280);
 });
 
@@ -188,7 +189,7 @@ test("Try to use a width larger than original (statsSync)", t => {
   });
 
   t.is(stats.jpeg.length, 1);
-  t.is(stats.jpeg[0].url, "/img/97854483.jpeg");
+  t.is(stats.jpeg[0].url, "/img/97854483-1280.jpeg");
   t.is(stats.jpeg[0].width, 1280);
 });
 
@@ -199,7 +200,7 @@ test("Use exact same width as original (statsSync)", t => {
   });
 
   t.is(stats.jpeg.length, 1);
-  t.is(stats.jpeg[0].url, "/img/97854483.jpeg"); // no width in filename
+  t.is(stats.jpeg[0].url, "/img/97854483-1280.jpeg"); // no width in filename
   t.is(stats.jpeg[0].width, 1280);
 });
 
@@ -225,9 +226,9 @@ test("Use custom function to define file names", async (t) => {
   t.is(stats.jpeg[0].url, "/img/bio-2017-97854483-600.jpeg");
   t.is(stats.jpeg[0].srcset, "/img/bio-2017-97854483-600.jpeg 600w");
   t.is(stats.jpeg[0].width, 600);
-  t.is(stats.jpeg[1].outputPath, "test/img/bio-2017-97854483.jpeg");
-  t.is(stats.jpeg[1].url, "/img/bio-2017-97854483.jpeg");
-  t.is(stats.jpeg[1].srcset, "/img/bio-2017-97854483.jpeg 1280w");
+  t.is(stats.jpeg[1].outputPath, "test/img/bio-2017-97854483-1280.jpeg");
+  t.is(stats.jpeg[1].url, "/img/bio-2017-97854483-1280.jpeg");
+  t.is(stats.jpeg[1].srcset, "/img/bio-2017-97854483-1280.jpeg 1280w");
   t.is(stats.jpeg[1].width, 1280);
 });
 
@@ -263,7 +264,7 @@ test("Upscale an SVG, Issue #32", async t => {
   });
 
   t.is(stats.png.length, 1);
-  t.not(stats.png[0].filename.substr(-9), "-3000.png"); // should not include width in filename
+  t.is(stats.png[0].filename.substr(-9), "-3000.png"); // should include width in filename
   t.is(stats.png[0].width, 3000);
   t.is(stats.png[0].height, 4179);
 });
@@ -317,4 +318,26 @@ test("getWidths allow upscaling", t => {
   t.deepEqual(eleventyImage.getWidths(300, [null, 600], true), [300, 600]);
   t.deepEqual(eleventyImage.getWidths(300, [150, null], true), [150,300]);
   t.deepEqual(eleventyImage.getWidths(300, [null, 150], true), [150,300]);
+});
+
+test("Sync by dimension with jpeg input (wrong dimensions, supplied are smaller than real)", t => {
+  let stats = eleventyImage.statsByDimensionsSync("./test/bio-2017.jpg", 164, 164, {
+    widths: [164, 328],
+    formats: ["jpeg"],
+  });
+
+  // this won’t upscale so it will miss out on higher resolution images but there won’t be any broken image URLs in the output
+  t.is(stats.jpeg.length, 1);
+  t.is(stats.jpeg[0].outputPath, "img/97854483-164.jpeg");
+});
+
+test("Sync by dimension with jpeg input (wrong dimensions, supplied are larger than real)", t => {
+  let stats = eleventyImage.statsByDimensionsSync("./test/bio-2017.jpg", 1500, 1500, {
+    widths: [164, 328],
+    formats: ["jpeg"],
+  });
+
+  t.is(stats.jpeg.length, 2);
+  t.is(stats.jpeg[0].outputPath, "img/97854483-164.jpeg");
+  t.is(stats.jpeg[1].outputPath, "img/97854483-328.jpeg");
 });
