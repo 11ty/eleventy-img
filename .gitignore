@@ -3,3 +3,4 @@ test/img/
 sample/img/
 sample/.cache/
 package-lock.json
+.cache

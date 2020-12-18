@@ -15,7 +15,7 @@ const svgHook = require("./format-hooks/svg");
 
 const CacheAsset = require("@11ty/eleventy-cache-assets");
 
-const filenameFormat = function(id, src, width, format) { // and options
+function filenameFormat(id, src, width, format) { // and options
   if (width) {
     return `${id}-${width}.${format}`;
   }
@@ -167,14 +167,12 @@ function getFullStats(src, metadata, opts) {
       }
     } else { // not SVG
       let widths = getValidWidths(metadata.width, options.widths, metadata.format === "svg" && options.svgAllowUpscale);
-      let index = 0;
       for(let width of widths) {
         // Warning: if this is a guess via statsByDimensionsSync and that guess is wrong
         // The aspect ratio will be wrong and any height/widths returned will be wrong!
         let height = Math.floor(width * metadata.height / metadata.width);
 
         results.push(getStats(src, outputFormat, options.urlPath, width, height, options));
-        index++;
       }
     }
   }
