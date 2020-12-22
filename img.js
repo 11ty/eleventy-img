@@ -10,7 +10,6 @@ const getImageSize = require("image-size");
 const sharp = require("sharp");
 const debug = require("debug")("EleventyImg");
 
-const avifHook = require("./format-hooks/avif");
 const svgHook = require("./format-hooks/svg");
 
 const CacheAsset = require("@11ty/eleventy-cache-assets");
@@ -26,7 +25,7 @@ function filenameFormat(id, src, width, format) { // and options
 const globalOptions = {
   src: null,
   widths: [null],
-  formats: ["webp", "jpeg"], // "png", "svg"
+  formats: ["webp", "jpeg"], // "png", "svg", "avif"
   concurrency: 10,
   urlPath: "/img/",
   outputDir: "img/",
@@ -37,9 +36,9 @@ const globalOptions = {
   sharpWebpOptions: {}, // options passed to the Sharp webp output method
   sharpPngOptions: {}, // options passed to the Sharp png output method
   sharpJpegOptions: {}, // options passed to the Sharp jpeg output method
+  sharpAvifOptions: {}, // options passed to the Sharp avif output method
   extensions: {},
   formatHooks: {
-    avif: avifHook,
     svg: svgHook,
   },
   cacheDuration: "1d", // deprecated, use cacheOptions.duration
@@ -209,6 +208,8 @@ function getSharpOptionsForFormat(format, options) {
     return options.sharpJpegOptions;
   } else if(format === "png") {
     return options.sharpPngOptions;
+  } else if(format === "avif") {
+    return options.sharpAvifOptions;
   }
   return {};
 }

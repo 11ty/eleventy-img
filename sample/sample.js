@@ -5,21 +5,21 @@ const eleventyImage = require("../");
   // await eleventyImage(`https://twitter.com/zachleat/profile_image?size=bigger`)
   // await eleventyImage(`https://twitter.com/eleven_ty/profile_image?size=bigger`, {
   //  widths: [48]
-  // })
+  // });
 
   // await eleventyImage(`https://unavatar.now.sh/twitter/zachleat?fallback=false`, {
   //   widths: [75, null],
   //   formats: [null]
-  // })
+  // });
 
-  await eleventyImage(`https://unavatar.now.sh/twitter/zachleat?fallback=false`, {
-    widths: [null],
-    formats: ["svg"],
-  })
+  // await eleventyImage(`https://unavatar.now.sh/twitter/zachleat?fallback=false`, {
+  //   widths: [null],
+  //   formats: ["svg"],
+  // });
 
   // upscale svg issue #32
   console.log( await eleventyImage(`https://www.netlify.com/v3/img/components/leaves.svg`, {
-    formats: ["png"],
+    formats: ["png", "avif"],
     widths: [2000],
     svgShortCircuit: true,
   }));
@@ -32,14 +32,12 @@ const eleventyImage = require("../");
   });
   console.log( leaves );
 
-  // AVIF requires ELEVENTY_EXPERIMENTAL
   let mexicoFlag = await eleventyImage("../test/Flag_of_Mexico.svg", {
     formats: ["svg", "avif"],
     widths: [600, null],
   });
   console.log( mexicoFlag );
 
-  // AVIF requires ELEVENTY_EXPERIMENTAL
   // let results = await eleventyImage("../test/bio-2017.jpg", {
   //   formats: ["avif", "jpeg"],
   //   widths: [400, 1280],
