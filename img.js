@@ -254,8 +254,9 @@ async function resizeImage(src, options = {}) {
           outputFilePromises.push(fs.writeFile(stat.outputPath, hookResult).then(() => stat));
         }
       } else { // not a format hook
-        if(outputFormat && metadata.format !== outputFormat) {
-          let sharpFormatOptions = getSharpOptionsForFormat(outputFormat, options);
+        let sharpFormatOptions = getSharpOptionsForFormat(outputFormat, options);
+        let hasCustomOptions = Object.keys(sharpFormatOptions).length > 0;
+        if(hasCustomOptions || outputFormat && metadata.format !== outputFormat) {
           sharpInstance.toFormat(outputFormat, sharpFormatOptions);
         }
 
