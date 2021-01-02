@@ -341,3 +341,60 @@ test("Sync by dimension with jpeg input (wrong dimensions, supplied are larger t
   t.is(stats.jpeg[0].outputPath, "img/97854483-164.jpeg");
   t.is(stats.jpeg[1].outputPath, "img/97854483-328.jpeg");
 });
+
+test("Keep a cache, reuse with same file names and options", async t => {
+  let promise1 = eleventyImage("./test/bio-2017.jpg", { dryRun: true });
+  let promise2 = eleventyImage("./test/bio-2017.jpg", { dryRun: true });
+  t.is(promise1, promise2);
+
+  let stats1 = await promise1;
+  let stats2 = await promise2;
+  t.deepEqual(stats1, stats2);
+});
+
+test("Keep a cache, reuse with same remote url and options", async t => {
+  let promise1 = eleventyImage("https://www.zachleat.com/img/avatar-2017-big.png", { dryRun: true });
+  let promise2 = eleventyImage("https://www.zachleat.com/img/avatar-2017-big.png", { dryRun: true });
+  t.is(promise1, promise2);
+
+  let stats1 = await promise1;
+  let stats2 = await promise2;
+  t.deepEqual(stats1, stats2);
+});
+
+test("Keep a cache, don’t reuse with same file names and different options", async t => {
+  let promise1 = eleventyImage("./test/bio-2017.jpg", {
+    widths: [null],
+    dryRun: true,
+  });
+  let promise2 = eleventyImage("./test/bio-2017.jpg", {
+    widths: [300],
+    dryRun: true,
+  });
+  t.not(promise1, promise2);
+
+  let stats1 = await promise1;
+  let stats2 = await promise2;
+  t.notDeepEqual(stats1, stats2);
+
+  t.is(stats1.jpeg.length, 1);
+  t.is(stats2.jpeg.length, 1);
+});
+
+test.skip("Keep a cache, don’t reuse with if the image changes", async t => {
+  let promise1 = eleventyImage("./test/bio-2017.jpg", {
+    dryRun: true,
+  });
+  // TODO modify image
+  let promise2 = eleventyImage("./test/bio-2017.jpg", {
+    dryRun: true,
+  });
+  t.not(promise1, promise2);
+
+  let stats1 = await promise1;
+  let stats2 = await promise2;
+  t.notDeepEqual(stats1, stats2);
+
+  t.is(stats1.jpeg.length, 1);
+  t.is(stats2.jpeg.length, 1);
+});

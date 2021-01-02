@@ -1,9 +1,6 @@
-// TODO use `srcsethelp` project to improve output (blurry lowsrc?)
-
 const path = require("path");
 const fs = require("fs-extra");
 const { URL } = require("url");
-
 const shorthash = require("short-hash");
 const {default: PQueue} = require("p-queue");
 const getImageSize = require("image-size");
@@ -12,18 +9,10 @@ const debug = require("debug")("EleventyImg");
 
 const svgHook = require("./format-hooks/svg");
 
-const CacheAsset = require("@11ty/eleventy-cache-assets");
-
-function filenameFormat(id, src, width, format) { // and options
-  if (width) {
-    return `${id}-${width}.${format}`;
-  }
-
-  return `${id}.${format}`;
-}
+const {RemoteAssetCache, queue} = require("@11ty/eleventy-cache-assets");
+const FileSizeCache = require("./filesize-cache");
 
 const globalOptions = {
-  src: null,
   widths: [null],
   formats: ["webp", "jpeg"], // "png", "svg", "avif"
   concurrency: 10,
@@ -42,6 +31,7 @@ const globalOptions = {
     svg: svgHook,
   },
   cacheDuration: "1d", // deprecated, use cacheOptions.duration
+  // disk cache for remote assets
   cacheOptions: {
     // duration: "1d",
     // directory: ".cache",
@@ -49,6 +39,8 @@ const globalOptions = {
     // fetchOptions: {},
   },
   filenameFormat,
+  useCache: true, // in-memory cache
+  dryRun: false,
 };
 
 const MIME_TYPES = {
@@ -58,6 +50,25 @@ const MIME_TYPES = {
   "svg": "image/svg+xml",
   "avif": "image/avif",
 };
+
+/* Size Cache */
+let sizeCache = new FileSizeCache();
+
+/* Queue */
+let processingQueue = new PQueue({
+  concurrency: globalOptions.concurrency
+});
+processingQueue.on("active", () => {
+  debug( `Concurrency: ${processingQueue.concurrency}, Size: ${processingQueue.size}, Pending: ${processingQueue.pending}` );
+});
+
+function filenameFormat(id, src, width, format) { // and options
+  if (width) {
+    return `${id}-${width}.${format}`;
+  }
+
+  return `${id}.${format}`;
+}
 
 function getFormatsArray(formats) {
   if(formats && formats.length) {
@@ -247,6 +258,8 @@ async function resizeImage(src, options = {}) {
         sharpInstance.resize(resizeOptions);
       }
 
+      await fs.ensureDir(options.outputDir);
+
       if(options.formatHooks && options.formatHooks[outputFormat]) {
         let hookResult = await options.formatHooks[outputFormat].call(stat, sharpInstance);
         if(hookResult) {
@@ -260,7 +273,7 @@ async function resizeImage(src, options = {}) {
           sharpInstance.toFormat(outputFormat, sharpFormatOptions);
         }
 
-        outputFilePromises.push(sharpInstance.toFile(stat.outputPath).then(data => {
+        outputFilePromises.push(sharpInstance[options.dryRun ? "toBuffer" : "toFile"](stat.outputPath).then(data => {
           stat.size = data.size;
           return stat;
         }));
@@ -282,52 +295,69 @@ function isFullUrl(url) {
   }
 }
 
-/* Combine it all together */
-async function image(src, opts) {
+function queueImage(src, opts) {
+  let options = Object.assign({}, globalOptions, opts);
+
   if(!src) {
     throw new Error("`src` is a required argument to the eleventy-img utility (can be a string file path, string URL, or buffer).");
   }
 
-  if(typeof src === "string" && isFullUrl(src)) {
-    // fetch remote image
-    let buffer = await CacheAsset(src, Object.assign({
-      duration: opts.cacheDuration,
-      type: "buffer"
-    }, opts.cacheOptions));
+  options.__originalSrc = src;
 
-    opts.sourceUrl = src;
-    return resizeImage(buffer, opts);
+  let assetCache;
+  let cacheOptions = Object.assign({
+    duration: options.cacheDuration, // deprecated
+    type: "buffer"
+  }, options.cacheOptions);
+
+  if(typeof src === "string" && isFullUrl(src)) {
+    options.sourceUrl = src;
+
+    assetCache = new RemoteAssetCache(src, cacheOptions.directory, cacheOptions);
+
+    // valid only if asset cached file is still valid
+    options.__validAssetCache = assetCache.isCacheValid(cacheOptions.duration);
+  } else {
+    options.__originalSize = fs.statSync(src).size;
   }
 
-  // use file path to local image
-  return resizeImage(src, opts);
-}
+  let cached = sizeCache.get(options);
+  if(options.useCache && cached) {
+    return cached;
+  }
 
-/* Queue */
-let queue = new PQueue({
-  concurrency: globalOptions.concurrency
-});
-queue.on("active", () => {
-  debug( `Concurrency: ${queue.concurrency}, Size: ${queue.size}, Pending: ${queue.pending}` );
-});
+  let promise = processingQueue.add(async () => {
+    let input;
 
-async function queueImage(src, opts) {
-  let options = Object.assign({}, globalOptions, opts);
+    if(typeof src === "string" && isFullUrl(src)) {
+      // fetch remote image
+      if(queue) {
+        // eleventy-cache-assets 2.0.4 and up
+        input = await queue(src, () => assetCache.fetch());
+      } else {
+        // eleventy-cache-assets 2.0.3 and below
+        input = await assetCache.fetch(cacheOptions);
+      }
+    } else {
+      input = src;
+    }
 
-  // create the output dir
-  await fs.ensureDir(options.outputDir);
+    return resizeImage(input, options);
+  });
 
-  return queue.add(() => image(src, options));
+  sizeCache.add(options, promise);
+
+  return promise;
 }
 
 module.exports = queueImage;
 
 Object.defineProperty(module.exports, "concurrency", {
   get: function() {
-    return queue.concurrency;
+    return processingQueue.concurrency;
   },
   set: function(concurrency) {
-    queue.concurrency = concurrency;
+    processingQueue.concurrency = concurrency;
   },
 });
 
