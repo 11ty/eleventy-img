@@ -45,8 +45,8 @@
     "short-hash": "^1.0.0"
   },
   "devDependencies": {
-    "ava": "^3.14.0",
-    "eslint": "^7.16.0"
+    "ava": "^3.15.0",
+    "eslint": "^7.17.0"
   },
   "ava": {
     "failFast": false,
