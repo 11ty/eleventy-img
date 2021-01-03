@@ -121,10 +121,15 @@ function getFilename(src, width, format, options = {}) {
   return filenameFormat(id, src, width, format, options);
 }
 
+function getUrlPath(dir, filename) {
+  let src = path.join(dir, filename);
+  return src.split(path.sep).join("/");
+}
+
 function getStats(src, format, urlPath, width, height, options = {}) {
   let outputExtension = options.extensions[format] || format;
   let outputFilename = getFilename(src, width, outputExtension, options);
-  let url = path.join(urlPath, outputFilename);
+  let url = getUrlPath(urlPath, outputFilename);
 
   return {
     format: format,
