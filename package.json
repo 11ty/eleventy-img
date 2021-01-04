@@ -8,6 +8,7 @@
   "main": "img.js",
   "scripts": {
     "test": "eslint img.js test/**.js && ava",
+    "test-verbose": "DEBUG=ava:watcher npm test -- --watch --verbose",
     "sample": "cd sample && node sample.js"
   },
   "repository": {
@@ -54,7 +55,9 @@
       "./test/*.js"
     ],
     "ignoredByWatcher": [
-      "./test/img/*"
+      "./img/*",
+      "./test/img/*",
+      "./test/**/generated*"
     ]
   }
 }

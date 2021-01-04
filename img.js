@@ -391,3 +391,4 @@ module.exports.statsSync = statsSync;
 module.exports.statsByDimensionsSync = statsByDimensionsSync;
 module.exports.getFormats = getFormatsArray;
 module.exports.getWidths = getValidWidths;
+module.exports.generateHTML = require("./generate-html.js");
