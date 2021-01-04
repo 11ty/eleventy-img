@@ -1,5 +1,6 @@
 const path = require("path");
 const test = require("ava");
+const fs = require("fs");
 const eleventyImage = require("../");
 
 // Remember that any outputPath tests must use path.join to work on Windows
@@ -383,18 +384,35 @@ test("Keep a cache, don’t reuse with same file names and different options", a
   t.is(stats2.jpeg.length, 1);
 });
 
-test.skip("Keep a cache, don’t reuse with if the image changes", async t => {
-  let promise1 = eleventyImage("./test/bio-2017.jpg", {
-    dryRun: true,
-  });
-  // TODO modify image
-  let promise2 = eleventyImage("./test/bio-2017.jpg", {
-    dryRun: true,
-  });
-  t.not(promise1, promise2);
+test("Keep a cache, don’t reuse with if the image changes, check promise equality", async t => {
+  fs.copyFileSync("./test/modify-bio-original.jpg", "./test/generated-modify-bio.jpg");
 
-  let stats1 = await promise1;
-  let stats2 = await promise2;
+  let promise1 = eleventyImage("./test/generated-modify-bio.jpg", {
+    outputDir: "./test/img/"
+  });
+
+  fs.copyFileSync("./test/modify-bio-grayscale.jpg", "./test/generated-modify-bio.jpg");
+
+  let promise2 = eleventyImage("./test/generated-modify-bio.jpg", {
+    outputDir: "./test/img/"
+  });
+
+  t.not(promise1, promise2);
+});
+
+test("Keep a cache, don’t reuse with if the image changes, check output", async t => {
+  fs.copyFileSync("./test/modify2-bio-original.jpg", "./test/generated-modify2-bio.jpg");
+
+  let stats1 = await eleventyImage("./test/generated-modify2-bio.jpg", {
+    outputDir: "./test/img/"
+  });
+
+  fs.copyFileSync("./test/modify2-bio-grayscale.jpg", "./test/generated-modify2-bio.jpg");
+
+  let stats2 = await eleventyImage("./test/generated-modify2-bio.jpg", {
+    outputDir: "./test/img/"
+  });
+
   t.notDeepEqual(stats1, stats2);
 
   t.is(stats1.jpeg.length, 1);
