@@ -324,6 +324,9 @@ function queueImage(src, opts) {
 
     // valid only if asset cached file is still valid
     options.__validAssetCache = assetCache.isCacheValid(cacheOptions.duration);
+  } else if(Buffer.isBuffer(src)) {
+    options.sourceUrl = src.toString();
+    options.__originalSize = src.length;
   } else {
     options.__originalSize = fs.statSync(src).size;
   }
