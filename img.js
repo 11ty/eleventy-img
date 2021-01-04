@@ -263,7 +263,9 @@ async function resizeImage(src, options = {}) {
         sharpInstance.resize(resizeOptions);
       }
 
-      await fs.ensureDir(options.outputDir);
+      if(!options.dryRun) {
+        await fs.ensureDir(options.outputDir);
+      }
 
       if(options.formatHooks && options.formatHooks[outputFormat]) {
         let hookResult = await options.formatHooks[outputFormat].call(stat, sharpInstance);
@@ -273,8 +275,8 @@ async function resizeImage(src, options = {}) {
         }
       } else { // not a format hook
         let sharpFormatOptions = getSharpOptionsForFormat(outputFormat, options);
-        let hasCustomOptions = Object.keys(sharpFormatOptions).length > 0;
-        if(hasCustomOptions || outputFormat && metadata.format !== outputFormat) {
+        let hasFormatOptions = Object.keys(sharpFormatOptions).length > 0;
+        if(hasFormatOptions || outputFormat && metadata.format !== outputFormat) {
           sharpInstance.toFormat(outputFormat, sharpFormatOptions);
         }
 
