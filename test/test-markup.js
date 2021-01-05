@@ -62,3 +62,14 @@ test("Image markup (throws on invalid object)", async t => {
   t.notThrows(() => generateHTML({ jpeg: [{}] }, { alt: "" }));
 });
 
+test("Image markup (defaults, inlined)", async t => {
+  let results = await eleventyImage("./test/bio-2017.jpg", {
+    dryRun: true
+  });
+
+  t.is(generateHTML(results, {
+    alt: ""
+  }, {
+    whitespaceMode: "inline"
+  }), `<picture><source type="image/webp" srcset="/img/97854483-1280.webp 1280w"><img src="/img/97854483-1280.jpeg" width="1280" height="853" alt=""></picture>`);
+});

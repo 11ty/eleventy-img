@@ -14,7 +14,7 @@ function objectToAttributes(obj) {
   }).join(" ");
 }
 
-function generateHTML(metadata, attributes = {}) {
+function generateHTML(metadata, attributes = {}, options = {}) {
   attributes = Object.assign({}, DEFAULT_ATTRIBUTES, attributes);
 
   if(attributes.alt === undefined) {
@@ -54,14 +54,17 @@ function generateHTML(metadata, attributes = {}) {
     return imgMarkup;
   }
 
-  return `<picture>
-  ${values.filter(imageFormat => {
+  let isInline = options.whitespaceMode === "inline";
+  let markup = ["<picture>"];
+  values.filter(imageFormat => {
     return lowsrcFormat !== imageFormat[0].format || imageFormat.length !== 1;
-  }).map(imageFormat => {
-    return `<source type="${imageFormat[0].sourceType}" srcset="${imageFormat.map(entry => entry.srcset).join(", ")}"${attributes.sizes ? ` sizes="${attributes.sizes}"` : ""}>`;
-  }).join("\n  ")}
-  ${imgMarkup}
-</picture>`;
+  }).forEach(imageFormat => {
+    markup.push(`${!isInline ? "  " : ""}<source type="${imageFormat[0].sourceType}" srcset="${imageFormat.map(entry => entry.srcset).join(", ")}"${attributes.sizes ? ` sizes="${attributes.sizes}"` : ""}>`);
+  });
+  markup.push(`${!isInline ? "  " : ""}${imgMarkup}`);
+  markup.push("</picture>");
+
+  return markup.join(!isInline ? "\n" : "");
 }
 
 module.exports = generateHTML;
