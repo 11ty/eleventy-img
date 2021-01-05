@@ -29,15 +29,21 @@ function generateHTML(metadata, attributes = {}) {
   }
 
   if(entryCount === 0) {
-    throw new Error("No image results found from `eleventy-img` in generateHTML. Expects a results object like the one documented at: https://www.11ty.dev/docs/plugins/image/#usage.");
+    throw new Error("No image results found from `eleventy-img` in generateHTML. Expects a results object similar to: https://www.11ty.dev/docs/plugins/image/#usage.");
   }
 
   let lowsrc;
+  let lowsrcFormat;
   for(let format of LOWSRC_FORMAT_PREFERENCE) {
     if(format in metadata) {
-      lowsrc = metadata[format][0];
+      lowsrcFormat = format;
+      lowsrc = metadata[lowsrcFormat][0];
       break;
     }
+  }
+
+  if(!lowsrc) {
+    throw new Error(`Could not find the lowest <img> source for responsive markup for ${attributes.src}`);
   }
 
   let imgMarkup = `<img src="${lowsrc.url}" width="${lowsrc.width}" height="${lowsrc.height}" ${objectToAttributes(attributes)}>`;
@@ -49,7 +55,9 @@ function generateHTML(metadata, attributes = {}) {
   }
 
   return `<picture>
-  ${values.map(imageFormat => {
+  ${values.filter(imageFormat => {
+    return lowsrcFormat !== imageFormat[0].format || imageFormat.length !== 1;
+  }).map(imageFormat => {
     return `<source type="${imageFormat[0].sourceType}" srcset="${imageFormat.map(entry => entry.srcset).join(", ")}"${attributes.sizes ? ` sizes="${attributes.sizes}"` : ""}>`;
   }).join("\n  ")}
   ${imgMarkup}
