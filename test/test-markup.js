@@ -51,7 +51,8 @@ test("Image markup (one format)", async t => {
   });
 
   t.is(generateHTML(results, {
-    alt: ""
+    alt: "",
+    sizes: "100vw"
   }), `<img src="/img/97854483-1280.jpeg" width="1280" height="853" alt="">`);
 });
 
