@@ -8,7 +8,7 @@ const DEFAULT_ATTRIBUTES = {
 const LOWSRC_FORMAT_PREFERENCE = ["jpeg", "png", "svg", "webp", "avif"];
 
 function objectToAttributes(obj) {
-  return Object.entries(obj).map(entry => {
+  return Object.entries(obj).filter(entry => entry[0] != 'sizes').map(entry => {
     let [key, value] = entry;
     return `${key}="${value}"`;
   }).join(" ");
