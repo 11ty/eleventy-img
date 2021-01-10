@@ -12,7 +12,7 @@ You maintain full control of your HTML—this plugin does not generate any marku
 * Find more [Eleventy plugins](https://www.11ty.dev/docs/plugins/).
 * Please star [Eleventy on GitHub](https://github.com/11ty/eleventy/), follow [@eleven_ty](https://twitter.com/eleven_ty) on Twitter, and support [11ty on Open Collective](https://opencollective.com/11ty)
 
-[![npm Version](https://img.shields.io/npm/v/@11ty/eleventy-img.svg?style=for-the-badge)](https://www.npmjs.com/package/@11ty/eleventy-img) [![GitHub issues](https://img.shields.io/github/issues/11ty/eleventy-img.svg?style=for-the-badge)](https://github.com/11ty/eleventy/issues)
+[![npm Version](https://img.shields.io/npm/v/@11ty/eleventy-img.svg?style=for-the-badge)](https://www.npmjs.com/package/@11ty/eleventy-img) [![GitHub issues](https://img.shields.io/github/issues/11ty/eleventy-img.svg?style=for-the-badge)](https://github.com/11ty/eleventy-img/issues)
 
 ## Installation
 
