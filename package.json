@@ -33,9 +33,6 @@
     "url": "https://github.com/11ty/eleventy-img/issues"
   },
   "homepage": "https://github.com/11ty/eleventy-img#readme",
-  "peerDependencies": {
-    "@11ty/eleventy": ">=0.10.0"
-  },
   "dependencies": {
     "@11ty/eleventy-cache-assets": "^2.0.4",
     "debug": "^4.3.1",
