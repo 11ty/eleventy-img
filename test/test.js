@@ -432,3 +432,10 @@ test("SVG to Buffer input! Issue #40", async t => {
   t.is(output.jpeg[0].width, 1569);
   t.is(output.webp[0].width, 1569);
 });
+
+test("Dryrun should include the buffer instance", async t => {
+  let result = await eleventyImage("./test/bio-2017.jpg", { dryRun: true });
+
+  t.truthy(result.jpeg[0].buffer);
+  t.truthy(result.webp[0].buffer);
+});

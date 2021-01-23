@@ -40,7 +40,7 @@ const globalOptions = {
   },
   filenameFormat,
   useCache: true, // in-memory cache
-  dryRun: false,
+  dryRun: false, // Also returns a buffer instance in the return object. Doesn’t write anything to the file system
 };
 
 const MIME_TYPES = {
@@ -280,10 +280,18 @@ async function resizeImage(src, options = {}) {
           sharpInstance.toFormat(outputFormat, sharpFormatOptions);
         }
 
-        outputFilePromises.push(sharpInstance[options.dryRun ? "toBuffer" : "toFile"](stat.outputPath).then(data => {
-          stat.size = data.size;
-          return stat;
-        }));
+        if(options.dryRun) {
+          outputFilePromises.push(sharpInstance.toBuffer({ resolveWithObject: true }).then(({ data, info }) => {
+            stat.buffer = data;
+            stat.size = info.size;
+            return stat;
+          }));
+        } else {
+          outputFilePromises.push(sharpInstance.toFile(stat.outputPath).then(info => {
+            stat.size = info.size;
+            return stat;
+          }));
+        }
       }
       debug( "Wrote %o", stat.outputPath );
     }
