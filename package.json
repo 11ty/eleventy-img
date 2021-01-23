@@ -34,7 +34,7 @@
   },
   "homepage": "https://github.com/11ty/eleventy-img#readme",
   "dependencies": {
-    "@11ty/eleventy-cache-assets": "^2.0.5",
+    "@11ty/eleventy-cache-assets": "^2.1.0",
     "debug": "^4.3.1",
     "fs-extra": "^9.0.1",
     "image-size": "^0.9.3",
