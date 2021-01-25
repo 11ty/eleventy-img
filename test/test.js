@@ -439,3 +439,33 @@ test("Dryrun should include the buffer instance", async t => {
   t.truthy(result.jpeg[0].buffer);
   t.truthy(result.webp[0].buffer);
 });
+
+test("Test with a string width", async t => {
+  let image = await eleventyImage("./test/bio-2017.jpg", {
+    widths: ["340"],
+    formats: [null],
+    dryRun: true,
+  });
+
+  t.deepEqual(image.jpeg[0].width, 340);
+});
+
+test("Test with a string px width", async t => {
+  let image = await eleventyImage("./test/bio-2017.jpg", {
+    widths: ["340px"],
+    formats: [null],
+    dryRun: true,
+  });
+
+  t.deepEqual(image.jpeg[0].width, 340);
+});
+
+test("Test with a string float width", async t => {
+  let image = await eleventyImage("./test/bio-2017.jpg", {
+    widths: ["340.9"],
+    formats: [null],
+    dryRun: true,
+  });
+
+  t.deepEqual(image.jpeg[0].width, 340);
+});

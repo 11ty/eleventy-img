@@ -96,6 +96,9 @@ function getValidWidths(originalWidth, widths = [], allowUpscale = false) {
   // replace any falsy values with the original width
   let valid = widths.map(width => width ? width : originalWidth);
 
+  // Convert strings to numbers, "400" (floats are not allowed in sharp)
+  valid = valid.map(width => parseInt(width, 10));
+
   // filter out large widths if upscaling is disabled
   let filtered = valid.filter(width => allowUpscale || width <= originalWidth);
 
