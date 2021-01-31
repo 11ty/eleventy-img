@@ -1,5 +1,3 @@
-const Image = require("./img");
-
 const DEFAULT_ATTRIBUTES = {
   // loading: "lazy",
   // decoding: "async",
@@ -7,8 +5,8 @@ const DEFAULT_ATTRIBUTES = {
 
 const LOWSRC_FORMAT_PREFERENCE = ["jpeg", "png", "svg", "webp", "avif"];
 
-function objectToAttributes(obj) {
-  return Object.entries(obj).filter(entry => entry[0] != 'sizes').map(entry => {
+function objectToAttributes(obj, filteredAttributes = []) {
+  return Object.entries(obj).filter(entry => filteredAttributes.indexOf(entry[0]) === -1).map(entry => {
     let [key, value] = entry;
     return `${key}="${value}"`;
   }).join(" ");
@@ -22,6 +20,7 @@ function generateHTML(metadata, attributes = {}, options = {}) {
     throw new Error(`Missing \`alt\` on eleventy-img shortcode from: ${attributes.src}`);
   }
 
+  let formats = Object.keys(metadata);
   let values = Object.values(metadata);
   let entryCount = 0;
   for(let imageFormat of values) {
@@ -37,21 +36,33 @@ function generateHTML(metadata, attributes = {}, options = {}) {
   for(let format of LOWSRC_FORMAT_PREFERENCE) {
     if(format in metadata) {
       lowsrcFormat = format;
-      lowsrc = metadata[lowsrcFormat][0];
+      lowsrc = metadata[lowsrcFormat];
       break;
     }
   }
 
-  if(!lowsrc) {
+  if(!lowsrc || !lowsrc.length) {
     throw new Error(`Could not find the lowest <img> source for responsive markup for ${attributes.src}`);
   }
 
-  let imgMarkup = `<img src="${lowsrc.url}" width="${lowsrc.width}" height="${lowsrc.height}" ${objectToAttributes(attributes)}>`;
+  attributes.src = lowsrc[0].url;
+  attributes.width = lowsrc[0].width;
+  attributes.height = lowsrc[0].height;
 
-  // No need for <picture> if only one format and one size is in play
-  // TODO improvement if one format and multiple sizes using <img srcset>
+  let attributesWithoutSizes = objectToAttributes(attributes, ["sizes"]);
+  let imgMarkup = `<img ${attributesWithoutSizes}>`;
+
+  // <img>: one format and one size
   if(entryCount === 1) {
     return imgMarkup;
+  }
+
+  // <img srcset>: one format and multiple sizes
+  if(formats.length === 1) { // implied entryCount > 1
+    let sizesAttr = attributes.sizes ? ` sizes="${attributes.sizes}"` : "";
+    // `sizes` was filtered out in objectToAttributes above
+    let srcsetAttr = ` srcset="${Object.values(lowsrc).map(entry => entry.srcset).join(", ")}"`;
+    return `<img ${attributesWithoutSizes}${srcsetAttr}${sizesAttr}>`;
   }
 
   let isInline = options.whitespaceMode === "inline";

@@ -11,7 +11,7 @@ test("Image markup (defaults)", async t => {
     alt: ""
   }), `<picture>
   <source type="image/webp" srcset="/img/97854483-1280.webp 1280w">
-  <img src="/img/97854483-1280.jpeg" width="1280" height="853" alt="">
+  <img alt="" src="/img/97854483-1280.jpeg" width="1280" height="853">
 </picture>`);
 });
 
@@ -26,7 +26,7 @@ test("Image markup (two widths)", async t => {
   }), `<picture>
   <source type="image/webp" srcset="/img/97854483-200.webp 200w, /img/97854483-400.webp 400w">
   <source type="image/jpeg" srcset="/img/97854483-200.jpeg 200w, /img/97854483-400.jpeg 400w">
-  <img src="/img/97854483-200.jpeg" width="200" height="133" alt="">
+  <img alt="" src="/img/97854483-200.jpeg" width="200" height="133">
 </picture>`);
 });
 
@@ -40,7 +40,7 @@ test("Image markup (two formats)", async t => {
     alt: ""
   }), `<picture>
   <source type="image/avif" srcset="/img/97854483-1280.avif 1280w">
-  <img src="/img/97854483-1280.webp" width="1280" height="853" alt="">
+  <img alt="" src="/img/97854483-1280.webp" width="1280" height="853">
 </picture>`);
 });
 
@@ -53,7 +53,20 @@ test("Image markup (one format)", async t => {
   t.is(generateHTML(results, {
     alt: "",
     sizes: "100vw"
-  }), `<img src="/img/97854483-1280.jpeg" width="1280" height="853" alt="">`);
+  }), `<img alt="" src="/img/97854483-1280.jpeg" width="1280" height="853">`);
+});
+
+test("Image markup (one format, two widths)", async t => {
+  let results = await eleventyImage("./test/bio-2017.jpg", {
+    dryRun: true,
+    formats: [null],
+    widths: [100,200],
+  });
+
+  t.is(generateHTML(results, {
+    alt: "",
+    sizes: "100vw"
+  }), `<img alt="" src="/img/97854483-100.jpeg" width="100" height="66" srcset="/img/97854483-100.jpeg 100w, /img/97854483-200.jpeg 200w" sizes="100vw">`);
 });
 
 test("Image markup (throws on invalid object)", async t => {
@@ -72,5 +85,5 @@ test("Image markup (defaults, inlined)", async t => {
     alt: ""
   }, {
     whitespaceMode: "inline"
-  }), `<picture><source type="image/webp" srcset="/img/97854483-1280.webp 1280w"><img src="/img/97854483-1280.jpeg" width="1280" height="853" alt=""></picture>`);
+  }), `<picture><source type="image/webp" srcset="/img/97854483-1280.webp 1280w"><img alt="" src="/img/97854483-1280.jpeg" width="1280" height="853"></picture>`);
 });
