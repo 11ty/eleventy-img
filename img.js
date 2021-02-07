@@ -344,6 +344,7 @@ function queueImage(src, opts) {
 
   let cached = sizeCache.get(options);
   if(options.useCache && cached) {
+    debug("Found cached, returning %o", cached);
     return cached;
   }
 
