@@ -34,7 +34,7 @@ function generateHTML(metadata, attributes = {}, options = {}) {
   let lowsrc;
   let lowsrcFormat;
   for(let format of LOWSRC_FORMAT_PREFERENCE) {
-    if(format in metadata) {
+    if((format in metadata) && metadata[format].length) {
       lowsrcFormat = format;
       lowsrc = metadata[lowsrcFormat];
       break;

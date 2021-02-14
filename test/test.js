@@ -492,3 +492,12 @@ test("Using `jpg` in formats Issue #64", async t => {
     ]
   });
 });
+
+test("SVG files and dryRun: Issue #72", async t => {
+  let stats = await eleventyImage("./test/Ghostscript_Tiger.svg", {
+    formats: ["svg"],
+    dryRun: true,
+  });
+  t.false(fs.existsSync("./img/8b4d670b-900.svg"));
+  t.truthy(stats.svg[0]);
+});

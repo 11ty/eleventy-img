@@ -80,3 +80,16 @@ test("Image markup (defaults, inlined)", async t => {
   <img alt="" src="/img/97854483-1280.jpeg" width="1280" height="853">
 </picture>`);
 });
+
+test("svgShortCircuit and generateHTML: Issue #48", async t => {
+  let stats = await eleventyImage("./test/Ghostscript_Tiger.svg", {
+    formats: ["webp", "png", "svg"],
+    svgShortCircuit: true,
+    dryRun: true,
+  });
+
+  let html = eleventyImage.generateHTML(stats, {
+    alt: "Tiger",
+  });
+  t.is(html, `<img alt="Tiger" src="/img/8b4d670b-900.svg" width="900" height="900">`);
+});
