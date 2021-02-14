@@ -46,8 +46,8 @@ function generateHTML(metadata, attributes = {}, options = {}) {
   }
 
   attributes.src = lowsrc[0].url;
-  attributes.width = lowsrc[0].width;
-  attributes.height = lowsrc[0].height;
+  attributes.width = lowsrc[lowsrc.length - 1].width;
+  attributes.height = lowsrc[lowsrc.length - 1].height;
 
   let attributesWithoutSizes = objectToAttributes(attributes, ["sizes"]);
   let imgMarkup = `<img ${attributesWithoutSizes}>`;
@@ -65,7 +65,7 @@ function generateHTML(metadata, attributes = {}, options = {}) {
     return `<img ${attributesWithoutSizes}${srcsetAttr}${sizesAttr}>`;
   }
 
-  let isInline = options.whitespaceMode === "inline";
+  let isInline = options.whitespaceMode !== "block";
   let markup = ["<picture>"];
   values.filter(imageFormat => {
     return lowsrcFormat !== imageFormat[0].format || imageFormat.length !== 1;
