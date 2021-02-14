@@ -469,3 +469,26 @@ test("Test with a string float width", async t => {
 
   t.deepEqual(image.jpeg[0].width, 340);
 });
+
+test("Using `jpg` in formats Issue #64", async t => {
+  let stats = await eleventyImage("./test/bio-2017.jpg", {
+    formats: ["jpg"],
+    dryRun: true,
+  });
+  delete stats.jpeg[0].buffer;
+  t.deepEqual(stats, {
+    jpeg: [
+      {
+        filename: '97854483-1280.jpeg',
+        format: 'jpeg',
+        height: 853,
+        outputPath: 'img/97854483-1280.jpeg',
+        size: 276231,
+        sourceType: "image/jpeg",
+        srcset: '/img/97854483-1280.jpeg 1280w',
+        url: '/img/97854483-1280.jpeg',
+        width: 1280,
+      },
+    ]
+  });
+});

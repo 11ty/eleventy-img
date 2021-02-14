@@ -51,6 +51,10 @@ const MIME_TYPES = {
   "avif": "image/avif",
 };
 
+const FORMAT_ALIASES = {
+  "jpg": "jpeg"
+};
+
 /* Size Cache */
 let sizeCache = new FileSizeCache();
 
@@ -75,6 +79,13 @@ function getFormatsArray(formats) {
     if(typeof formats === "string") {
       formats = formats.split(",");
     }
+
+    formats = formats.map(format => {
+      if(FORMAT_ALIASES[format]) {
+        return FORMAT_ALIASES[format];
+      }
+      return format;
+    });
 
     // svg must come first for possible short circuiting
     formats.sort((a, b) => {
