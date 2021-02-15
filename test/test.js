@@ -482,7 +482,7 @@ test("Using `jpg` in formats Issue #64", async t => {
         filename: '97854483-1280.jpeg',
         format: 'jpeg',
         height: 853,
-        outputPath: 'img/97854483-1280.jpeg',
+        outputPath: path.join('img/97854483-1280.jpeg'),
         size: 276231,
         sourceType: "image/jpeg",
         srcset: '/img/97854483-1280.jpeg 1280w',
