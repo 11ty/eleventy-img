@@ -17,7 +17,7 @@ function generateHTML(metadata, attributes = {}, options = {}) {
 
   if(attributes.alt === undefined) {
     // You bet we throw an error on missing alt (alt="" works okay)
-    throw new Error(`Missing \`alt\` on eleventy-img shortcode from: ${attributes.src}`);
+    throw new Error(`Missing \`alt\` attribute on eleventy-img shortcode from: ${attributes.src}`);
   }
 
   let formats = Object.keys(metadata);
@@ -57,9 +57,16 @@ function generateHTML(metadata, attributes = {}, options = {}) {
     return imgMarkup;
   }
 
+  let sizesAttr = attributes.sizes ? ` sizes="${attributes.sizes}"` : "";
+  let missingSizesErrorMessage = `Missing \`sizes\` attribute on eleventy-img shortcode from: ${attributes.src}`;
+
   // <img srcset>: one format and multiple sizes
   if(formats.length === 1) { // implied entryCount > 1
-    let sizesAttr = attributes.sizes ? ` sizes="${attributes.sizes}"` : "";
+    if(entryCount > 1 && !attributes.sizes) {
+      // Per the HTML specification sizes is required when multiple sources are in srcset
+      // The default "100vw" is okay
+      throw new Error(missingSizesErrorMessage);
+    }
     // `sizes` was filtered out in objectToAttributes above
     let srcsetAttr = ` srcset="${Object.values(lowsrc).map(entry => entry.srcset).join(", ")}"`;
     return `<img ${attributesWithoutSizes}${srcsetAttr}${sizesAttr}>`;
@@ -70,7 +77,13 @@ function generateHTML(metadata, attributes = {}, options = {}) {
   values.filter(imageFormat => {
     return lowsrcFormat !== imageFormat[0].format || imageFormat.length !== 1;
   }).forEach(imageFormat => {
-    markup.push(`${!isInline ? "  " : ""}<source type="${imageFormat[0].sourceType}" srcset="${imageFormat.map(entry => entry.srcset).join(", ")}"${attributes.sizes ? ` sizes="${attributes.sizes}"` : ""}>`);
+    if(imageFormat.length > 1 && !attributes.sizes) {
+      // Per the HTML specification sizes is required when multiple sources are in srcset
+      // The default "100vw" is okay
+      throw new Error(missingSizesErrorMessage);
+    }
+
+    markup.push(`${!isInline ? "  " : ""}<source type="${imageFormat[0].sourceType}" srcset="${imageFormat.map(entry => entry.srcset).join(", ")}"${sizesAttr}>`);
   });
   markup.push(`${!isInline ? "  " : ""}${imgMarkup}`);
   markup.push("</picture>");
