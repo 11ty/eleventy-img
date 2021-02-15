@@ -22,10 +22,10 @@ test("Image markup (two widths)", async t => {
     alt: "",
     sizes: "100vw",
   }), [`<picture>`,
-        `<source type="image/webp" srcset="/img/97854483-200.webp 200w, /img/97854483-400.webp 400w" sizes="100vw">`,
-        `<source type="image/jpeg" srcset="/img/97854483-200.jpeg 200w, /img/97854483-400.jpeg 400w" sizes="100vw">`,
-        `<img alt="" src="/img/97854483-200.jpeg" width="400" height="266">`,
-      `</picture>`].join(""));
+    `<source type="image/webp" srcset="/img/97854483-200.webp 200w, /img/97854483-400.webp 400w" sizes="100vw">`,
+    `<source type="image/jpeg" srcset="/img/97854483-200.jpeg 200w, /img/97854483-400.jpeg 400w" sizes="100vw">`,
+    `<img alt="" src="/img/97854483-200.jpeg" width="400" height="266">`,
+    `</picture>`].join(""));
 });
 
 test("Image markup (two widths, no sizes—throws an error)", async t => {
