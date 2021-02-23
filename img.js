@@ -51,6 +51,10 @@ const MIME_TYPES = {
   "avif": "image/avif",
 };
 
+const FORMAT_ALIASES = {
+  "jpg": "jpeg"
+};
+
 /* Size Cache */
 let sizeCache = new FileSizeCache();
 
@@ -75,6 +79,13 @@ function getFormatsArray(formats) {
     if(typeof formats === "string") {
       formats = formats.split(",");
     }
+
+    formats = formats.map(format => {
+      if(FORMAT_ALIASES[format]) {
+        return FORMAT_ALIASES[format];
+      }
+      return format;
+    });
 
     // svg must come first for possible short circuiting
     formats.sort((a, b) => {
@@ -274,7 +285,12 @@ async function resizeImage(src, options = {}) {
         let hookResult = await options.formatHooks[outputFormat].call(stat, sharpInstance);
         if(hookResult) {
           stat.size = hookResult.length;
-          outputFilePromises.push(fs.writeFile(stat.outputPath, hookResult).then(() => stat));
+          if(options.dryRun) {
+            stat.buffer = Buffer.from(hookResult);
+            outputFilePromises.push(Promise.resolve(stat));
+          } else {
+            outputFilePromises.push(fs.writeFile(stat.outputPath, hookResult).then(() => stat));
+          }
         }
       } else { // not a format hook
         let sharpFormatOptions = getSharpOptionsForFormat(outputFormat, options);

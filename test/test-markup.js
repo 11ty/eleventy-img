@@ -9,10 +9,7 @@ test("Image markup (defaults)", async t => {
 
   t.is(generateHTML(results, {
     alt: ""
-  }), `<picture>
-  <source type="image/webp" srcset="/img/97854483-1280.webp 1280w">
-  <img alt="" src="/img/97854483-1280.jpeg" width="1280" height="853">
-</picture>`);
+  }), `<picture><source type="image/webp" srcset="/img/97854483-1280.webp 1280w"><img alt="" src="/img/97854483-1280.jpeg" width="1280" height="853"></picture>`);
 });
 
 test("Image markup (two widths)", async t => {
@@ -22,12 +19,24 @@ test("Image markup (two widths)", async t => {
   });
 
   t.is(generateHTML(results, {
-    alt: ""
-  }), `<picture>
-  <source type="image/webp" srcset="/img/97854483-200.webp 200w, /img/97854483-400.webp 400w">
-  <source type="image/jpeg" srcset="/img/97854483-200.jpeg 200w, /img/97854483-400.jpeg 400w">
-  <img alt="" src="/img/97854483-200.jpeg" width="200" height="133">
-</picture>`);
+    alt: "",
+    sizes: "100vw",
+  }), [`<picture>`,
+    `<source type="image/webp" srcset="/img/97854483-200.webp 200w, /img/97854483-400.webp 400w" sizes="100vw">`,
+    `<source type="image/jpeg" srcset="/img/97854483-200.jpeg 200w, /img/97854483-400.jpeg 400w" sizes="100vw">`,
+    `<img alt="" src="/img/97854483-200.jpeg" width="400" height="266">`,
+    `</picture>`].join(""));
+});
+
+test("Image markup (two widths, no sizes—throws an error)", async t => {
+  let results = await eleventyImage("./test/bio-2017.jpg", {
+    dryRun: true,
+    widths: [200, 400]
+  });
+
+  t.throws(() => generateHTML(results, {
+    alt: "",
+  }));
 });
 
 test("Image markup (two formats)", async t => {
@@ -38,10 +47,7 @@ test("Image markup (two formats)", async t => {
 
   t.is(generateHTML(results, {
     alt: ""
-  }), `<picture>
-  <source type="image/avif" srcset="/img/97854483-1280.avif 1280w">
-  <img alt="" src="/img/97854483-1280.webp" width="1280" height="853">
-</picture>`);
+  }), `<picture><source type="image/avif" srcset="/img/97854483-1280.avif 1280w"><img alt="" src="/img/97854483-1280.webp" width="1280" height="853"></picture>`);
 });
 
 test("Image markup (one format)", async t => {
@@ -66,7 +72,7 @@ test("Image markup (one format, two widths)", async t => {
   t.is(generateHTML(results, {
     alt: "",
     sizes: "100vw"
-  }), `<img alt="" src="/img/97854483-100.jpeg" width="100" height="66" srcset="/img/97854483-100.jpeg 100w, /img/97854483-200.jpeg 200w" sizes="100vw">`);
+  }), `<img alt="" src="/img/97854483-100.jpeg" width="200" height="133" srcset="/img/97854483-100.jpeg 100w, /img/97854483-200.jpeg 200w" sizes="100vw">`);
 });
 
 test("Image markup (throws on invalid object)", async t => {
@@ -84,6 +90,22 @@ test("Image markup (defaults, inlined)", async t => {
   t.is(generateHTML(results, {
     alt: ""
   }, {
-    whitespaceMode: "inline"
-  }), `<picture><source type="image/webp" srcset="/img/97854483-1280.webp 1280w"><img alt="" src="/img/97854483-1280.jpeg" width="1280" height="853"></picture>`);
+    whitespaceMode: "block"
+  }), `<picture>
+  <source type="image/webp" srcset="/img/97854483-1280.webp 1280w">
+  <img alt="" src="/img/97854483-1280.jpeg" width="1280" height="853">
+</picture>`);
+});
+
+test("svgShortCircuit and generateHTML: Issue #48", async t => {
+  let stats = await eleventyImage("./test/Ghostscript_Tiger.svg", {
+    formats: ["webp", "png", "svg"],
+    svgShortCircuit: true,
+    dryRun: true,
+  });
+
+  let html = eleventyImage.generateHTML(stats, {
+    alt: "Tiger",
+  });
+  t.is(html, `<img alt="Tiger" src="/img/8b4d670b-900.svg" width="900" height="900">`);
 });
