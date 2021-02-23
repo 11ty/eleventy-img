@@ -94,7 +94,7 @@ function getFormatsArray(formats) {
 
 function getValidWidths(originalWidth, widths = [], allowUpscale = false) {
   // replace any falsy values with the original width
-  let valid = widths.map(width => width ? width : originalWidth);
+  let valid = widths.map(width => !width || width === 'auto' ? originalWidth : width);
 
   // Convert strings to numbers, "400" (floats are not allowed in sharp)
   valid = valid.map(width => parseInt(width, 10));
@@ -157,11 +157,11 @@ function getFullStats(src, metadata, opts) {
   let outputFormats = getFormatsArray(options.formats);
 
   for(let outputFormat of outputFormats) {
-    if(!outputFormat) {
+    if(!outputFormat || outputFormat === "auto") {
       outputFormat = metadata.format || options.overrideInputFormat;
     }
-    if(!outputFormat) {
-      throw new Error("When using statsSync or statsByDimensionsSync, `formats: [null]` to use the native image format is not supported.");
+    if(!outputFormat || outputFormat === "auto") {
+      throw new Error("When using statsSync or statsByDimensionsSync, `formats: [null | auto]` to use the native image format is not supported.");
     }
 
     if(outputFormat === "svg") {

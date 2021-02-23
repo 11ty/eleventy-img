@@ -113,6 +113,22 @@ test("Sync with null width", t => {
   t.is(stats.jpeg[1].height, 853);
 });
 
+test("Sync with 'auto' width", t => {
+  let stats = eleventyImage.statsSync("./test/bio-2017.jpg", {
+    widths: [300, 'auto']
+  });
+  t.is(stats.webp.length, 2);
+  t.is(stats.webp[0].width, 300);
+  t.is(stats.webp[0].height, 199);
+  t.is(stats.webp[1].width, 1280);
+  t.is(stats.webp[1].height, 853);
+  t.is(stats.jpeg.length, 2);
+  t.is(stats.jpeg[0].width, 300);
+  t.is(stats.jpeg[0].height, 199);
+  t.is(stats.jpeg[1].width, 1280);
+  t.is(stats.jpeg[1].height, 853);
+});
+
 test("Sync by dimension with null width", t => {
   let stats = eleventyImage.statsByDimensionsSync("./test/bio-2017.jpg", 1280, 853, {
     widths: [300, null]
@@ -127,6 +143,33 @@ test("Sync by dimension with null width", t => {
   t.is(stats.jpeg[0].height, 199);
   t.is(stats.jpeg[1].width, 1280);
   t.is(stats.jpeg[1].height, 853);
+});
+
+test("Sync by dimension with 'auto' width", t => {
+  let stats = eleventyImage.statsByDimensionsSync("./test/bio-2017.jpg", 1280, 853, {
+    widths: [300, 'auto']
+  });
+  t.is(stats.webp.length, 2);
+  t.is(stats.webp[0].width, 300);
+  t.is(stats.webp[0].height, 199);
+  t.is(stats.webp[1].width, 1280);
+  t.is(stats.webp[1].height, 853);
+  t.is(stats.jpeg.length, 2);
+  t.is(stats.jpeg[0].width, 300);
+  t.is(stats.jpeg[0].height, 199);
+  t.is(stats.jpeg[1].width, 1280);
+  t.is(stats.jpeg[1].height, 853);
+});
+
+test("Use 'auto' format as original", async t => {
+  let stats = await eleventyImage("./test/bio-2017.jpg", {
+    widths: [null],
+    formats: ['auto'],
+    outputDir: "./test/img/"
+  });
+  t.is(stats.jpeg.length, 1);
+  t.is(stats.jpeg[0].outputPath, path.join("test/img/97854483-1280.jpeg"));
+  t.is(stats.jpeg[0].width, 1280);
 });
 
 test("Try to use a width larger than original", async t => {
@@ -303,24 +346,34 @@ test("svgShortCircuit", async t => {
 
 test("getWidths", t => {
   t.deepEqual(eleventyImage.getWidths(300, [null]), [300]); // want original
+  t.deepEqual(eleventyImage.getWidths(300, ['auto']), [300]); // want original
   t.deepEqual(eleventyImage.getWidths(300, [600]), [300]); // want larger
   t.deepEqual(eleventyImage.getWidths(300, [150]), [150]); // want smaller
 
   t.deepEqual(eleventyImage.getWidths(300, [600, null]), [300]);
   t.deepEqual(eleventyImage.getWidths(300, [null, 600]), [300]);
+  t.deepEqual(eleventyImage.getWidths(300, [600, 'auto']), [300]);
+  t.deepEqual(eleventyImage.getWidths(300, ['auto', 600]), [300]);
   t.deepEqual(eleventyImage.getWidths(300, [150, null]), [150,300]);
   t.deepEqual(eleventyImage.getWidths(300, [null, 150]), [150,300]);
+  t.deepEqual(eleventyImage.getWidths(300, [150, 'auto']), [150,300]);
+  t.deepEqual(eleventyImage.getWidths(300, ['auto', 150]), [150,300]);
 });
 
 test("getWidths allow upscaling", t => {
   t.deepEqual(eleventyImage.getWidths(300, [null], true), [300]); // want original
+  t.deepEqual(eleventyImage.getWidths(300, ['auto'], true), [300]); // want original
   t.deepEqual(eleventyImage.getWidths(300, [600], true), [600]); // want larger
   t.deepEqual(eleventyImage.getWidths(300, [150], true), [150]); // want smaller
 
   t.deepEqual(eleventyImage.getWidths(300, [600, null], true), [300, 600]);
   t.deepEqual(eleventyImage.getWidths(300, [null, 600], true), [300, 600]);
+  t.deepEqual(eleventyImage.getWidths(300, [600, 'auto'], true), [300, 600]);
+  t.deepEqual(eleventyImage.getWidths(300, ['auto', 600], true), [300, 600]);
   t.deepEqual(eleventyImage.getWidths(300, [150, null], true), [150,300]);
   t.deepEqual(eleventyImage.getWidths(300, [null, 150], true), [150,300]);
+  t.deepEqual(eleventyImage.getWidths(300, [150, 'auto'], true), [150,300]);
+  t.deepEqual(eleventyImage.getWidths(300, ['auto', 150], true), [150,300]);
 });
 
 test("Sync by dimension with jpeg input (wrong dimensions, supplied are smaller than real)", t => {
@@ -468,4 +521,15 @@ test("Test with a string float width", async t => {
   });
 
   t.deepEqual(image.jpeg[0].width, 340);
+});
+
+test("Test with 'auto' width", async t => {
+  let image = await eleventyImage("./test/bio-2017.jpg", {
+    widths: ['auto'],
+    formats: [null],
+    dryRun: true,
+  });
+
+  t.deepEqual(image.jpeg[0].width, 1280);
+  t.deepEqual(image.jpeg[0].height, 853);
 });
