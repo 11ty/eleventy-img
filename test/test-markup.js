@@ -50,6 +50,24 @@ test("Image markup (two formats)", async t => {
   }), `<picture><source type="image/avif" srcset="/img/97854483-1280.avif 1280w"><img alt="" src="/img/97854483-1280.webp" width="1280" height="853"></picture>`);
 });
 
+test("Image markup (three formats) with reorder", async t => {
+  let results = await eleventyImage("./test/bio-2017.jpg", {
+    dryRun: true,
+    formats: ["webp","jpeg", "avif"],
+  });
+
+  // print in console `Formats order was changed: from [webp,jpeg,avif] to [avif,webp,jpeg]`;
+  // Need test!!
+
+  t.is(generateHTML(results, {
+    alt: ""
+  }), [`<picture>`,
+    `<source type="image/avif" srcset="/img/97854483-1280.avif 1280w">`,
+    `<source type="image/webp" srcset="/img/97854483-1280.webp 1280w">`,
+    `<img alt="" src="/img/97854483-1280.jpeg" width="1280" height="853">`,
+    `</picture>`].join(""));
+});
+
 test("Image markup (one format)", async t => {
   let results = await eleventyImage("./test/bio-2017.jpg", {
     dryRun: true,
