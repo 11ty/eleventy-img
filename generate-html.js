@@ -12,6 +12,16 @@ function objectToAttributes(obj, filteredAttributes = []) {
   }).join(" ");
 }
 
+function reorderMetadataValues(data) {
+  const reordered = data.slice().sort((a, b) => LOWSRC_FORMAT_PREFERENCE.indexOf(b[0].format) - LOWSRC_FORMAT_PREFERENCE.indexOf(a[0].format));
+  const isChanged = JSON.stringify(data) !== JSON.stringify(reordered);
+  if (isChanged) {
+    const formatsOrder = arr => arr.map(x => x[0].format);
+    console.log(`Formats order was changed: from [${formatsOrder(data)}] to [${formatsOrder(reordered)}]`);
+  }
+  return reordered;
+} 
+
 function generateHTML(metadata, attributes = {}, options = {}) {
   attributes = Object.assign({}, DEFAULT_ATTRIBUTES, attributes);
 
@@ -74,9 +84,10 @@ function generateHTML(metadata, attributes = {}, options = {}) {
 
   let isInline = options.whitespaceMode !== "block";
   let markup = ["<picture>"];
-  values.filter(imageFormat => {
+  let filtered = values.filter(imageFormat => {
     return lowsrcFormat !== imageFormat[0].format || imageFormat.length !== 1;
-  }).forEach(imageFormat => {
+  });
+  reorderMetadataValues(filtered).forEach(imageFormat => {
     if(imageFormat.length > 1 && !attributes.sizes) {
       // Per the HTML specification sizes is required when multiple sources are in srcset
       // The default "100vw" is okay
