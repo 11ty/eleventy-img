@@ -82,6 +82,14 @@ test("Image markup (throws on invalid object)", async t => {
   t.notThrows(() => generateHTML({ jpeg: [{}] }, { alt: "" }));
 });
 
+test("Image markup (throws on missing alt)", async t => {
+  let results = await eleventyImage("./test/bio-2017.jpg", {
+    dryRun: true
+  });
+
+  t.throws(() => generateHTML(results, {}));
+});
+
 test("Image markup (defaults, inlined)", async t => {
   let results = await eleventyImage("./test/bio-2017.jpg", {
     dryRun: true
