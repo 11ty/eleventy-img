@@ -14,10 +14,12 @@ function objectToAttributes(obj, filteredAttributes = []) {
 
 function generateHTML(metadata, attributes = {}, options = {}) {
   attributes = Object.assign({}, DEFAULT_ATTRIBUTES, attributes);
+  // The attributes.src gets overwritten later on. Save it here to make the error outputs less cryptic.
+  const originalSrc = attributes.src;
 
   if(attributes.alt === undefined) {
     // You bet we throw an error on missing alt (alt="" works okay)
-    throw new Error(`Missing \`alt\` attribute on eleventy-img shortcode from: ${attributes.src}`);
+    throw new Error(`Missing \`alt\` attribute on eleventy-img shortcode from: ${originalSrc}`);
   }
 
   let formats = Object.keys(metadata);
@@ -42,7 +44,7 @@ function generateHTML(metadata, attributes = {}, options = {}) {
   }
 
   if(!lowsrc || !lowsrc.length) {
-    throw new Error(`Could not find the lowest <img> source for responsive markup for ${attributes.src}`);
+    throw new Error(`Could not find the lowest <img> source for responsive markup for ${originalSrc}`);
   }
 
   attributes.src = lowsrc[0].url;
@@ -58,7 +60,7 @@ function generateHTML(metadata, attributes = {}, options = {}) {
   }
 
   let sizesAttr = attributes.sizes ? ` sizes="${attributes.sizes}"` : "";
-  let missingSizesErrorMessage = `Missing \`sizes\` attribute on eleventy-img shortcode from: ${attributes.src}`;
+  let missingSizesErrorMessage = `Missing \`sizes\` attribute on eleventy-img shortcode from: ${originalSrc || attributes.src}`;
 
   // <img srcset>: one format and multiple sizes
   if(formats.length === 1) { // implied entryCount > 1
