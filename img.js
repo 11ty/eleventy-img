@@ -212,7 +212,7 @@ function getFullStats(src, metadata, opts) {
 function transformRawFiles(files = [], formats = []) {
   let byType = {};
   for(let format of formats) {
-    if(format) {
+    if(format && format !== 'auto') {
       byType[format] = [];
     }
   }
