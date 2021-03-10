@@ -167,6 +167,8 @@ test("Use 'auto' format as original", async t => {
     formats: ['auto'],
     outputDir: "./test/img/"
   });
+
+  t.is(stats.auto, undefined);
   t.is(stats.jpeg.length, 1);
   t.is(stats.jpeg[0].outputPath, path.join("test/img/97854483-1280.jpeg"));
   t.is(stats.jpeg[0].width, 1280);

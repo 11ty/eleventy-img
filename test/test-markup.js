@@ -90,6 +90,18 @@ test("Image markup (one format)", async t => {
   }), `<img alt="" src="/img/97854483-1280.jpeg" width="1280" height="853">`);
 });
 
+test("Image markup (auto format)", async t => {
+  let results = await eleventyImage("./test/bio-2017.jpg", {
+    dryRun: true,
+    formats: ["auto"],
+  });
+
+  t.is(generateHTML(results, {
+    alt: "",
+    sizes: "100vw"
+  }), `<img alt="" src="/img/97854483-1280.jpeg" width="1280" height="853">`);
+});
+
 test("Image markup (one format, two widths)", async t => {
   let results = await eleventyImage("./test/bio-2017.jpg", {
     dryRun: true,
