@@ -5,14 +5,16 @@ const DEFAULT_ATTRIBUTES = {
 
 const LOWSRC_FORMAT_PREFERENCE = ["jpeg", "png", "svg", "webp", "avif"];
 
-function objectToAttributes(obj, filteredAttributes = []) {
-  return Object.entries(obj).filter(entry => filteredAttributes.indexOf(entry[0]) === -1).map(entry => {
-    let [key, value] = entry;
-    return `${key}="${value}"`;
-  }).join(" ");
-}
-
-function generateHTML(metadata, attributes = {}, options = {}) {
+/*
+  Returns:
+  e.g. { img: { alt: "", src: "" }
+  e.g. { picture: [
+    { source: { srcset: "", sizes: "" } },
+    { source: { srcset: "", sizes: "" } },
+    { img: { alt: "", src: "" } },
+  ]}
+ */
+function generateObject(metadata, attributes = {}, options = {}) {
   attributes = Object.assign({}, DEFAULT_ATTRIBUTES, attributes);
   // The attributes.src gets overwritten later on. Save it here to make the error outputs less cryptic.
   const originalSrc = attributes.src;
@@ -51,15 +53,14 @@ function generateHTML(metadata, attributes = {}, options = {}) {
   attributes.width = lowsrc[lowsrc.length - 1].width;
   attributes.height = lowsrc[lowsrc.length - 1].height;
 
-  let attributesWithoutSizes = objectToAttributes(attributes, ["sizes"]);
-  let imgMarkup = `<img ${attributesWithoutSizes}>`;
+  let attributesWithoutSizes = Object.assign({}, attributes);
+  delete attributesWithoutSizes.sizes;
 
   // <img>: one format and one size
   if(entryCount === 1) {
-    return imgMarkup;
+    return { "img": attributesWithoutSizes };
   }
 
-  let sizesAttr = attributes.sizes ? ` sizes="${attributes.sizes}"` : "";
   let missingSizesErrorMessage = `Missing \`sizes\` attribute on eleventy-img shortcode from: ${originalSrc || attributes.src}`;
 
   // <img srcset>: one format and multiple sizes
@@ -69,13 +70,16 @@ function generateHTML(metadata, attributes = {}, options = {}) {
       // The default "100vw" is okay
       throw new Error(missingSizesErrorMessage);
     }
-    // `sizes` was filtered out in objectToAttributes above
-    let srcsetAttr = ` srcset="${Object.values(lowsrc).map(entry => entry.srcset).join(", ")}"`;
-    return `<img ${attributesWithoutSizes}${srcsetAttr}${sizesAttr}>`;
+
+    let imgAttributes = Object.assign({}, attributesWithoutSizes);
+    let srcsetAttrValue = Object.values(lowsrc).map(entry => entry.srcset).join(", ");
+    imgAttributes.srcset = srcsetAttrValue;
+    imgAttributes.sizes = attributes.sizes;
+
+    return { "img": imgAttributes };
   }
 
-  let isInline = options.whitespaceMode !== "block";
-  let markup = ["<picture>"];
+  let children = [];
   values.filter(imageFormat => {
     return lowsrcFormat !== imageFormat[0].format || imageFormat.length !== 1;
   }).forEach(imageFormat => {
@@ -85,12 +89,56 @@ function generateHTML(metadata, attributes = {}, options = {}) {
       throw new Error(missingSizesErrorMessage);
     }
 
-    markup.push(`${!isInline ? "  " : ""}<source type="${imageFormat[0].sourceType}" srcset="${imageFormat.map(entry => entry.srcset).join(", ")}"${sizesAttr}>`);
-  });
-  markup.push(`${!isInline ? "  " : ""}${imgMarkup}`);
-  markup.push("</picture>");
+    let sourceAttrs = {
+      type: imageFormat[0].sourceType,
+      srcset: imageFormat.map(entry => entry.srcset).join(", "),
+    };
 
+    if(attributes.sizes) {
+      sourceAttrs.sizes = attributes.sizes;
+    }
+
+    children.push({
+      "source": sourceAttrs
+    });
+  });
+
+  children.push({
+    "img": attributesWithoutSizes
+  });
+
+  return {
+    "picture": children
+  };
+}
+
+function mapObjectToHTML(tagName, attrs = {}) {
+  let attrHtml = Object.entries(attrs).map(entry => {
+    let [key, value] = entry;
+    return `${key}="${value}"`;
+  }).join(" ");
+
+  return `<${tagName}${attrHtml ? ` ${attrHtml}` : ""}>`;
+}
+
+function generateHTML(metadata, attributes = {}, options = {}) {
+  let isInline = options.whitespaceMode !== "block";
+  let markup = [];
+  let obj = generateObject(metadata, attributes, options);
+  for(let tag in obj) {
+    if(!Array.isArray(obj[tag])) {
+      markup.push(mapObjectToHTML(tag, obj[tag]));
+    } else {
+      markup.push(`<${tag}>`);
+      for(let child of obj[tag]) {
+        let childTagName = Object.keys(child)[0];
+        markup.push((!isInline ? "  " : "") + mapObjectToHTML(childTagName, child[childTagName]));
+      }
+      markup.push(`</${tag}>`);
+    }
+  }
   return markup.join(!isInline ? "\n" : "");
 }
 
 module.exports = generateHTML;
+module.exports.generateObject = generateObject;

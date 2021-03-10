@@ -212,7 +212,7 @@ function getFullStats(src, metadata, opts) {
 function transformRawFiles(files = [], formats = []) {
   let byType = {};
   for(let format of formats) {
-    if(format) {
+    if(format && format !== 'auto') {
       byType[format] = [];
     }
   }
@@ -419,4 +419,7 @@ module.exports.statsSync = statsSync;
 module.exports.statsByDimensionsSync = statsByDimensionsSync;
 module.exports.getFormats = getFormatsArray;
 module.exports.getWidths = getValidWidths;
-module.exports.generateHTML = require("./generate-html.js");
+
+const generateHTML = require("./generate-html");
+module.exports.generateHTML = generateHTML;
+module.exports.generateObject = generateHTML.generateObject;
