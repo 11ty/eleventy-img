@@ -157,3 +157,37 @@ test("svgShortCircuit and generateHTML: Issue #48", async t => {
   });
   t.is(html, `<img alt="Tiger" src="/img/8b4d670b-900.svg" width="900" height="900">`);
 });
+
+test("Filter out empty format arrays", async t => {
+  let stats = {
+    svg: [],
+    jpeg: [
+      {
+        format: 'jpeg',
+        width: 164,
+        height: 164,
+        filename: '78c26ccd-164.jpeg',
+        outputPath: '_site/v3/img/build/78c26ccd-164.jpeg',
+        url: '/v3/img/build/78c26ccd-164.jpeg',
+        sourceType: 'image/jpeg',
+        srcset: '/v3/img/build/78c26ccd-164.jpeg 164w'
+      },
+      {
+        format: 'jpeg',
+        width: 328,
+        height: 328,
+        filename: '78c26ccd-328.jpeg',
+        outputPath: '_site/v3/img/build/78c26ccd-328.jpeg',
+        url: '/v3/img/build/78c26ccd-328.jpeg',
+        sourceType: 'image/jpeg',
+        srcset: '/v3/img/build/78c26ccd-328.jpeg 328w'
+      }
+    ]
+  };
+
+  let html = eleventyImage.generateHTML(stats, {
+    alt: "Tiger",
+    sizes: "100vw",
+  });
+  t.truthy(!!html);
+});

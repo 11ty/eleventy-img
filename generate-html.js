@@ -81,7 +81,7 @@ function generateObject(metadata, attributes = {}, options = {}) {
 
   let children = [];
   values.filter(imageFormat => {
-    return lowsrcFormat !== imageFormat[0].format || imageFormat.length !== 1;
+    return imageFormat.length > 0 && (lowsrcFormat !== imageFormat[0].format || imageFormat.length !== 1);
   }).forEach(imageFormat => {
     if(imageFormat.length > 1 && !attributes.sizes) {
       // Per the HTML specification sizes is required when multiple sources are in srcset
