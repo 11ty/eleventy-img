@@ -14,16 +14,15 @@ test("Image markup (defaults)", async t => {
 });
 
 test("Image service", async t => {
-  let serviceDomain = "https://zachleat.com";
+  let serviceApiDomain = "https://zachleat.com";
   let siteUrl = "https://heydonworks.com/";
-  let screenshotUrl = `${serviceDomain}/api/screenshot/?url=${encodeURIComponent(siteUrl)}&js=false`;
+  let screenshotUrl = `${serviceApiDomain}/api/screenshot/?url=${encodeURIComponent(siteUrl)}&js=false`;
 
   let options = {
     formats: ["jpeg"],
     widths: [600], // 260-440 in layout
-    sourceUrl: screenshotUrl,
-    urlFormat: function(id, src, width, format) {
-      return `${serviceDomain}/api/image/?url=${encodeURIComponent(screenshotUrl)}&width=${width}&format=${format}`;
+    urlFormat: function({ width, format }) {
+      return `${serviceApiDomain}/api/image/?url=${encodeURIComponent(screenshotUrl)}&width=${width}&format=${format}`;
     }
   };
 

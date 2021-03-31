@@ -147,7 +147,12 @@ function getStats(src, format, urlPath, width, height, options = {}) {
 
   if(options.urlFormat && typeof options.urlFormat === "function") {
     let id = shorthash(src);
-    url = options.urlFormat(id, src, width, outputExtension, options);
+    url = options.urlFormat({
+      id,
+      src,
+      width,
+      format: outputExtension,
+    }, options);
   } else {
     outputFilename = getFilename(src, width, outputExtension, options);
     url = getUrlPath(urlPath, outputFilename);
