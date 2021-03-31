@@ -13,6 +13,27 @@ test("Image markup (defaults)", async t => {
   }), `<picture><source type="image/webp" srcset="/img/97854483-1280.webp 1280w"><img alt="" src="/img/97854483-1280.jpeg" width="1280" height="853"></picture>`);
 });
 
+test("Image service", async t => {
+  let serviceDomain = "https://zachleat.com";
+  let siteUrl = "https://heydonworks.com/";
+  let screenshotUrl = `${serviceDomain}/api/screenshot/?url=${encodeURIComponent(siteUrl)}&js=false`;
+
+  let options = {
+    formats: ["jpeg"],
+    widths: [600], // 260-440 in layout
+    sourceUrl: screenshotUrl,
+    urlFormat: function(id, src, width, format) {
+      return `${serviceDomain}/api/image/?url=${encodeURIComponent(screenshotUrl)}&width=${width}&format=${format}`;
+    }
+  };
+
+  let results = eleventyImage.statsByDimensionsSync(screenshotUrl, 1440, 900, options);
+
+  t.is(generateHTML(results, {
+    alt: "",
+  }), `<img alt="" src="https://zachleat.com/api/image/?url=https%3A%2F%2Fzachleat.com%2Fapi%2Fscreenshot%2F%3Furl%3Dhttps%253A%252F%252Fheydonworks.com%252F%26js%3Dfalse&width=600&format=jpeg" width="600" height="375">`);
+});
+
 test("Image object (defaults)", async t => {
   let results = await eleventyImage("./test/bio-2017.jpg", {
     dryRun: true

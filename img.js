@@ -141,22 +141,35 @@ function getUrlPath(dir, filename) {
 }
 
 function getStats(src, format, urlPath, width, height, options = {}) {
+  let url;
+  let outputFilename;
   let outputExtension = options.extensions[format] || format;
-  let outputFilename = getFilename(src, width, outputExtension, options);
-  let url = getUrlPath(urlPath, outputFilename);
 
-  return {
+  if(options.urlFormat && typeof options.urlFormat === "function") {
+    let id = shorthash(src);
+    url = options.urlFormat(id, src, width, outputExtension, options);
+  } else {
+    outputFilename = getFilename(src, width, outputExtension, options);
+    url = getUrlPath(urlPath, outputFilename);
+  }
+
+  let stats = {
     format: format,
     width: width,
     height: height,
-    filename: outputFilename,
-    outputPath: path.join(options.outputDir, outputFilename),
     url: url,
     sourceType: MIME_TYPES[format],
     srcset: `${url} ${width}w`,
     // Not available in stats* functions below
     // size // only after processing
   };
+
+  if(outputFilename) {
+    stats.filename = outputFilename; // optional
+    stats.outputPath = path.join(options.outputDir, outputFilename); // optional
+  }
+
+  return stats;
 }
 
 // metadata so far: width, height, format
@@ -191,7 +204,7 @@ function getFullStats(src, metadata, opts) {
           continue;
         }
       } else {
-        debug("Skipping: %o asked for SVG output but received raster input.", src);
+        debug("Skipping SVG output for %o: received raster input.", src);
         continue;
       }
     } else { // not SVG
