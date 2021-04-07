@@ -39,7 +39,7 @@
     "fs-extra": "^9.0.1",
     "image-size": "^0.9.3",
     "p-queue": "^6.6.2",
-    "sharp": "^0.27.0",
+    "sharp": "^0.28.1",
     "short-hash": "^1.0.0"
   },
   "devDependencies": {
