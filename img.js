@@ -292,6 +292,7 @@ async function resizeImage(src, options = {}) {
         if(metadata.format !== "svg" || !options.svgAllowUpscale) {
           resizeOptions.withoutEnlargement = true;
         }
+        sharpInstance.rotate();
         sharpInstance.resize(resizeOptions);
       }
 
