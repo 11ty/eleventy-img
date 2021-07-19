@@ -1,4 +1,5 @@
 const path = require("path");
+const { createHash } = require("crypto");
 const fs = require("fs-extra");
 const { URL } = require("url");
 const shorthash = require("short-hash");
@@ -122,8 +123,37 @@ function getValidWidths(originalWidth, widths = [], allowUpscale = false) {
   return filtered.sort((a, b) => a - b);
 }
 
+function getFileHash(src, options) {
+  const hash = createHash("sha1");
+  hash.setEncoding("hex");
+
+  const opts = {
+    sharpOptions: options.sharpOptions,
+    sharpWebpOptions: options.sharpWebpOptions,
+    sharpPngOptions: options.sharpPngOptions,
+    sharpJpegOptions: options.sharpJpegOptions,
+    sharpAvifOptions: options.sharpAvifOptions
+  };
+
+  if(typeof src === "string" && isFullUrl(src)) { // is URL
+    hash.write(src);
+  } else if(Buffer.isBuffer(src)) {               // is Buffer
+    hash.write(src);
+  } else if(fs.existsSync(src)) {                 // is file
+    fs.createReadStream(src).pipe(hash);
+  } else {                                        // is svg text
+    hash.write(src);
+  }
+
+  hash.write(JSON.stringify(opts));
+  hash.end();
+
+  return shorthash(hash.read());
+}
+
 function getFilename(src, width, format, options = {}) {
-  let id = shorthash(src);
+  let id = getFileHash(src, options);
+
   if (typeof options.filenameFormat === "function") {
     let filename = options.filenameFormat(id, src, width, format, options);
     // if options.filenameFormat returns falsy, use fallback filename
@@ -146,7 +176,8 @@ function getStats(src, format, urlPath, width, height, options = {}) {
   let outputExtension = options.extensions[format] || format;
 
   if(options.urlFormat && typeof options.urlFormat === "function") {
-    let id = shorthash(src);
+    let id = getFileHash(src, options);
+
     url = options.urlFormat({
       id,
       src,
@@ -284,6 +315,11 @@ async function resizeImage(src, options = {}) {
   let fullStats = getFullStats(src, metadata, options);
   for(let outputFormat in fullStats) {
     for(let stat of fullStats[outputFormat]) {
+      if(options.useCache && !options.svgShortCircuit && fs.existsSync(stat.outputPath)){
+        outputFilePromises.push(Promise.resolve(stat));
+        continue;
+      }
+
       let sharpInstance = sharpImage.clone();
       if(stat.width < metadata.width || (options.svgAllowUpscale && metadata.format === "svg")) {
         let resizeOptions = {
