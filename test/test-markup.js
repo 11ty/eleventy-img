@@ -10,7 +10,7 @@ test("Image markup (defaults)", async t => {
 
   t.is(generateHTML(results, {
     alt: ""
-  }), `<picture><source type="image/webp" srcset="/img/a705425c-1280.webp 1280w"><img alt="" src="/img/a705425c-1280.jpeg" width="1280" height="853"></picture>`);
+  }), `<picture><source type="image/webp" srcset="/img/e1d4b79f-1280.webp 1280w"><img alt="" src="/img/e1d4b79f-1280.jpeg" width="1280" height="853"></picture>`);
 });
 
 test("Image service", async t => {
@@ -45,13 +45,13 @@ test("Image object (defaults)", async t => {
       {
         "source": {
           type: "image/webp",
-          srcset: "/img/a705425c-1280.webp 1280w",
+          srcset: "/img/e1d4b79f-1280.webp 1280w",
         }
       },
       {
         "img": {
           alt: "",
-          src: "/img/a705425c-1280.jpeg",
+          src: "/img/e1d4b79f-1280.jpeg",
           width: 1280,
           height: 853,
         }
@@ -70,9 +70,9 @@ test("Image markup (two widths)", async t => {
     alt: "",
     sizes: "100vw",
   }), [`<picture>`,
-    `<source type="image/webp" srcset="/img/a705425c-200.webp 200w, /img/a705425c-400.webp 400w" sizes="100vw">`,
-    `<source type="image/jpeg" srcset="/img/a705425c-200.jpeg 200w, /img/a705425c-400.jpeg 400w" sizes="100vw">`,
-    `<img alt="" src="/img/a705425c-200.jpeg" width="400" height="266">`,
+    `<source type="image/webp" srcset="/img/e1d4b79f-200.webp 200w, /img/e1d4b79f-400.webp 400w" sizes="100vw">`,
+    `<source type="image/jpeg" srcset="/img/e1d4b79f-200.jpeg 200w, /img/e1d4b79f-400.jpeg 400w" sizes="100vw">`,
+    `<img alt="" src="/img/e1d4b79f-200.jpeg" width="400" height="266">`,
     `</picture>`].join(""));
 });
 
@@ -95,7 +95,7 @@ test("Image markup (two formats)", async t => {
 
   t.is(generateHTML(results, {
     alt: ""
-  }), `<picture><source type="image/avif" srcset="/img/a705425c-1280.avif 1280w"><img alt="" src="/img/a705425c-1280.webp" width="1280" height="853"></picture>`);
+  }), `<picture><source type="image/avif" srcset="/img/e1d4b79f-1280.avif 1280w"><img alt="" src="/img/e1d4b79f-1280.webp" width="1280" height="853"></picture>`);
 });
 
 test("Image markup (one format)", async t => {
@@ -107,7 +107,7 @@ test("Image markup (one format)", async t => {
   t.is(generateHTML(results, {
     alt: "",
     sizes: "100vw"
-  }), `<img alt="" src="/img/a705425c-1280.jpeg" width="1280" height="853">`);
+  }), `<img alt="" src="/img/e1d4b79f-1280.jpeg" width="1280" height="853">`);
 });
 
 test("Image markup (auto format)", async t => {
@@ -119,7 +119,7 @@ test("Image markup (auto format)", async t => {
   t.is(generateHTML(results, {
     alt: "",
     sizes: "100vw"
-  }), `<img alt="" src="/img/a705425c-1280.jpeg" width="1280" height="853">`);
+  }), `<img alt="" src="/img/e1d4b79f-1280.jpeg" width="1280" height="853">`);
 });
 
 test("Image markup (one format, two widths)", async t => {
@@ -132,7 +132,7 @@ test("Image markup (one format, two widths)", async t => {
   t.is(generateHTML(results, {
     alt: "",
     sizes: "100vw"
-  }), `<img alt="" src="/img/a705425c-100.jpeg" width="200" height="133" srcset="/img/a705425c-100.jpeg 100w, /img/a705425c-200.jpeg 200w" sizes="100vw">`);
+  }), `<img alt="" src="/img/e1d4b79f-100.jpeg" width="200" height="133" srcset="/img/e1d4b79f-100.jpeg 100w, /img/e1d4b79f-200.jpeg 200w" sizes="100vw">`);
 });
 
 test("Image markup (throws on invalid object)", async t => {
@@ -160,8 +160,8 @@ test("Image markup (defaults, inlined)", async t => {
   }, {
     whitespaceMode: "block"
   }), `<picture>
-  <source type="image/webp" srcset="/img/a705425c-1280.webp 1280w">
-  <img alt="" src="/img/a705425c-1280.jpeg" width="1280" height="853">
+  <source type="image/webp" srcset="/img/e1d4b79f-1280.webp 1280w">
+  <img alt="" src="/img/e1d4b79f-1280.jpeg" width="1280" height="853">
 </picture>`);
 });
 
@@ -175,7 +175,7 @@ test("svgShortCircuit and generateHTML: Issue #48", async t => {
   let html = eleventyImage.generateHTML(stats, {
     alt: "Tiger",
   });
-  t.is(html, `<img alt="Tiger" src="/img/a705425c-900.svg" width="900" height="900">`);
+  t.is(html, `<img alt="Tiger" src="/img/fc94394f-900.svg" width="900" height="900">`);
 });
 
 test("Filter out empty format arrays", async t => {

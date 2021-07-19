@@ -2,7 +2,6 @@ const path = require("path");
 const { createHash } = require("crypto");
 const fs = require("fs-extra");
 const { URL } = require("url");
-const shorthash = require("short-hash");
 const {default: PQueue} = require("p-queue");
 const getImageSize = require("image-size");
 const sharp = require("sharp");
@@ -125,7 +124,6 @@ function getValidWidths(originalWidth, widths = [], allowUpscale = false) {
 
 function getFileHash(src, options) {
   const hash = createHash("sha1");
-  hash.setEncoding("hex");
 
   const opts = {
     sharpOptions: options.sharpOptions,
@@ -135,20 +133,16 @@ function getFileHash(src, options) {
     sharpAvifOptions: options.sharpAvifOptions
   };
 
-  if(typeof src === "string" && isFullUrl(src)) { // is URL
-    hash.write(src);
-  } else if(Buffer.isBuffer(src)) {               // is Buffer
-    hash.write(src);
-  } else if(fs.existsSync(src)) {                 // is file
-    fs.createReadStream(src).pipe(hash);
-  } else {                                        // is svg text
-    hash.write(src);
+  if(fs.existsSync(src)) {
+    const fileContent = fs.readFileSync(src);
+    hash.update(fileContent);
+  } else {
+    hash.update(src);
   }
 
-  hash.write(JSON.stringify(opts));
-  hash.end();
+  hash.update(JSON.stringify(opts));
 
-  return shorthash(hash.read());
+  return hash.digest('hex').substring(0, 8);
 }
 
 function getFilename(src, width, format, options = {}) {
