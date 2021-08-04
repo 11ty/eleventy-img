@@ -309,7 +309,12 @@ async function resizeImage(src, options = {}) {
   let fullStats = getFullStats(src, metadata, options);
   for(let outputFormat in fullStats) {
     for(let stat of fullStats[outputFormat]) {
-      if(options.useCache && !options.svgShortCircuit && fs.existsSync(stat.outputPath)){
+      if(options.useCache && fs.existsSync(stat.outputPath)){
+        stat.size = fs.statSync(stat.outputPath).size;
+        if(options.dryRun) {
+          stat.buffer = fs.readFileSync(src);
+        }
+
         outputFilePromises.push(Promise.resolve(stat));
         continue;
       }
