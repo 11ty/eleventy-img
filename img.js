@@ -122,7 +122,10 @@ function getValidWidths(originalWidth, widths = [], allowUpscale = false) {
   return filtered.sort((a, b) => a - b);
 }
 
+let imgHashCache = {};
 function getHash(src, imgOptions={}, length=10) {
+  if(src in imgHashCache) return imgHashCache[src];
+  
   const hash = createHash("sha256");
 
   let opts = Object.assign({
@@ -151,7 +154,9 @@ function getHash(src, imgOptions={}, length=10) {
   }
 
   hash.update(JSON.stringify(opts));
-  return hash.digest("base64url").substring(0, length);;
+  imgHashCache[src] = hash.digest("base64url").substring(0, length);
+
+  return imgHashCache[src];
 }
 
 function getFilename(src, width, format, options = {}) {
