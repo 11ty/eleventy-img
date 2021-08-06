@@ -122,15 +122,25 @@ function getValidWidths(originalWidth, widths = [], allowUpscale = false) {
   return filtered.sort((a, b) => a - b);
 }
 
-function getFileHash(src, options) {
-  const hash = createHash("sha1");
+function getHash(src, imgOptions={}, length=10) {
+  const hash = createHash("sha256");
 
-  const opts = {
-    sharpOptions: options.sharpOptions,
-    sharpWebpOptions: options.sharpWebpOptions,
-    sharpPngOptions: options.sharpPngOptions,
-    sharpJpegOptions: options.sharpJpegOptions,
-    sharpAvifOptions: options.sharpAvifOptions
+  let opts = Object.assign({
+    "userOptions": {},
+    "sharpOptions": {}, 
+    "sharpWebpOptions": {},
+    "sharpPngOptions": {},
+    "sharpJpegOptions": {},
+    "sharpAvifOptions": {},
+  }, imgOptions);
+
+  opts = {
+    userOptions: opts.userOptions,
+    sharpOptions: opts.sharpOptions,
+    sharpWebpOptions: opts.sharpWebpOptions,
+    sharpPngOptions: opts.sharpPngOptions,
+    sharpJpegOptions: opts.sharpJpegOptions,
+    sharpAvifOptions: opts.sharpAvifOptions,
   };
 
   if(fs.existsSync(src)) {
@@ -141,12 +151,11 @@ function getFileHash(src, options) {
   }
 
   hash.update(JSON.stringify(opts));
-
-  return hash.digest('hex').substring(0, 8);
+  return hash.digest("base64url").substring(0, length);;
 }
 
 function getFilename(src, width, format, options = {}) {
-  let id = getFileHash(src, options);
+  let id = getHash(src, options);
 
   if (typeof options.filenameFormat === "function") {
     let filename = options.filenameFormat(id, src, width, format, options);
@@ -170,7 +179,7 @@ function getStats(src, format, urlPath, width, height, options = {}) {
   let outputExtension = options.extensions[format] || format;
 
   if(options.urlFormat && typeof options.urlFormat === "function") {
-    let id = getFileHash(src, options);
+    let id = getHash(src, options);
 
     url = options.urlFormat({
       id,
@@ -472,6 +481,7 @@ module.exports.statsSync = statsSync;
 module.exports.statsByDimensionsSync = statsByDimensionsSync;
 module.exports.getFormats = getFormatsArray;
 module.exports.getWidths = getValidWidths;
+module.exports.getHash = getHash;
 
 const generateHTML = require("./generate-html");
 module.exports.generateHTML = generateHTML;
