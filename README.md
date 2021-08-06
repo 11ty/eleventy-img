@@ -19,7 +19,7 @@ You maintain full control of your HTML—this plugin does not generate any marku
 ## Installation
 
 ```
-npm install @11ty/eleventy-img
+npm install --save-dev @11ty/eleventy-img
 ```
 
 _[The full `eleventy-img` documentation is on 11ty.dev](https://www.11ty.dev/docs/plugins/image/)._
