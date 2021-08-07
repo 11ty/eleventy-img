@@ -136,6 +136,7 @@ function getHash(src, imgOptions={}, length=10) {
     "sharpPngOptions": {},
     "sharpJpegOptions": {},
     "sharpAvifOptions": {},
+    "remoteAssetContent": {}
   }, imgOptions);
 
   opts = {
@@ -145,6 +146,7 @@ function getHash(src, imgOptions={}, length=10) {
     sharpPngOptions: opts.sharpPngOptions,
     sharpJpegOptions: opts.sharpJpegOptions,
     sharpAvifOptions: opts.sharpAvifOptions,
+    remoteAssetContent: opts.remoteAssetContent
   };
 
   if(fs.existsSync(src)) {
@@ -444,6 +446,8 @@ function queueImage(src, opts) {
         // eleventy-cache-assets 2.0.3 and below
         input = await assetCache.fetch(cacheOptions);
       }
+
+      options.remoteAssetContent = input; // Only set for remote assets with URL
     } else {
       input = src;
     }
@@ -474,11 +478,17 @@ Object.defineProperty(module.exports, "concurrency", {
  * the correct location yet.
  */
 function statsSync(src, opts) {
+  if(typeof src === "string" && isFullUrl(src) && !('remoteAssetContent' in opts)) {
+    throw new Error("When using statsSync or statsByDimensionsSync with URLs, opts.remoteAssetContent should be set to the content of the remote asset.");
+  }
   let dimensions = getImageSize(src);
   return getFullStats(src, dimensions, opts);
 }
 
 function statsByDimensionsSync(src, width, height, opts) {
+  if(typeof src === "string" && isFullUrl(src) && !('remoteAssetContent' in opts)) {
+    throw new Error("When using statsSync or statsByDimensionsSync with URLs, opts.remoteAssetContent should be set to the content of the remote asset.");
+  }
   let dimensions = { width, height, guess: true };
   return getFullStats(src, dimensions, opts);
 }
