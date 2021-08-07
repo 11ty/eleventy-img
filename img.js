@@ -3,6 +3,7 @@ const { createHash } = require("crypto");
 const fs = require("fs-extra");
 const { URL } = require("url");
 const {default: PQueue} = require("p-queue");
+const base64url = require("base64url");
 const getImageSize = require("image-size");
 const sharp = require("sharp");
 const debug = require("debug")("EleventyImg");
@@ -154,7 +155,7 @@ function getHash(src, imgOptions={}, length=10) {
   }
 
   hash.update(JSON.stringify(opts));
-  imgHashCache[src] = hash.digest("base64url").substring(0, length);
+  imgHashCache[src] = base64url.encode(hash.digest()).substring(0, length);
 
   return imgHashCache[src];
 }
