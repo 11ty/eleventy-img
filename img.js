@@ -126,7 +126,11 @@ function getValidWidths(originalWidth, widths = [], allowUpscale = false) {
 let imgHashCache = {};
 function getHash(src, imgOptions={}, length=10) {
   if(src in imgHashCache) return imgHashCache[src];
-  
+
+  if(typeof src === "string" && isFullUrl(src) && !("remoteAssetContent" in imgOptions)) {
+    throw new Error("When using getHash with URLs, imgOptions.remoteAssetContent should be set to the content of the remote asset.");
+  }
+
   const hash = createHash("sha256");
 
   let opts = Object.assign({
@@ -478,17 +482,19 @@ Object.defineProperty(module.exports, "concurrency", {
  * the correct location yet.
  */
 function statsSync(src, opts) {
-  if(typeof src === "string" && isFullUrl(src) && !('remoteAssetContent' in opts)) {
-    throw new Error("When using statsSync or statsByDimensionsSync with URLs, opts.remoteAssetContent should be set to the content of the remote asset.");
+  if(typeof src === "string" && isFullUrl(src) && !("remoteAssetContent" in opts)) {
+    throw new Error("When using statsSync or statsByDimensionsSync with URLs, options.remoteAssetContent should be set to the content of the remote asset.");
   }
+
   let dimensions = getImageSize(src);
   return getFullStats(src, dimensions, opts);
 }
 
 function statsByDimensionsSync(src, width, height, opts) {
-  if(typeof src === "string" && isFullUrl(src) && !('remoteAssetContent' in opts)) {
-    throw new Error("When using statsSync or statsByDimensionsSync with URLs, opts.remoteAssetContent should be set to the content of the remote asset.");
+  if(typeof src === "string" && isFullUrl(src) && !("remoteAssetContent" in opts)) {
+    throw new Error("When using statsSync or statsByDimensionsSync with URLs, options.remoteAssetContent should be set to the content of the remote asset.");
   }
+
   let dimensions = { width, height, guess: true };
   return getFullStats(src, dimensions, opts);
 }
