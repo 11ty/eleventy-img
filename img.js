@@ -1,5 +1,6 @@
 const path = require("path");
-const fs = require("fs-extra");
+const fs = require("fs");
+const fsp = fs.promises;
 const { URL } = require("url");
 const shorthash = require("short-hash");
 const {default: PQueue} = require("p-queue");
@@ -296,7 +297,9 @@ async function resizeImage(src, options = {}) {
       }
 
       if(!options.dryRun) {
-        await fs.ensureDir(options.outputDir);
+        await fsp.mkdir(options.outputDir, {
+          recursive: true
+        });
       }
 
       if(options.formatHooks && options.formatHooks[outputFormat]) {
@@ -307,7 +310,7 @@ async function resizeImage(src, options = {}) {
             stat.buffer = Buffer.from(hookResult);
             outputFilePromises.push(Promise.resolve(stat));
           } else {
-            outputFilePromises.push(fs.writeFile(stat.outputPath, hookResult).then(() => stat));
+            outputFilePromises.push(fsp.writeFile(stat.outputPath, hookResult).then(() => stat));
           }
         }
       } else { // not a format hook
