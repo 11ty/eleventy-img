@@ -34,8 +34,8 @@
   },
   "homepage": "https://github.com/11ty/eleventy-img#readme",
   "dependencies": {
-    "@11ty/eleventy-cache-assets": "^2.2.1",
-    "debug": "^4.3.1",
+    "@11ty/eleventy-cache-assets": "^2.3.0",
+    "debug": "^4.3.2",
     "fs-extra": "^9.0.1",
     "image-size": "^0.9.3",
     "p-queue": "^6.6.2",
@@ -44,7 +44,7 @@
   },
   "devDependencies": {
     "ava": "^3.15.0",
-    "eslint": "^7.26.0"
+    "eslint": "^7.32.0"
   },
   "ava": {
     "failFast": false,
