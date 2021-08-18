@@ -1,6 +1,6 @@
 {
   "name": "@11ty/eleventy-img",
-  "version": "0.9.0",
+  "version": "0.10.0",
   "description": "Low level utility to perform build-time image transformations.",
   "publishConfig": {
     "access": "public"
