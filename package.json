@@ -38,7 +38,7 @@
     "debug": "^4.3.2",
     "image-size": "^0.9.3",
     "p-queue": "^6.6.2",
-    "sharp": "^0.28.2",
+    "sharp": "^0.29.0",
     "short-hash": "^1.0.0"
   },
   "devDependencies": {
