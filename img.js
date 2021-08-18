@@ -362,6 +362,7 @@ function queueImage(src, opts) {
   let assetCache;
   let cacheOptions = Object.assign({
     duration: options.cacheDuration, // deprecated
+    dryRun: options.dryRun, // Issue #117: re-use eleventy-img dryRun option value for eleventy-cache-assets dryRun
     type: "buffer"
   }, options.cacheOptions);
 
