@@ -2,7 +2,7 @@
 
 # eleventy-img
 
-Requires Node 10+
+Requires Node 12+
 
 Low level utility to perform build-time image transformations for both vector and raster images. Output multiple sizes, save multiple formats, cache remote images locally. Uses the [sharp](https://sharp.pixelplumbing.com/) image processor.
 
@@ -19,7 +19,7 @@ You maintain full control of your HTML—this plugin does not generate any marku
 ## Installation
 
 ```
-npm install @11ty/eleventy-img
+npm install --save-dev @11ty/eleventy-img
 ```
 
 _[The full `eleventy-img` documentation is on 11ty.dev](https://www.11ty.dev/docs/plugins/image/)._

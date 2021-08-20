@@ -1,7 +1,8 @@
 const path = require("path");
-const { createHash } = require("crypto");
-const fs = require("fs-extra");
+const fs = require("fs");
+const fsp = fs.promises;
 const { URL } = require("url");
+const { createHash } = require("crypto");
 const {default: PQueue} = require("p-queue");
 const base64url = require("base64url");
 const getImageSize = require("image-size");
@@ -352,7 +353,9 @@ async function resizeImage(src, options = {}) {
       }
 
       if(!options.dryRun) {
-        await fs.ensureDir(options.outputDir);
+        await fsp.mkdir(options.outputDir, {
+          recursive: true
+        });
       }
 
       if(options.formatHooks && options.formatHooks[outputFormat]) {
@@ -363,7 +366,7 @@ async function resizeImage(src, options = {}) {
             stat.buffer = Buffer.from(hookResult);
             outputFilePromises.push(Promise.resolve(stat));
           } else {
-            outputFilePromises.push(fs.writeFile(stat.outputPath, hookResult).then(() => stat));
+            outputFilePromises.push(fsp.writeFile(stat.outputPath, hookResult).then(() => stat));
           }
         }
       } else { // not a format hook
@@ -415,6 +418,7 @@ function queueImage(src, opts) {
   let assetCache;
   let cacheOptions = Object.assign({
     duration: options.cacheDuration, // deprecated
+    dryRun: options.dryRun, // Issue #117: re-use eleventy-img dryRun option value for eleventy-cache-assets dryRun
     type: "buffer"
   }, options.cacheOptions);
 
