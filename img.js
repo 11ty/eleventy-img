@@ -2,8 +2,9 @@ const path = require("path");
 const fs = require("fs");
 const fsp = fs.promises;
 const { URL } = require("url");
-const shorthash = require("short-hash");
+const { createHash } = require("crypto");
 const {default: PQueue} = require("p-queue");
+const base64url = require("base64url");
 const getImageSize = require("image-size");
 const sharp = require("sharp");
 const debug = require("debug")("EleventyImg");
@@ -123,8 +124,52 @@ function getValidWidths(originalWidth, widths = [], allowUpscale = false) {
   return filtered.sort((a, b) => a - b);
 }
 
+let imgHashCache = {};
+function getHash(src, imgOptions={}, length=10) {
+  if(src in imgHashCache) return imgHashCache[src];
+
+  if(typeof src === "string" && isFullUrl(src) && !("remoteAssetContent" in imgOptions)) {
+    throw new Error("When using getHash with URLs, imgOptions.remoteAssetContent should be set to the content of the remote asset.");
+  }
+
+  const hash = createHash("sha256");
+
+  let opts = Object.assign({
+    "userOptions": {},
+    "sharpOptions": {}, 
+    "sharpWebpOptions": {},
+    "sharpPngOptions": {},
+    "sharpJpegOptions": {},
+    "sharpAvifOptions": {},
+    "remoteAssetContent": {}
+  }, imgOptions);
+
+  opts = {
+    userOptions: opts.userOptions,
+    sharpOptions: opts.sharpOptions,
+    sharpWebpOptions: opts.sharpWebpOptions,
+    sharpPngOptions: opts.sharpPngOptions,
+    sharpJpegOptions: opts.sharpJpegOptions,
+    sharpAvifOptions: opts.sharpAvifOptions,
+    remoteAssetContent: opts.remoteAssetContent
+  };
+
+  if(fs.existsSync(src)) {
+    const fileContent = fs.readFileSync(src);
+    hash.update(fileContent);
+  } else {
+    hash.update(src);
+  }
+
+  hash.update(JSON.stringify(opts));
+  imgHashCache[src] = base64url.encode(hash.digest()).substring(0, length);
+
+  return imgHashCache[src];
+}
+
 function getFilename(src, width, format, options = {}) {
-  let id = shorthash(src);
+  let id = getHash(src, options);
+
   if (typeof options.filenameFormat === "function") {
     let filename = options.filenameFormat(id, src, width, format, options);
     // if options.filenameFormat returns falsy, use fallback filename
@@ -147,7 +192,8 @@ function getStats(src, format, urlPath, width, height, options = {}) {
   let outputExtension = options.extensions[format] || format;
 
   if(options.urlFormat && typeof options.urlFormat === "function") {
-    let id = shorthash(src);
+    let id = getHash(src, options);
+
     url = options.urlFormat({
       id,
       src,
@@ -285,6 +331,16 @@ async function resizeImage(src, options = {}) {
   let fullStats = getFullStats(src, metadata, options);
   for(let outputFormat in fullStats) {
     for(let stat of fullStats[outputFormat]) {
+      if(options.useCache && fs.existsSync(stat.outputPath)){
+        stat.size = fs.statSync(stat.outputPath).size;
+        if(options.dryRun) {
+          stat.buffer = fs.readFileSync(src);
+        }
+
+        outputFilePromises.push(Promise.resolve(stat));
+        continue;
+      }
+
       let sharpInstance = sharpImage.clone();
       if(stat.width < metadata.width || (options.svgAllowUpscale && metadata.format === "svg")) {
         let resizeOptions = {
@@ -398,6 +454,8 @@ function queueImage(src, opts) {
         // eleventy-cache-assets 2.0.3 and below
         input = await assetCache.fetch(cacheOptions);
       }
+
+      options.remoteAssetContent = input; // Only set for remote assets with URL
     } else {
       input = src;
     }
@@ -428,6 +486,10 @@ Object.defineProperty(module.exports, "concurrency", {
  * the correct location yet.
  */
 function statsSync(src, opts) {
+  if(typeof src === "string" && isFullUrl(src) && !("remoteAssetContent" in opts)) {
+    throw new Error("When using statsSync or statsByDimensionsSync with URLs, options.remoteAssetContent should be set to the content of the remote asset.");
+  }
+
   let dimensions = getImageSize(src);
   let metadata = {
     width:  dimensions.width,
@@ -438,6 +500,10 @@ function statsSync(src, opts) {
 }
 
 function statsByDimensionsSync(src, width, height, opts) {
+  if(typeof src === "string" && isFullUrl(src) && !("remoteAssetContent" in opts)) {
+    throw new Error("When using statsSync or statsByDimensionsSync with URLs, options.remoteAssetContent should be set to the content of the remote asset.");
+  }
+
   let dimensions = { width, height, guess: true };
   return getFullStats(src, dimensions, opts);
 }
@@ -446,6 +512,7 @@ module.exports.statsSync = statsSync;
 module.exports.statsByDimensionsSync = statsByDimensionsSync;
 module.exports.getFormats = getFormatsArray;
 module.exports.getWidths = getValidWidths;
+module.exports.getHash = getHash;
 
 const generateHTML = require("./generate-html");
 module.exports.generateHTML = generateHTML;

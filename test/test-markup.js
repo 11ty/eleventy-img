@@ -10,7 +10,7 @@ test("Image markup (defaults)", async t => {
 
   t.is(generateHTML(results, {
     alt: ""
-  }), `<picture><source type="image/webp" srcset="/img/97854483-1280.webp 1280w"><img alt="" src="/img/97854483-1280.jpeg" width="1280" height="853"></picture>`);
+  }), `<picture><source type="image/webp" srcset="/img/Bok0Qhed6a-1280.webp 1280w"><img alt="" src="/img/Bok0Qhed6a-1280.jpeg" width="1280" height="853"></picture>`);
 });
 
 test("Image service", async t => {
@@ -23,7 +23,8 @@ test("Image service", async t => {
     widths: [600], // 260-440 in layout
     urlFormat: function({ width, format }) {
       return `${serviceApiDomain}/api/image/?url=${encodeURIComponent(screenshotUrl)}&width=${width}&format=${format}`;
-    }
+    },
+    remoteAssetContent: 'remote asset content'
   };
 
   let results = eleventyImage.statsByDimensionsSync(screenshotUrl, 1440, 900, options);
@@ -45,13 +46,13 @@ test("Image object (defaults)", async t => {
       {
         "source": {
           type: "image/webp",
-          srcset: "/img/97854483-1280.webp 1280w",
+          srcset: "/img/Bok0Qhed6a-1280.webp 1280w",
         }
       },
       {
         "img": {
           alt: "",
-          src: "/img/97854483-1280.jpeg",
+          src: "/img/Bok0Qhed6a-1280.jpeg",
           width: 1280,
           height: 853,
         }
@@ -70,9 +71,9 @@ test("Image markup (two widths)", async t => {
     alt: "",
     sizes: "100vw",
   }), [`<picture>`,
-    `<source type="image/webp" srcset="/img/97854483-200.webp 200w, /img/97854483-400.webp 400w" sizes="100vw">`,
-    `<source type="image/jpeg" srcset="/img/97854483-200.jpeg 200w, /img/97854483-400.jpeg 400w" sizes="100vw">`,
-    `<img alt="" src="/img/97854483-200.jpeg" width="400" height="266">`,
+    `<source type="image/webp" srcset="/img/Bok0Qhed6a-200.webp 200w, /img/Bok0Qhed6a-400.webp 400w" sizes="100vw">`,
+    `<source type="image/jpeg" srcset="/img/Bok0Qhed6a-200.jpeg 200w, /img/Bok0Qhed6a-400.jpeg 400w" sizes="100vw">`,
+    `<img alt="" src="/img/Bok0Qhed6a-200.jpeg" width="400" height="266">`,
     `</picture>`].join(""));
 });
 
@@ -95,7 +96,7 @@ test("Image markup (two formats)", async t => {
 
   t.is(generateHTML(results, {
     alt: ""
-  }), `<picture><source type="image/avif" srcset="/img/97854483-1280.avif 1280w"><img alt="" src="/img/97854483-1280.webp" width="1280" height="853"></picture>`);
+  }), `<picture><source type="image/avif" srcset="/img/Bok0Qhed6a-1280.avif 1280w"><img alt="" src="/img/Bok0Qhed6a-1280.webp" width="1280" height="853"></picture>`);
 });
 
 test("Image markup (one format)", async t => {
@@ -107,7 +108,7 @@ test("Image markup (one format)", async t => {
   t.is(generateHTML(results, {
     alt: "",
     sizes: "100vw"
-  }), `<img alt="" src="/img/97854483-1280.jpeg" width="1280" height="853">`);
+  }), `<img alt="" src="/img/Bok0Qhed6a-1280.jpeg" width="1280" height="853">`);
 });
 
 test("Image markup (auto format)", async t => {
@@ -119,7 +120,7 @@ test("Image markup (auto format)", async t => {
   t.is(generateHTML(results, {
     alt: "",
     sizes: "100vw"
-  }), `<img alt="" src="/img/97854483-1280.jpeg" width="1280" height="853">`);
+  }), `<img alt="" src="/img/Bok0Qhed6a-1280.jpeg" width="1280" height="853">`);
 });
 
 test("Image markup (one format, two widths)", async t => {
@@ -132,7 +133,7 @@ test("Image markup (one format, two widths)", async t => {
   t.is(generateHTML(results, {
     alt: "",
     sizes: "100vw"
-  }), `<img alt="" src="/img/97854483-100.jpeg" width="200" height="133" srcset="/img/97854483-100.jpeg 100w, /img/97854483-200.jpeg 200w" sizes="100vw">`);
+  }), `<img alt="" src="/img/Bok0Qhed6a-100.jpeg" width="200" height="133" srcset="/img/Bok0Qhed6a-100.jpeg 100w, /img/Bok0Qhed6a-200.jpeg 200w" sizes="100vw">`);
 });
 
 test("Image markup (throws on invalid object)", async t => {
@@ -160,8 +161,8 @@ test("Image markup (defaults, inlined)", async t => {
   }, {
     whitespaceMode: "block"
   }), `<picture>
-  <source type="image/webp" srcset="/img/97854483-1280.webp 1280w">
-  <img alt="" src="/img/97854483-1280.jpeg" width="1280" height="853">
+  <source type="image/webp" srcset="/img/Bok0Qhed6a-1280.webp 1280w">
+  <img alt="" src="/img/Bok0Qhed6a-1280.jpeg" width="1280" height="853">
 </picture>`);
 });
 
@@ -175,7 +176,7 @@ test("svgShortCircuit and generateHTML: Issue #48", async t => {
   let html = eleventyImage.generateHTML(stats, {
     alt: "Tiger",
   });
-  t.is(html, `<img alt="Tiger" src="/img/8b4d670b-900.svg" width="900" height="900">`);
+  t.is(html, `<img alt="Tiger" src="/img/VBWwBwQG9D-900.svg" width="900" height="900">`);
 });
 
 test("Filter out empty format arrays", async t => {
