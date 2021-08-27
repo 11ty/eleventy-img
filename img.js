@@ -41,6 +41,12 @@ const globalOptions = {
     // fetchOptions: {},
   },
   filenameFormat,
+
+  // urlFormat allows you to return a full URL to an image including the domain.
+  // Useful when you’re using your own hosted image service (probably via .statsSync or .statsByDimensionsSync)
+  // Note: when you use this, metadata will not include .filename or .outputPath
+  urlFormat: null,
+
   useCache: true, // in-memory cache
   dryRun: false, // Also returns a buffer instance in the return object. Doesn’t write anything to the file system
 };
@@ -136,7 +142,7 @@ function getHash(src, imgOptions={}, length=10) {
 
   let opts = Object.assign({
     "userOptions": {},
-    "sharpOptions": {}, 
+    "sharpOptions": {},
     "sharpWebpOptions": {},
     "sharpPngOptions": {},
     "sharpJpegOptions": {},
@@ -158,6 +164,7 @@ function getHash(src, imgOptions={}, length=10) {
     const fileContent = fs.readFileSync(src);
     hash.update(fileContent);
   } else {
+    // probably a remote URL
     hash.update(src);
   }
 
@@ -243,7 +250,7 @@ function getFullStats(src, metadata, opts) {
     if(outputFormat === "svg") {
       if((metadata.format || options.overrideInputFormat) === "svg") {
         let svgStats = getStats(src, "svg", options.urlPath, metadata.width, metadata.height, options);
-        // metadata.size is only available with Buffer input (remote urls)
+        // SVG metadata.size is only available with Buffer input (remote urls)
         if(metadata.size) {
           // Note this is unfair for comparison with raster formats because its uncompressed (no GZIP, etc)
           svgStats.size = metadata.size;
@@ -358,6 +365,7 @@ async function resizeImage(src, options = {}) {
         });
       }
 
+      // format hooks are only used for SVG out of the box
       if(options.formatHooks && options.formatHooks[outputFormat]) {
         let hookResult = await options.formatHooks[outputFormat].call(stat, sharpInstance);
         if(hookResult) {
@@ -484,6 +492,9 @@ Object.defineProperty(module.exports, "concurrency", {
  * in synchronous-only template environments where you need the
  * image URLs synchronously but can’t rely on the files being in
  * the correct location yet.
+ *
+ * `options.dryRun` is still asynchronous but also doesn’t generate
+ * any files.
  */
 function statsSync(src, opts) {
   if(typeof src === "string" && isFullUrl(src) && !("remoteAssetContent" in opts)) {

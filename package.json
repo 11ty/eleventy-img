@@ -39,7 +39,7 @@
     "base64url": "^3.0.1",
     "image-size": "^1.0.0",
     "p-queue": "^6.6.2",
-    "sharp": "^0.29.0",
+    "sharp": "^0.29.0"
   },
   "devDependencies": {
     "ava": "^3.15.0",
