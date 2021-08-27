@@ -429,7 +429,12 @@ Object.defineProperty(module.exports, "concurrency", {
  */
 function statsSync(src, opts) {
   let dimensions = getImageSize(src);
-  return getFullStats(src, dimensions, opts);
+  let metadata = {
+    width:  dimensions.width,
+    height: dimensions.height,
+    format: dimensions.type,
+  };
+  return getFullStats(src, metadata, opts);
 }
 
 function statsByDimensionsSync(src, width, height, opts) {
