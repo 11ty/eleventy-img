@@ -37,6 +37,7 @@ function generateObject(metadata, attributes = {}, options = {}) {
 
   let lowsrc;
   let lowsrcFormat;
+  // TODO handle if intersection between format and LOWSRC_FORMAT_PREFERENCE
   for(let format of LOWSRC_FORMAT_PREFERENCE) {
     if((format in metadata) && metadata[format].length) {
       lowsrcFormat = format;

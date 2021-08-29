@@ -40,7 +40,8 @@ const globalOptions = {
     // removeUrlQueryParams: false,
     // fetchOptions: {},
   },
-  filenameFormat,
+
+  filenameFormat: null,
 
   // urlFormat allows you to return a full URL to an image including the domain.
   // Useful when you’re using your own hosted image service (probably via .statsSync or .statsByDimensionsSync)
@@ -70,7 +71,7 @@ class Image {
     }
 
     this.src = src;
-    this.isRemoteUrl = typeof src === "string" && isFullUrl(src);
+    this.isRemoteUrl = typeof src === "string" && Image.isFullUrl(src);
     this.options = this.getFullOptions(options);
 
     if(this.isRemoteUrl) {
@@ -106,31 +107,23 @@ class Image {
     return opts;
   }
 
-  async getInput() {
-    if(this.isRemoteUrl) {
-      // fetch remote image Buffer
-      if(queue) {
-        // eleventy-cache-assets 2.0.4 and up
-        return queue(this.src, () => this.assetCache.fetch());
-      }
+  static getValidWidths(originalWidth, widths = [], allowUpscale = false) {
+    // replace any falsy values with the original width
+    let valid = widths.map(width => !width || width === 'auto' ? originalWidth : width);
 
-      // eleventy-cache-assets 2.0.3 and below
-      return this.assetCache.fetch(this.cacheOptions);
-    }
-    return this.src;
-  }
+    // Convert strings to numbers, "400" (floats are not allowed in sharp)
+    valid = valid.map(width => parseInt(width, 10));
 
-  getSharpOptionsForFormat(format) {
-    if(format === "webp") {
-      return this.options.sharpWebpOptions;
-    } else if(format === "jpeg") {
-      return this.options.sharpJpegOptions;
-    } else if(format === "png") {
-      return this.options.sharpPngOptions;
-    } else if(format === "avif") {
-      return this.options.sharpAvifOptions;
+    // filter out large widths if upscaling is disabled
+    let filtered = valid.filter(width => allowUpscale || width <= originalWidth);
+
+    // if the only valid width was larger than the original (and no upscaling), then use the original width
+    if(valid.length > 0 && filtered.length === 0) {
+      filtered.push(originalWidth);
     }
-    return {};
+
+    // sort ascending
+    return filtered.sort((a, b) => a - b);
   }
 
   static getFormatsArray(formats) {
@@ -162,6 +155,101 @@ class Image {
     return [];
   }
 
+
+  // TODO does this need a cache? if so it needs to be based on src and imgOptions
+  static getHash(src, imgOptions = {}, length = 10) {
+    const hash = createHash("sha256");
+
+    let opts = Object.assign({
+      "userOptions": {},
+      "sharpOptions": {},
+      "sharpWebpOptions": {},
+      "sharpPngOptions": {},
+      "sharpJpegOptions": {},
+      "sharpAvifOptions": {},
+    }, imgOptions);
+
+    opts = {
+      userOptions: opts.userOptions,
+      sharpOptions: opts.sharpOptions,
+      sharpWebpOptions: opts.sharpWebpOptions,
+      sharpPngOptions: opts.sharpPngOptions,
+      sharpJpegOptions: opts.sharpJpegOptions,
+      sharpAvifOptions: opts.sharpAvifOptions,
+    };
+
+    if(fs.existsSync(src)) {
+      const fileContent = fs.readFileSync(src);
+      hash.update(fileContent);
+    } else {
+      // probably a remote URL
+      hash.update(src);
+    }
+
+    hash.update(JSON.stringify(opts));
+
+    return base64url.encode(hash.digest()).substring(0, length);
+  }
+
+  static isFullUrl(url) {
+    try {
+      new URL(url);
+      return true;
+    } catch(e) {
+      // invalid url OR local path
+      return false;
+    }
+  }
+
+  _transformRawFiles(files = [], formats = []) {
+    let byType = {};
+    for(let format of formats) {
+      if(format && format !== 'auto') {
+        byType[format] = [];
+      }
+    }
+    for(let file of files) {
+      if(!byType[file.format]) {
+        byType[file.format] = [];
+      }
+      byType[file.format].push(file);
+    }
+    for(let type in byType) {
+      // sort by width, ascending (for `srcset`)
+      byType[type].sort((a, b) => {
+        return a.width - b.width;
+      });
+    }
+    return byType;
+  }
+
+  getSharpOptionsForFormat(format) {
+    if(format === "webp") {
+      return this.options.sharpWebpOptions;
+    } else if(format === "jpeg") {
+      return this.options.sharpJpegOptions;
+    } else if(format === "png") {
+      return this.options.sharpPngOptions;
+    } else if(format === "avif") {
+      return this.options.sharpAvifOptions;
+    }
+    return {};
+  }
+
+  async getInput() {
+    if(this.isRemoteUrl) {
+      // fetch remote image Buffer
+      if(queue) {
+        // eleventy-cache-assets 2.0.4 and up
+        return queue(this.src, () => this.assetCache.fetch());
+      }
+
+      // eleventy-cache-assets 2.0.3 and below
+      return this.assetCache.fetch(this.cacheOptions);
+    }
+    return this.src;
+  }
+
   // metadata so far: width, height, format
   // src is used to calculate the output file names
   getFullStats(metadata) {
@@ -178,7 +266,7 @@ class Image {
 
       if(outputFormat === "svg") {
         if((metadata.format || this.options.overrideInputFormat) === "svg") {
-          let svgStats = getStats(this.src, "svg", this.options.urlPath, metadata.width, metadata.height, this.options);
+          let svgStats = ImageStat.getStat(this.src, "svg", this.options.urlPath, metadata.width, metadata.height, this.options);
           // SVG metadata.size is only available with Buffer input (remote urls)
           if(metadata.size) {
             // Note this is unfair for comparison with raster formats because its uncompressed (no GZIP, etc)
@@ -196,18 +284,18 @@ class Image {
           continue;
         }
       } else { // not SVG
-        let widths = getValidWidths(metadata.width, this.options.widths, metadata.format === "svg" && this.options.svgAllowUpscale);
+        let widths = Image.getValidWidths(metadata.width, this.options.widths, metadata.format === "svg" && this.options.svgAllowUpscale);
         for(let width of widths) {
           // Warning: if this is a guess via statsByDimensionsSync and that guess is wrong
           // The aspect ratio will be wrong and any height/widths returned will be wrong!
           let height = Math.floor(width * metadata.height / metadata.width);
 
-          results.push(getStats(this.src, outputFormat, this.options.urlPath, width, height, this.options));
+          results.push(ImageStat.getStat(this.src, outputFormat, this.options.urlPath, width, height, this.options));
         }
       }
     }
 
-    return transformRawFiles(results, outputFormats);
+    return this._transformRawFiles(results, outputFormats);
   }
 
   // src should be a file path to an image or a buffer
@@ -291,7 +379,107 @@ class Image {
       }
     }
 
-    return Promise.all(outputFilePromises).then(files => transformRawFiles(files, Object.keys(fullStats)));
+    return Promise.all(outputFilePromises).then(files => this._transformRawFiles(files, Object.keys(fullStats)));
+  }
+
+  /* `statsSync` doesn’t generate any files, but will tell you where
+  * the asynchronously generated files will end up! This is useful
+  * in synchronous-only template environments where you need the
+  * image URLs synchronously but can’t rely on the files being in
+  * the correct location yet.
+  *
+  * `options.dryRun` is still asynchronous but also doesn’t generate
+  * any files.
+  */
+  static statsSync(src, opts) {
+    if(typeof src === "string" && Image.isFullUrl(src)) {
+      throw new Error("`statsSync` is not supported with full URL sources. Use `statsByDimensionsSync` instead.");
+    }
+
+    let dimensions = getImageSize(src);
+
+    let img = new Image(src, opts);
+    return img.getFullStats({
+      width: dimensions.width,
+      height: dimensions.height,
+      format: dimensions.type,
+    });
+  }
+
+  static statsByDimensionsSync(src, width, height, opts) {
+    let dimensions = {
+      width,
+      height,
+      guess: true
+    };
+
+    let img = new Image(src, opts);
+    return img.getFullStats(dimensions);
+  }
+}
+
+class ImageStat {
+  static filenameFormat(id, src, width, format) { // and options
+    if (width) {
+      return `${id}-${width}.${format}`;
+    }
+
+    return `${id}.${format}`;
+  }
+
+  static getFilename(id, src, width, format, options = {}) {
+    if (typeof options.filenameFormat === "function") {
+      let filename = options.filenameFormat(id, src, width, format, options);
+      // if options.filenameFormat returns falsy, use fallback filename
+      if(filename) {
+        return filename;
+      }
+    }
+
+    return ImageStat.filenameFormat(id, src, width, format, options);
+  }
+
+  static convertFilePathToUrl(dir, filename) {
+    let src = path.join(dir, filename);
+    return src.split(path.sep).join("/");
+  }
+
+  static getStat(src, format, urlPath, width, height, options = {}) {
+    let url;
+    let outputFilename;
+    let outputExtension = options.extensions[format] || format;
+
+    let id = Image.getHash(src, options);
+
+    if(options.urlFormat && typeof options.urlFormat === "function") {
+      url = options.urlFormat({
+        id,
+        src,
+        width,
+        format: outputExtension,
+      }, options);
+    } else {
+      outputFilename = ImageStat.getFilename(id, src, width, outputExtension, options);
+      url = ImageStat.convertFilePathToUrl(urlPath, outputFilename);
+    }
+
+    let stats = {
+      format: format,
+      width: width,
+      height: height,
+      url: url,
+      sourceType: MIME_TYPES[format],
+      srcset: `${url} ${width}w`,
+      // Not available in stats* functions below
+      // size // only after processing
+    };
+
+    if(outputFilename) {
+      stats.filename = outputFilename; // optional
+      stats.outputPath = path.join(options.outputDir, outputFilename); // optional
+    }
+
+    return stats;
   }
 }
 
@@ -305,157 +493,6 @@ let processingQueue = new PQueue({
 processingQueue.on("active", () => {
   debug( `Concurrency: ${processingQueue.concurrency}, Size: ${processingQueue.size}, Pending: ${processingQueue.pending}` );
 });
-
-function filenameFormat(id, src, width, format) { // and options
-  if (width) {
-    return `${id}-${width}.${format}`;
-  }
-
-  return `${id}.${format}`;
-}
-
-
-
-function getValidWidths(originalWidth, widths = [], allowUpscale = false) {
-  // replace any falsy values with the original width
-  let valid = widths.map(width => !width || width === 'auto' ? originalWidth : width);
-
-  // Convert strings to numbers, "400" (floats are not allowed in sharp)
-  valid = valid.map(width => parseInt(width, 10));
-
-  // filter out large widths if upscaling is disabled
-  let filtered = valid.filter(width => allowUpscale || width <= originalWidth);
-
-  // if the only valid width was larger than the original (and no upscaling), then use the original width
-  if(valid.length > 0 && filtered.length === 0) {
-    filtered.push(originalWidth);
-  }
-
-  // sort ascending
-  return filtered.sort((a, b) => a - b);
-}
-
-// TODO does this need a cache? if so it needs to be based on src and imgOptions
-function getHash(src, imgOptions={}, length=10) {
-  const hash = createHash("sha256");
-
-  let opts = Object.assign({
-    "userOptions": {},
-    "sharpOptions": {},
-    "sharpWebpOptions": {},
-    "sharpPngOptions": {},
-    "sharpJpegOptions": {},
-    "sharpAvifOptions": {},
-  }, imgOptions);
-
-  opts = {
-    userOptions: opts.userOptions,
-    sharpOptions: opts.sharpOptions,
-    sharpWebpOptions: opts.sharpWebpOptions,
-    sharpPngOptions: opts.sharpPngOptions,
-    sharpJpegOptions: opts.sharpJpegOptions,
-    sharpAvifOptions: opts.sharpAvifOptions,
-  };
-
-  if(fs.existsSync(src)) {
-    const fileContent = fs.readFileSync(src);
-    hash.update(fileContent);
-  } else {
-    // probably a remote URL
-    hash.update(src);
-  }
-
-  hash.update(JSON.stringify(opts));
-
-  return base64url.encode(hash.digest()).substring(0, length);
-}
-
-function getFilename(id, src, width, format, options = {}) {
-  if (typeof options.filenameFormat === "function") {
-    let filename = options.filenameFormat(id, src, width, format, options);
-    // if options.filenameFormat returns falsy, use fallback filename
-    if(filename) {
-      return filename;
-    }
-  }
-
-  return filenameFormat(id, src, width, format, options);
-}
-
-function getUrlPath(dir, filename) {
-  let src = path.join(dir, filename);
-  return src.split(path.sep).join("/");
-}
-
-function getStats(src, format, urlPath, width, height, options = {}) {
-  let url;
-  let outputFilename;
-  let outputExtension = options.extensions[format] || format;
-
-  let id = getHash(src, options);
-
-  if(options.urlFormat && typeof options.urlFormat === "function") {
-    url = options.urlFormat({
-      id,
-      src,
-      width,
-      format: outputExtension,
-    }, options);
-  } else {
-    outputFilename = getFilename(id, src, width, outputExtension, options);
-    url = getUrlPath(urlPath, outputFilename);
-  }
-
-  let stats = {
-    format: format,
-    width: width,
-    height: height,
-    url: url,
-    sourceType: MIME_TYPES[format],
-    srcset: `${url} ${width}w`,
-    // Not available in stats* functions below
-    // size // only after processing
-  };
-
-  if(outputFilename) {
-    stats.filename = outputFilename; // optional
-    stats.outputPath = path.join(options.outputDir, outputFilename); // optional
-  }
-
-  return stats;
-}
-
-function transformRawFiles(files = [], formats = []) {
-  let byType = {};
-  for(let format of formats) {
-    if(format && format !== 'auto') {
-      byType[format] = [];
-    }
-  }
-  for(let file of files) {
-    if(!byType[file.format]) {
-      byType[file.format] = [];
-    }
-    byType[file.format].push(file);
-  }
-  for(let type in byType) {
-    // sort by width, ascending (for `srcset`)
-    byType[type].sort((a, b) => {
-      return a.width - b.width;
-    });
-  }
-  return byType;
-}
-
-function isFullUrl(url) {
-  try {
-    new URL(url);
-    return true;
-  } catch(e) {
-    // invalid url OR local path
-    return false;
-  }
-}
 
 function queueImage(src, opts) {
   let img = new Image(src, opts);
@@ -475,6 +512,8 @@ function queueImage(src, opts) {
   return promise;
 }
 
+// Exports
+
 module.exports = queueImage;
 
 Object.defineProperty(module.exports, "concurrency", {
@@ -486,42 +525,11 @@ Object.defineProperty(module.exports, "concurrency", {
   },
 });
 
-/* `statsSync` doesn’t generate any files, but will tell you where
- * the asynchronously generated files will end up! This is useful
- * in synchronous-only template environments where you need the
- * image URLs synchronously but can’t rely on the files being in
- * the correct location yet.
- *
- * `options.dryRun` is still asynchronous but also doesn’t generate
- * any files.
- */
-function statsSync(src, opts) {
-  if(typeof src === "string" && isFullUrl(src)) {
-    throw new Error("`statsSync` is not supported with full URL sources. Use `statsByDimensionsSync` instead.");
-  }
-
-  let dimensions = getImageSize(src);
-
-  let img = new Image(src, opts);
-  return img.getFullStats({
-    width: dimensions.width,
-    height: dimensions.height,
-    format: dimensions.type,
-  });
-}
-
-function statsByDimensionsSync(src, width, height, opts) {
-  let dimensions = { width, height, guess: true };
-
-  let img = new Image(src, opts);
-  return img.getFullStats(dimensions);
-}
-
-module.exports.statsSync = statsSync;
-module.exports.statsByDimensionsSync = statsByDimensionsSync;
+module.exports.statsSync = Image.statsSync;
+module.exports.statsByDimensionsSync = Image.statsByDimensionsSync;
 module.exports.getFormats = Image.getFormatsArray;
-module.exports.getWidths = getValidWidths;
-module.exports.getHash = getHash;
+module.exports.getWidths = Image.getValidWidths;
+module.exports.getHash = Image.getHash;
 
 const generateHTML = require("./generate-html");
 module.exports.generateHTML = generateHTML;
