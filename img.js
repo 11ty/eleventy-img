@@ -85,7 +85,6 @@ class Image {
   }
 
   getFullOptions(options) {
-    // TODO globalOptions are used in two places!
     let opts = Object.assign({}, globalOptions, options);
 
     // augment Options object with metadata for hashing
