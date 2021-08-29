@@ -63,6 +63,239 @@ const FORMAT_ALIASES = {
   "jpg": "jpeg"
 };
 
+class Image {
+  constructor(src, options) {
+    if(!src) {
+      throw new Error("`src` is a required argument to the eleventy-img utility (can be a String file path, String URL, or Buffer).");
+    }
+
+    this.src = src;
+    this.isRemoteUrl = typeof src === "string" && isFullUrl(src);
+    this.options = this.getFullOptions(options);
+
+    if(this.isRemoteUrl) {
+      this.cacheOptions = Object.assign({
+        duration: this.options.cacheDuration, // deprecated
+        dryRun: this.options.dryRun, // Issue #117: re-use eleventy-img dryRun option value for eleventy-cache-assets dryRun
+        type: "buffer"
+      }, this.options.cacheOptions);
+
+      this.assetCache = new RemoteAssetCache(src, this.cacheOptions.directory, this.cacheOptions);
+    }
+  }
+
+  getFullOptions(options) {
+    // TODO globalOptions are used in two places!
+    let opts = Object.assign({}, globalOptions, options);
+
+    // augment Options object with metadata for hashing
+    opts.__originalSrc = this.src;
+
+    if(this.isRemoteUrl) {
+      opts.sourceUrl = this.src;
+      if(this.assetCache && this.cacheOptions) {
+        // valid only if asset cached file is still valid
+        opts.__validAssetCache = this.assetCache.isCacheValid(this.cacheOptions.duration);
+      }
+    } else if(Buffer.isBuffer(this.src)) {
+      opts.sourceUrl = this.src.toString();
+      opts.__originalSize = this.src.length; // used for hashing
+    } else {
+      opts.__originalSize = fs.statSync(this.src).size; // used for hashing
+    }
+
+    return opts;
+  }
+
+  async getInput() {
+    if(this.isRemoteUrl) {
+      // fetch remote image Buffer
+      if(queue) {
+        // eleventy-cache-assets 2.0.4 and up
+        return queue(this.src, () => this.assetCache.fetch());
+      }
+
+      // eleventy-cache-assets 2.0.3 and below
+      return this.assetCache.fetch(this.cacheOptions);
+    }
+    return this.src;
+  }
+
+  getSharpOptionsForFormat(format) {
+    if(format === "webp") {
+      return this.options.sharpWebpOptions;
+    } else if(format === "jpeg") {
+      return this.options.sharpJpegOptions;
+    } else if(format === "png") {
+      return this.options.sharpPngOptions;
+    } else if(format === "avif") {
+      return this.options.sharpAvifOptions;
+    }
+    return {};
+  }
+
+  static getFormatsArray(formats) {
+    if(formats && formats.length) {
+      if(typeof formats === "string") {
+        formats = formats.split(",");
+      }
+
+      formats = formats.map(format => {
+        if(FORMAT_ALIASES[format]) {
+          return FORMAT_ALIASES[format];
+        }
+        return format;
+      });
+
+      // svg must come first for possible short circuiting
+      formats.sort((a, b) => {
+        if(a === "svg") {
+          return -1;
+        } else if(b === "svg") {
+          return 1;
+        }
+        return 0;
+      });
+
+      return formats;
+    }
+
+    return [];
+  }
+
+  // metadata so far: width, height, format
+  // src is used to calculate the output file names
+  getFullStats(metadata) {
+    let results = [];
+    let outputFormats = Image.getFormatsArray(this.options.formats);
+
+    for(let outputFormat of outputFormats) {
+      if(!outputFormat || outputFormat === "auto") {
+        outputFormat = metadata.format || this.options.overrideInputFormat;
+      }
+      if(!outputFormat || outputFormat === "auto") {
+        throw new Error("When using statsSync or statsByDimensionsSync, `formats: [null | auto]` to use the native image format is not supported.");
+      }
+
+      if(outputFormat === "svg") {
+        if((metadata.format || this.options.overrideInputFormat) === "svg") {
+          let svgStats = getStats(this.src, "svg", this.options.urlPath, metadata.width, metadata.height, this.options);
+          // SVG metadata.size is only available with Buffer input (remote urls)
+          if(metadata.size) {
+            // Note this is unfair for comparison with raster formats because its uncompressed (no GZIP, etc)
+            svgStats.size = metadata.size;
+          }
+          results.push(svgStats);
+
+          if(this.options.svgShortCircuit) {
+            break;
+          } else {
+            continue;
+          }
+        } else {
+          debug("Skipping SVG output for %o: received raster input.", this.src);
+          continue;
+        }
+      } else { // not SVG
+        let widths = getValidWidths(metadata.width, this.options.widths, metadata.format === "svg" && this.options.svgAllowUpscale);
+        for(let width of widths) {
+          // Warning: if this is a guess via statsByDimensionsSync and that guess is wrong
+          // The aspect ratio will be wrong and any height/widths returned will be wrong!
+          let height = Math.floor(width * metadata.height / metadata.width);
+
+          results.push(getStats(this.src, outputFormat, this.options.urlPath, width, height, this.options));
+        }
+      }
+    }
+
+    return transformRawFiles(results, outputFormats);
+  }
+
+  // src should be a file path to an image or a buffer
+  async resize(input) {
+    let sharpImage = sharp(input, Object.assign({
+      failOnError: false
+    }, this.options.sharpOptions));
+
+    if(typeof this.src !== "string" && !this.options.sourceUrl) {
+      throw new Error("Expected this.options.sourceUrl in .resize when using Buffer as input.");
+    }
+
+    // Must find the image format from the metadata
+    // File extensions lie or may not be present in the src url!
+    let metadata = await sharpImage.metadata();
+    let outputFilePromises = [];
+
+    let fullStats = this.getFullStats(metadata);
+    for(let outputFormat in fullStats) {
+      for(let stat of fullStats[outputFormat]) {
+        if(this.options.useCache && fs.existsSync(stat.outputPath)){
+          stat.size = fs.statSync(stat.outputPath).size;
+          if(this.options.dryRun) {
+            stat.buffer = fs.readFileSync(this.src);
+          }
+
+          outputFilePromises.push(Promise.resolve(stat));
+          continue;
+        }
+
+        let sharpInstance = sharpImage.clone();
+        if(stat.width < metadata.width || (this.options.svgAllowUpscale && metadata.format === "svg")) {
+          let resizeOptions = {
+            width: stat.width
+          };
+          if(metadata.format !== "svg" || !this.options.svgAllowUpscale) {
+            resizeOptions.withoutEnlargement = true;
+          }
+          sharpInstance.resize(resizeOptions);
+        }
+
+        if(!this.options.dryRun) {
+          await fsp.mkdir(this.options.outputDir, {
+            recursive: true
+          });
+        }
+
+        // format hooks are only used for SVG out of the box
+        if(this.options.formatHooks && this.options.formatHooks[outputFormat]) {
+          let hookResult = await this.options.formatHooks[outputFormat].call(stat, sharpInstance);
+          if(hookResult) {
+            stat.size = hookResult.length;
+            if(this.options.dryRun) {
+              stat.buffer = Buffer.from(hookResult);
+              outputFilePromises.push(Promise.resolve(stat));
+            } else {
+              outputFilePromises.push(fsp.writeFile(stat.outputPath, hookResult).then(() => stat));
+            }
+          }
+        } else { // not a format hook
+          let sharpFormatOptions = this.getSharpOptionsForFormat(outputFormat);
+          let hasFormatOptions = Object.keys(sharpFormatOptions).length > 0;
+          if(hasFormatOptions || outputFormat && metadata.format !== outputFormat) {
+            sharpInstance.toFormat(outputFormat, sharpFormatOptions);
+          }
+
+          if(this.options.dryRun) {
+            outputFilePromises.push(sharpInstance.toBuffer({ resolveWithObject: true }).then(({ data, info }) => {
+              stat.buffer = data;
+              stat.size = info.size;
+              return stat;
+            }));
+          } else {
+            outputFilePromises.push(sharpInstance.toFile(stat.outputPath).then(info => {
+              stat.size = info.size;
+              return stat;
+            }));
+          }
+        }
+        debug( "Wrote %o", stat.outputPath );
+      }
+    }
+
+    return Promise.all(outputFilePromises).then(files => transformRawFiles(files, Object.keys(fullStats)));
+  }
+}
+
 /* Size Cache */
 let sizeCache = new FileSizeCache();
 
@@ -82,34 +315,7 @@ function filenameFormat(id, src, width, format) { // and options
   return `${id}.${format}`;
 }
 
-function getFormatsArray(formats) {
-  if(formats && formats.length) {
-    if(typeof formats === "string") {
-      formats = formats.split(",");
-    }
 
-    formats = formats.map(format => {
-      if(FORMAT_ALIASES[format]) {
-        return FORMAT_ALIASES[format];
-      }
-      return format;
-    });
-
-    // svg must come first for possible short circuiting
-    formats.sort((a, b) => {
-      if(a === "svg") {
-        return -1;
-      } else if(b === "svg") {
-        return 1;
-      }
-      return 0;
-    });
-
-    return formats;
-  }
-
-  return [];
-}
 
 function getValidWidths(originalWidth, widths = [], allowUpscale = false) {
   // replace any falsy values with the original width
@@ -130,14 +336,8 @@ function getValidWidths(originalWidth, widths = [], allowUpscale = false) {
   return filtered.sort((a, b) => a - b);
 }
 
-let imgHashCache = {};
+// TODO does this need a cache? if so it needs to be based on src and imgOptions
 function getHash(src, imgOptions={}, length=10) {
-  if(src in imgHashCache) return imgHashCache[src];
-
-  if(typeof src === "string" && isFullUrl(src) && !("remoteAssetContent" in imgOptions)) {
-    throw new Error("When using getHash with URLs, imgOptions.remoteAssetContent should be set to the content of the remote asset.");
-  }
-
   const hash = createHash("sha256");
 
   let opts = Object.assign({
@@ -147,7 +347,6 @@ function getHash(src, imgOptions={}, length=10) {
     "sharpPngOptions": {},
     "sharpJpegOptions": {},
     "sharpAvifOptions": {},
-    "remoteAssetContent": {}
   }, imgOptions);
 
   opts = {
@@ -157,7 +356,6 @@ function getHash(src, imgOptions={}, length=10) {
     sharpPngOptions: opts.sharpPngOptions,
     sharpJpegOptions: opts.sharpJpegOptions,
     sharpAvifOptions: opts.sharpAvifOptions,
-    remoteAssetContent: opts.remoteAssetContent
   };
 
   if(fs.existsSync(src)) {
@@ -169,14 +367,11 @@ function getHash(src, imgOptions={}, length=10) {
   }
 
   hash.update(JSON.stringify(opts));
-  imgHashCache[src] = base64url.encode(hash.digest()).substring(0, length);
 
-  return imgHashCache[src];
+  return base64url.encode(hash.digest()).substring(0, length);
 }
 
-function getFilename(src, width, format, options = {}) {
-  let id = getHash(src, options);
-
+function getFilename(id, src, width, format, options = {}) {
   if (typeof options.filenameFormat === "function") {
     let filename = options.filenameFormat(id, src, width, format, options);
     // if options.filenameFormat returns falsy, use fallback filename
@@ -198,9 +393,9 @@ function getStats(src, format, urlPath, width, height, options = {}) {
   let outputFilename;
   let outputExtension = options.extensions[format] || format;
 
-  if(options.urlFormat && typeof options.urlFormat === "function") {
-    let id = getHash(src, options);
+  let id = getHash(src, options);
 
+  if(options.urlFormat && typeof options.urlFormat === "function") {
     url = options.urlFormat({
       id,
       src,
@@ -208,7 +403,7 @@ function getStats(src, format, urlPath, width, height, options = {}) {
       format: outputExtension,
     }, options);
   } else {
-    outputFilename = getFilename(src, width, outputExtension, options);
+    outputFilename = getFilename(id, src, width, outputExtension, options);
     url = getUrlPath(urlPath, outputFilename);
   }
 
@@ -229,56 +424,6 @@ function getStats(src, format, urlPath, width, height, options = {}) {
   }
 
   return stats;
-}
-
-// metadata so far: width, height, format
-// src is used to calculate the output file names
-function getFullStats(src, metadata, opts) {
-  let options = Object.assign({}, globalOptions, opts);
-
-  let results = [];
-  let outputFormats = getFormatsArray(options.formats);
-
-  for(let outputFormat of outputFormats) {
-    if(!outputFormat || outputFormat === "auto") {
-      outputFormat = metadata.format || options.overrideInputFormat;
-    }
-    if(!outputFormat || outputFormat === "auto") {
-      throw new Error("When using statsSync or statsByDimensionsSync, `formats: [null | auto]` to use the native image format is not supported.");
-    }
-
-    if(outputFormat === "svg") {
-      if((metadata.format || options.overrideInputFormat) === "svg") {
-        let svgStats = getStats(src, "svg", options.urlPath, metadata.width, metadata.height, options);
-        // SVG metadata.size is only available with Buffer input (remote urls)
-        if(metadata.size) {
-          // Note this is unfair for comparison with raster formats because its uncompressed (no GZIP, etc)
-          svgStats.size = metadata.size;
-        }
-        results.push(svgStats);
-
-        if(options.svgShortCircuit) {
-          break;
-        } else {
-          continue;
-        }
-      } else {
-        debug("Skipping SVG output for %o: received raster input.", src);
-        continue;
-      }
-    } else { // not SVG
-      let widths = getValidWidths(metadata.width, options.widths, metadata.format === "svg" && options.svgAllowUpscale);
-      for(let width of widths) {
-        // Warning: if this is a guess via statsByDimensionsSync and that guess is wrong
-        // The aspect ratio will be wrong and any height/widths returned will be wrong!
-        let height = Math.floor(width * metadata.height / metadata.width);
-
-        results.push(getStats(src, outputFormat, options.urlPath, width, height, options));
-      }
-    }
-  }
-
-  return transformRawFiles(results, outputFormats);
 }
 
 function transformRawFiles(files = [], formats = []) {
@@ -303,107 +448,6 @@ function transformRawFiles(files = [], formats = []) {
   return byType;
 }
 
-function getSharpOptionsForFormat(format, options) {
-  if(format === "webp") {
-    return options.sharpWebpOptions;
-  } else if(format === "jpeg") {
-    return options.sharpJpegOptions;
-  } else if(format === "png") {
-    return options.sharpPngOptions;
-  } else if(format === "avif") {
-    return options.sharpAvifOptions;
-  }
-  return {};
-}
-
-// src should be a file path to an image or a buffer
-async function resizeImage(src, options = {}) {
-  let sharpImage = sharp(src, Object.assign({
-    failOnError: false
-  }, options.sharpOptions));
-
-  if(typeof src !== "string") {
-    if(options.sourceUrl) {
-      src = options.sourceUrl;
-    } else {
-      throw new Error("Expected options.sourceUrl in resizeImage when using Buffer as input.");
-    }
-  }
-
-  // Must find the image format from the metadata
-  // File extensions lie or may not be present in the src url!
-  let metadata = await sharpImage.metadata();
-  let outputFilePromises = [];
-
-  let fullStats = getFullStats(src, metadata, options);
-  for(let outputFormat in fullStats) {
-    for(let stat of fullStats[outputFormat]) {
-      if(options.useCache && fs.existsSync(stat.outputPath)){
-        stat.size = fs.statSync(stat.outputPath).size;
-        if(options.dryRun) {
-          stat.buffer = fs.readFileSync(src);
-        }
-
-        outputFilePromises.push(Promise.resolve(stat));
-        continue;
-      }
-
-      let sharpInstance = sharpImage.clone();
-      if(stat.width < metadata.width || (options.svgAllowUpscale && metadata.format === "svg")) {
-        let resizeOptions = {
-          width: stat.width
-        };
-        if(metadata.format !== "svg" || !options.svgAllowUpscale) {
-          resizeOptions.withoutEnlargement = true;
-        }
-        sharpInstance.resize(resizeOptions);
-      }
-
-      if(!options.dryRun) {
-        await fsp.mkdir(options.outputDir, {
-          recursive: true
-        });
-      }
-
-      // format hooks are only used for SVG out of the box
-      if(options.formatHooks && options.formatHooks[outputFormat]) {
-        let hookResult = await options.formatHooks[outputFormat].call(stat, sharpInstance);
-        if(hookResult) {
-          stat.size = hookResult.length;
-          if(options.dryRun) {
-            stat.buffer = Buffer.from(hookResult);
-            outputFilePromises.push(Promise.resolve(stat));
-          } else {
-            outputFilePromises.push(fsp.writeFile(stat.outputPath, hookResult).then(() => stat));
-          }
-        }
-      } else { // not a format hook
-        let sharpFormatOptions = getSharpOptionsForFormat(outputFormat, options);
-        let hasFormatOptions = Object.keys(sharpFormatOptions).length > 0;
-        if(hasFormatOptions || outputFormat && metadata.format !== outputFormat) {
-          sharpInstance.toFormat(outputFormat, sharpFormatOptions);
-        }
-
-        if(options.dryRun) {
-          outputFilePromises.push(sharpInstance.toBuffer({ resolveWithObject: true }).then(({ data, info }) => {
-            stat.buffer = data;
-            stat.size = info.size;
-            return stat;
-          }));
-        } else {
-          outputFilePromises.push(sharpInstance.toFile(stat.outputPath).then(info => {
-            stat.size = info.size;
-            return stat;
-          }));
-        }
-      }
-      debug( "Wrote %o", stat.outputPath );
-    }
-  }
-
-  return Promise.all(outputFilePromises).then(files => transformRawFiles(files, Object.keys(fullStats)));
-}
-
 function isFullUrl(url) {
   try {
     new URL(url);
@@ -415,63 +459,19 @@ function isFullUrl(url) {
 }
 
 function queueImage(src, opts) {
-  let options = Object.assign({}, globalOptions, opts);
-
-  if(!src) {
-    throw new Error("`src` is a required argument to the eleventy-img utility (can be a string file path, string URL, or buffer).");
-  }
-
-  options.__originalSrc = src;
-
-  let assetCache;
-  let cacheOptions = Object.assign({
-    duration: options.cacheDuration, // deprecated
-    dryRun: options.dryRun, // Issue #117: re-use eleventy-img dryRun option value for eleventy-cache-assets dryRun
-    type: "buffer"
-  }, options.cacheOptions);
-
-  if(typeof src === "string" && isFullUrl(src)) {
-    options.sourceUrl = src;
-
-    assetCache = new RemoteAssetCache(src, cacheOptions.directory, cacheOptions);
-
-    // valid only if asset cached file is still valid
-    options.__validAssetCache = assetCache.isCacheValid(cacheOptions.duration);
-  } else if(Buffer.isBuffer(src)) {
-    options.sourceUrl = src.toString();
-    options.__originalSize = src.length;
-  } else {
-    options.__originalSize = fs.statSync(src).size;
-  }
-
-  let cached = sizeCache.get(options);
-  if(options.useCache && cached) {
+  let img = new Image(src, opts);
+  let cached = sizeCache.get(img.options);
+  if(img.options.useCache && cached) {
     debug("Found cached, returning %o", cached);
     return cached;
   }
 
   let promise = processingQueue.add(async () => {
-    let input;
-
-    if(typeof src === "string" && isFullUrl(src)) {
-      // fetch remote image
-      if(queue) {
-        // eleventy-cache-assets 2.0.4 and up
-        input = await queue(src, () => assetCache.fetch());
-      } else {
-        // eleventy-cache-assets 2.0.3 and below
-        input = await assetCache.fetch(cacheOptions);
-      }
-
-      options.remoteAssetContent = input; // Only set for remote assets with URL
-    } else {
-      input = src;
-    }
-
-    return resizeImage(input, options);
+    let input = await img.getInput();
+    return img.resize(input);
   });
 
-  sizeCache.add(options, promise);
+  sizeCache.add(img.options, promise);
 
   return promise;
 }
@@ -497,31 +497,30 @@ Object.defineProperty(module.exports, "concurrency", {
  * any files.
  */
 function statsSync(src, opts) {
-  if(typeof src === "string" && isFullUrl(src) && !("remoteAssetContent" in opts)) {
-    throw new Error("When using statsSync or statsByDimensionsSync with URLs, options.remoteAssetContent should be set to the content of the remote asset.");
+  if(typeof src === "string" && isFullUrl(src)) {
+    throw new Error("`statsSync` is not supported with full URL sources. Use `statsByDimensionsSync` instead.");
   }
 
   let dimensions = getImageSize(src);
-  let metadata = {
-    width:  dimensions.width,
+
+  let img = new Image(src, opts);
+  return img.getFullStats({
+    width: dimensions.width,
     height: dimensions.height,
     format: dimensions.type,
-  };
-  return getFullStats(src, metadata, opts);
+  });
 }
 
 function statsByDimensionsSync(src, width, height, opts) {
-  if(typeof src === "string" && isFullUrl(src) && !("remoteAssetContent" in opts)) {
-    throw new Error("When using statsSync or statsByDimensionsSync with URLs, options.remoteAssetContent should be set to the content of the remote asset.");
-  }
-
   let dimensions = { width, height, guess: true };
-  return getFullStats(src, dimensions, opts);
+
+  let img = new Image(src, opts);
+  return img.getFullStats(dimensions);
 }
 
 module.exports.statsSync = statsSync;
 module.exports.statsByDimensionsSync = statsByDimensionsSync;
-module.exports.getFormats = getFormatsArray;
+module.exports.getFormats = Image.getFormatsArray;
 module.exports.getWidths = getValidWidths;
 module.exports.getHash = getHash;
 

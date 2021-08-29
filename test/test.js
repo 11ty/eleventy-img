@@ -170,7 +170,7 @@ test("Use 'auto' format as original", async t => {
 
   t.is(stats.auto, undefined);
   t.is(stats.jpeg.length, 1);
-  t.is(stats.jpeg[0].outputPath, path.join("test/img/Bok0Qhed6a-1280.jpeg"));
+  t.is(stats.jpeg[0].outputPath, path.join("test/img/70DaY9n7K_-1280.jpeg"));
   t.is(stats.jpeg[0].width, 1280);
 });
 
@@ -181,7 +181,7 @@ test("Try to use a width larger than original", async t => {
     outputDir: "./test/img/"
   });
   t.is(stats.jpeg.length, 1);
-  t.is(stats.jpeg[0].outputPath, path.join("test/img/Bok0Qhed6a-1280.jpeg"));
+  t.is(stats.jpeg[0].outputPath, path.join("test/img/70DaY9n7K_-1280.jpeg"));
   t.is(stats.jpeg[0].width, 1280);
 });
 
@@ -192,7 +192,7 @@ test("Try to use a width larger than original (two sizes)", async t => {
     outputDir: "./test/img/"
   });
   t.is(stats.jpeg.length, 1);
-  t.is(stats.jpeg[0].outputPath, path.join("test/img/Bok0Qhed6a-1280.jpeg"));
+  t.is(stats.jpeg[0].outputPath, path.join("test/img/70DaY9n7K_-1280.jpeg"));
   t.is(stats.jpeg[0].width, 1280);
 });
 
@@ -203,7 +203,7 @@ test("Try to use a width larger than original (with a null in there)", async t =
     outputDir: "./test/img/"
   });
   t.is(stats.jpeg.length, 1);
-  t.is(stats.jpeg[0].outputPath, path.join("test/img/Bok0Qhed6a-1280.jpeg"));
+  t.is(stats.jpeg[0].outputPath, path.join("test/img/70DaY9n7K_-1280.jpeg"));
   t.is(stats.jpeg[0].width, 1280);
 });
 
@@ -214,7 +214,7 @@ test("Just falsy width", async t => {
     outputDir: "./test/img/"
   });
   t.is(stats.jpeg.length, 1);
-  t.is(stats.jpeg[0].outputPath, path.join("test/img/Bok0Qhed6a-1280.jpeg"));
+  t.is(stats.jpeg[0].outputPath, path.join("test/img/70DaY9n7K_-1280.jpeg"));
   t.is(stats.jpeg[0].width, 1280);
 });
 
@@ -226,7 +226,7 @@ test("Use exact same width as original", async t => {
   });
   t.is(stats.jpeg.length, 1);
   // breaking change in 0.5: always use width in filename
-  t.is(stats.jpeg[0].outputPath, path.join("test/img/Bok0Qhed6a-1280.jpeg"));
+  t.is(stats.jpeg[0].outputPath, path.join("test/img/70DaY9n7K_-1280.jpeg"));
   t.is(stats.jpeg[0].width, 1280);
 });
 
@@ -237,7 +237,7 @@ test("Try to use a width larger than original (statsSync)", t => {
   });
 
   t.is(stats.jpeg.length, 1);
-  t.is(stats.jpeg[0].url, "/img/Bok0Qhed6a-1280.jpeg");
+  t.is(stats.jpeg[0].url, "/img/70DaY9n7K_-1280.jpeg");
   t.is(stats.jpeg[0].width, 1280);
 });
 
@@ -248,7 +248,7 @@ test("Use exact same width as original (statsSync)", t => {
   });
 
   t.is(stats.jpeg.length, 1);
-  t.is(stats.jpeg[0].url, "/img/Bok0Qhed6a-1280.jpeg"); // no width in filename
+  t.is(stats.jpeg[0].url, "/img/70DaY9n7K_-1280.jpeg"); // no width in filename
   t.is(stats.jpeg[0].width, 1280);
 });
 
@@ -270,13 +270,13 @@ test("Use custom function to define file names", async (t) => {
   });
 
   t.is(stats.jpeg.length, 2);
-  t.is(stats.jpeg[0].outputPath, path.join("test/img/bio-2017-Bok0Qhed6a-600.jpeg"));
-  t.is(stats.jpeg[0].url, "/img/bio-2017-Bok0Qhed6a-600.jpeg");
-  t.is(stats.jpeg[0].srcset, "/img/bio-2017-Bok0Qhed6a-600.jpeg 600w");
+  t.is(stats.jpeg[0].outputPath, path.join("test/img/bio-2017-70DaY9n7K_-600.jpeg"));
+  t.is(stats.jpeg[0].url, "/img/bio-2017-70DaY9n7K_-600.jpeg");
+  t.is(stats.jpeg[0].srcset, "/img/bio-2017-70DaY9n7K_-600.jpeg 600w");
   t.is(stats.jpeg[0].width, 600);
-  t.is(stats.jpeg[1].outputPath, path.join("test/img/bio-2017-Bok0Qhed6a-1280.jpeg"));
-  t.is(stats.jpeg[1].url, "/img/bio-2017-Bok0Qhed6a-1280.jpeg");
-  t.is(stats.jpeg[1].srcset, "/img/bio-2017-Bok0Qhed6a-1280.jpeg 1280w");
+  t.is(stats.jpeg[1].outputPath, path.join("test/img/bio-2017-70DaY9n7K_-1280.jpeg"));
+  t.is(stats.jpeg[1].url, "/img/bio-2017-70DaY9n7K_-1280.jpeg");
+  t.is(stats.jpeg[1].srcset, "/img/bio-2017-70DaY9n7K_-1280.jpeg 1280w");
   t.is(stats.jpeg[1].width, 1280);
 });
 
@@ -387,7 +387,7 @@ test("Sync by dimension with jpeg input (wrong dimensions, supplied are smaller 
 
   // this won’t upscale so it will miss out on higher resolution images but there won’t be any broken image URLs in the output
   t.is(stats.jpeg.length, 1);
-  t.is(stats.jpeg[0].outputPath, path.join("img/Bok0Qhed6a-164.jpeg"));
+  t.is(stats.jpeg[0].outputPath, path.join("img/70DaY9n7K_-164.jpeg"));
 });
 
 test("Sync by dimension with jpeg input (wrong dimensions, supplied are larger than real)", t => {
@@ -397,8 +397,8 @@ test("Sync by dimension with jpeg input (wrong dimensions, supplied are larger t
   });
 
   t.is(stats.jpeg.length, 2);
-  t.is(stats.jpeg[0].outputPath, path.join("img/Bok0Qhed6a-164.jpeg"));
-  t.is(stats.jpeg[1].outputPath, path.join("img/Bok0Qhed6a-328.jpeg"));
+  t.is(stats.jpeg[0].outputPath, path.join("img/70DaY9n7K_-164.jpeg"));
+  t.is(stats.jpeg[1].outputPath, path.join("img/70DaY9n7K_-328.jpeg"));
 });
 
 test("Keep a cache, reuse with same file names and options", async t => {
@@ -546,14 +546,14 @@ test("Using `jpg` in formats Issue #64", async t => {
   t.deepEqual(stats, {
     jpeg: [
       {
-        filename: 'Bok0Qhed6a-1280.jpeg',
+        filename: '70DaY9n7K_-1280.jpeg',
         format: 'jpeg',
         height: 853,
-        outputPath: path.join('img/Bok0Qhed6a-1280.jpeg'),
+        outputPath: path.join('img/70DaY9n7K_-1280.jpeg'),
         size: 276231,
         sourceType: "image/jpeg",
-        srcset: '/img/Bok0Qhed6a-1280.jpeg 1280w',
-        url: '/img/Bok0Qhed6a-1280.jpeg',
+        srcset: '/img/70DaY9n7K_-1280.jpeg 1280w',
+        url: '/img/70DaY9n7K_-1280.jpeg',
         width: 1280,
       },
     ]
