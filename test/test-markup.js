@@ -167,6 +167,14 @@ test("Image markup (defaults, inlined)", async t => {
 });
 
 test("svgShortCircuit and generateHTML: Issue #48", async t => {
+  let img = new eleventyImage.Image("./test/Ghostscript_Tiger.svg", {
+    formats: ["webp", "png", "svg"],
+    svgShortCircuit: true,
+    dryRun: true,
+  });
+  let svgStats = eleventyImage.ImageStat.getStat("./test/Ghostscript_Tiger.svg", "svg", "/img/", 900, 900, img.options);
+  console.log( svgStats );
+
   let stats = await eleventyImage("./test/Ghostscript_Tiger.svg", {
     formats: ["webp", "png", "svg"],
     svgShortCircuit: true,
