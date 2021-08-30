@@ -1,19 +1,12 @@
-const fs = require("fs");
 const debug = require("debug")("EleventyImg");
 
-class FileSizeCache {
+class MemoryCache {
   constructor() {
     this.cache = {};
     debug("New cache.");
   }
 
-  getSize(path) {
-    let stats = fs.statSync(path);
-    return stats.size;
-  }
-
-  add(options, results) {
-    let key = JSON.stringify(options);
+  add(key, results) {
     debug("Before add cache size %o", Object.keys(this.cache).length);
     debug("Added %o to cache: %o", key, results);
 
@@ -22,8 +15,7 @@ class FileSizeCache {
     };
   }
 
-  get(options) {
-    let key = JSON.stringify(options);
+  get(key) {
     if(this.cache[key]) {
       // may return promise
       debug("Cache size %o", Object.keys(this.cache).length);
@@ -37,4 +29,4 @@ class FileSizeCache {
   }
 }
 
-module.exports = FileSizeCache;
+module.exports = MemoryCache;

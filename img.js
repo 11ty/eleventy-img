@@ -12,7 +12,7 @@ const debug = require("debug")("EleventyImg");
 const svgHook = require("./format-hooks/svg");
 
 const {RemoteAssetCache, queue} = require("@11ty/eleventy-cache-assets");
-const FileSizeCache = require("./filesize-cache");
+const MemoryCache = require("./memory-cache");
 
 const globalOptions = {
   widths: [null],
@@ -50,6 +50,8 @@ const globalOptions = {
 
   useCache: true, // in-memory cache
   dryRun: false, // Also returns a buffer instance in the return object. Doesn’t write anything to the file system
+
+  hashLength: 10, // Truncates the hash to this length
 };
 
 const MIME_TYPES = {
@@ -66,6 +68,7 @@ const FORMAT_ALIASES = {
 
 class Util {
   /*
+   * Does not mutate, returns new Object
    * Note if keysToKeep is empty it will keep all keys.
    */
   static getSortedObject(unordered) {
@@ -96,7 +99,7 @@ class Image {
 
     this.src = src;
     this.isRemoteUrl = typeof src === "string" && Util.isFullUrl(src);
-    this.options = this.getFullOptions(options);
+    this.options = Object.assign({}, globalOptions, options);
 
     if(this.isRemoteUrl) {
       this.cacheOptions = Object.assign({
@@ -109,27 +112,48 @@ class Image {
     }
   }
 
-  getFullOptions(options) {
-    let opts = Object.assign({}, globalOptions, options);
+  // In memory cache is up front, handles promise de-duping from input (this does not use getHash)
+  // Note: output cache is also in play below (uses getHash)
+  getInMemoryCacheKey() {
+    let opts = Util.getSortedObject(this.options);
 
-    // augment Options object with metadata for hashing
     opts.__originalSrc = this.src;
 
     if(this.isRemoteUrl) {
-      opts.sourceUrl = this.src;
+      opts.sourceUrl = this.src; // the source url
+
       if(this.assetCache && this.cacheOptions) {
         // valid only if asset cached file is still valid
         opts.__validAssetCache = this.assetCache.isCacheValid(this.cacheOptions.duration);
       }
     } else if(Buffer.isBuffer(this.src)) {
       opts.sourceUrl = this.src.toString();
-      opts.__originalSize = this.src.length; // used for hashing
+      opts.__originalSize = this.src.length;
     } else {
       // TODO @zachleat (multiread): another read
-      opts.__originalSize = fs.statSync(this.src).size; // used for hashing
+      opts.__originalSize = fs.statSync(this.src).size;
     }
 
-    return opts;
+
+    return JSON.stringify(opts);
+  }
+
+  getFileContents() {
+    if(this.isRemoteUrl) {
+      return false;
+    }
+
+    // perf: check to make sure it’s not a string first
+    if(typeof this.src !== "string" && Buffer.isBuffer(this.src)) {
+      this._contents = this.src;
+    }
+
+    // TODO @zachleat add a smarter cache here (not too aggressive! must handle input file changes)
+    if(!this._contents) {
+      this._contents = fs.readFileSync(this.src);
+    }
+
+    return this._contents;
   }
 
   static getValidWidths(originalWidth, widths = [], allowUpscale = false) {
@@ -178,46 +202,6 @@ class Image {
     }
 
     return [];
-  }
-
-  // format is only required for local files
-  static getHash(src, format, options = {}, length = 10) {
-    let hash = createHash("sha256");
-
-    if(fs.existsSync(src)) {
-      // TODO @zachleat (multiread): probably need a cache here
-      let fileContent = fs.readFileSync(src);
-      if(format === "svg") {
-        // remove all newlines for hashing for better cross-OS hash compatibility (#122)
-        fileContent = fileContent.toString().replace(/\r|\n/g, '');
-      }
-      hash.update(fileContent);
-    } else {
-      // probably a remote URL
-      hash.update(src);
-    }
-
-    // We ignore all keys not relevant to the file processing/output (including `widths`, which is a suffix added to the filename)
-    // e.g. `widths: [300]` and `widths: [300, 600]`, with all else being equal the 300px output of each should have the same hash
-    // The code currently assumes these are all Object literals (see Util.getSortedObject)
-    let keysToKeep = [
-      "sharpOptions",
-      "sharpWebpOptions",
-      "sharpPngOptions",
-      "sharpJpegOptions",
-      "sharpAvifOptions"
-    ].sort();
-
-    let hashObject = {};
-    for(let key of keysToKeep) {
-      if(options[key]) {
-        hashObject[key] = Util.getSortedObject(options[key]);
-      }
-    }
-
-    hash.update(JSON.stringify(hashObject));
-
-    return base64url.encode(hash.digest()).substring(0, length);
   }
 
   _transformRawFiles(files = [], formats = []) {
@@ -271,6 +255,92 @@ class Image {
     return this.src;
   }
 
+  getHash() {
+    let hash = createHash("sha256");
+
+    if(fs.existsSync(this.src)) {
+      let fileContents = this.getFileContents();
+
+      // remove all newlines for hashing for better cross-OS hash compatibility (Issue #122)
+      let fileContentsStr = fileContents.toString();
+      let firstFour = fileContentsStr.trim().substr(0, 5);
+      if(firstFour === "<svg " || firstFour === "<?xml") {
+        fileContents = fileContentsStr.replace(/\r|\n/g, '');
+      }
+
+      hash.update(fileContents);
+    } else {
+      // probably a remote URL
+      hash.update(this.src);
+
+      // add whether or not the cached asset is still valid per the cache duration (work with empty duration or "*")
+      if(this.isRemoteUrl && this.assetCache && this.cacheOptions) {
+        hash.update(`ValidCache:${this.assetCache.isCacheValid(this.cacheOptions.duration)}`);
+      }
+    }
+
+    // We ignore all keys not relevant to the file processing/output (including `widths`, which is a suffix added to the filename)
+    // e.g. `widths: [300]` and `widths: [300, 600]`, with all else being equal the 300px output of each should have the same hash
+    // The code currently assumes these are all Object literals (see Util.getSortedObject)
+    let keysToKeep = [
+      "sharpOptions",
+      "sharpWebpOptions",
+      "sharpPngOptions",
+      "sharpJpegOptions",
+      "sharpAvifOptions"
+    ].sort();
+
+    let hashObject = {};
+    for(let key of keysToKeep) {
+      if(this.options[key]) {
+        hashObject[key] = Util.getSortedObject(this.options[key]);
+      }
+    }
+
+    hash.update(JSON.stringify(hashObject));
+
+    // TODO allow user to update other things into hash
+
+    return base64url.encode(hash.digest()).substring(0, this.options.hashLength);
+  }
+
+  getStat(outputFormat, width, height) {
+    let url;
+    let outputFilename;
+    let outputExtension = this.options.extensions[outputFormat] || outputFormat;
+    let hash = this.getHash();
+
+    if(this.options.urlFormat && typeof this.options.urlFormat === "function") {
+      url = this.options.urlFormat({
+        hash,
+        src: this.src,
+        width,
+        format: outputExtension,
+      }, this.options);
+    } else {
+      outputFilename = ImagePath.getFilename(hash, this.src, width, outputExtension, this.options);
+      url = ImagePath.convertFilePathToUrl(this.options.urlPath, outputFilename);
+    }
+
+    let stats = {
+      format: outputFormat,
+      width: width,
+      height: height,
+      url: url,
+      sourceType: MIME_TYPES[outputFormat],
+      srcset: `${url} ${width}w`,
+      // Not available in stats* functions below
+      // size // only after processing
+    };
+
+    if(outputFilename) {
+      stats.filename = outputFilename; // optional
+      stats.outputPath = path.join(this.options.outputDir, outputFilename); // optional
+    }
+
+    return stats;
+  }
+
   // metadata so far: width, height, format
   // src is used to calculate the output file names
   getFullStats(metadata) {
@@ -287,7 +357,7 @@ class Image {
 
       if(outputFormat === "svg") {
         if((metadata.format || this.options.overrideInputFormat) === "svg") {
-          let svgStats = ImageStat.getStat(this.src, "svg", this.options.urlPath, metadata.width, metadata.height, this.options);
+          let svgStats = this.getStat("svg", metadata.width, metadata.height);
           // SVG metadata.size is only available with Buffer input (remote urls)
           if(metadata.size) {
             // Note this is unfair for comparison with raster formats because its uncompressed (no GZIP, etc)
@@ -311,7 +381,7 @@ class Image {
           // The aspect ratio will be wrong and any height/widths returned will be wrong!
           let height = Math.floor(width * metadata.height / metadata.width);
 
-          results.push(ImageStat.getStat(this.src, outputFormat, this.options.urlPath, width, height, this.options));
+          results.push(this.getStat(outputFormat, width, height));
         }
       }
     }
@@ -325,10 +395,6 @@ class Image {
       failOnError: false
     }, this.options.sharpOptions));
 
-    if(typeof this.src !== "string" && !this.options.sourceUrl) {
-      throw new Error("Expected this.options.sourceUrl in .resize when using Buffer as input.");
-    }
-
     // Must find the image format from the metadata
     // File extensions lie or may not be present in the src url!
     let metadata = await sharpImage.metadata();
@@ -340,8 +406,7 @@ class Image {
         if(this.options.useCache && fs.existsSync(stat.outputPath)){
           stat.size = fs.statSync(stat.outputPath).size;
           if(this.options.dryRun) {
-            // TODO @zachleat (multiread): get rid of this duplicate read when input is always a buffer (see TODO in getInput)
-            stat.buffer = fs.readFileSync(this.src);
+            stat.buffer = this.getFileContents();
           }
 
           outputFilePromises.push(Promise.resolve(stat));
@@ -440,7 +505,7 @@ class Image {
   }
 }
 
-class ImageStat {
+class ImagePath {
   static filenameFormat(id, src, width, format) { // and options
     if (width) {
       return `${id}-${width}.${format}`;
@@ -458,55 +523,17 @@ class ImageStat {
       }
     }
 
-    return ImageStat.filenameFormat(id, src, width, format, options);
+    return ImagePath.filenameFormat(id, src, width, format, options);
   }
 
   static convertFilePathToUrl(dir, filename) {
     let src = path.join(dir, filename);
     return src.split(path.sep).join("/");
   }
-
-  static getStat(src, format, urlPath, width, height, options = {}) {
-    let url;
-    let outputFilename;
-    let outputExtension = options.extensions[format] || format;
-
-    let id = Image.getHash(src, format, options);
-
-    if(options.urlFormat && typeof options.urlFormat === "function") {
-      url = options.urlFormat({
-        id,
-        src,
-        width,
-        format: outputExtension,
-      }, options);
-    } else {
-      outputFilename = ImageStat.getFilename(id, src, width, outputExtension, options);
-      url = ImageStat.convertFilePathToUrl(urlPath, outputFilename);
-    }
-
-    let stats = {
-      format: format,
-      width: width,
-      height: height,
-      url: url,
-      sourceType: MIME_TYPES[format],
-      srcset: `${url} ${width}w`,
-      // Not available in stats* functions below
-      // size // only after processing
-    };
-
-    if(outputFilename) {
-      stats.filename = outputFilename; // optional
-      stats.outputPath = path.join(options.outputDir, outputFilename); // optional
-    }
-
-    return stats;
-  }
 }
 
 /* Size Cache */
-let sizeCache = new FileSizeCache();
+let memCache = new MemoryCache();
 
 /* Queue */
 let processingQueue = new PQueue({
@@ -518,10 +545,16 @@ processingQueue.on("active", () => {
 
 function queueImage(src, opts) {
   let img = new Image(src, opts);
-  let cached = sizeCache.get(img.options);
-  if(img.options.useCache && cached) {
-    debug("Found cached, returning %o", cached);
-    return cached;
+  let key;
+
+  if(img.options.useCache) {
+    // we don’t know the output format yet, but this hash is just for the in memory cache
+    key = img.getInMemoryCacheKey();
+    let cached = memCache.get(key);
+    if(cached) {
+      debug("Found cached, returning %o", cached);
+      return cached;
+    }
   }
 
   let promise = processingQueue.add(async () => {
@@ -529,7 +562,9 @@ function queueImage(src, opts) {
     return img.resize(input);
   });
 
-  sizeCache.add(img.options, promise);
+  if(img.options.useCache) {
+    memCache.add(key, promise);
+  }
 
   return promise;
 }
@@ -549,13 +584,17 @@ Object.defineProperty(module.exports, "concurrency", {
 
 module.exports.Util = Util;
 module.exports.Image = Image;
-module.exports.ImageStat = ImageStat;
+module.exports.ImagePath = ImagePath;
 
 module.exports.statsSync = Image.statsSync;
 module.exports.statsByDimensionsSync = Image.statsByDimensionsSync;
 module.exports.getFormats = Image.getFormatsArray;
 module.exports.getWidths = Image.getValidWidths;
-module.exports.getHash = Image.getHash;
+
+module.exports.getHash = function getHash(src, options) {
+  let img = new Image(src, options);
+  return img.getHash();
+};
 
 const generateHTML = require("./generate-html");
 module.exports.generateHTML = generateHTML;
