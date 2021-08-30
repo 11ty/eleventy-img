@@ -24,12 +24,12 @@ const eleventyImage = require("../");
   console.log( "https://www.11ty.dev/img/possum-balloon-original-sm.png" );
   console.dir( possum );
 
-  let possumStats = eleventyImage.statsSync("https://www.11ty.dev/img/possum-balloon-original-sm.png", {
-    formats: ["avif", "jpeg"],
-    widths: [400, 1280],
-  });
-  console.log( "https://www.11ty.dev/img/possum-balloon-original-sm.png (statsSync)" );
-  console.dir( possumStats );
+  // let possumStats = eleventyImage.statsSync("https://www.11ty.dev/img/possum-balloon-original-sm.png", {
+  //   formats: ["avif", "jpeg"],
+  //   widths: [400, 1280],
+  // });
+  // console.log( "https://www.11ty.dev/img/possum-balloon-original-sm.png (statsSync)" );
+  // console.dir( possumStats );
 
 
   /* Local images */
