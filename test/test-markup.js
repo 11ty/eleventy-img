@@ -175,12 +175,12 @@ test("svgShortCircuit and generateHTML: Issue #48", async t => {
   t.is(stats.svg.length, 1);
   t.is(stats.webp.length, 0);
   t.is(stats.png.length, 0);
-  t.is(stats.svg[0].url, "/img/tZ4Kzy-sde-900.svg");
+  t.is(stats.svg[0].url, "/img/W-k0C0bkvk-900.svg");
 
   let html = eleventyImage.generateHTML(stats, {
     alt: "Tiger",
   });
-  t.is(html, `<img alt="Tiger" src="/img/tZ4Kzy-sde-900.svg" width="900" height="900">`);
+  t.is(html, `<img alt="Tiger" src="/img/W-k0C0bkvk-900.svg" width="900" height="900">`);
 });
 
 test("Filter out empty format arrays", async t => {
