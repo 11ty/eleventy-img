@@ -604,3 +604,27 @@ test("widths array should be ignored in hashing", t => {
   t.is(stats2.jpeg[0].url, "/img/KkPMmHd3hP-300.jpeg");
   t.is(stats2.jpeg[1].url, "/img/KkPMmHd3hP-600.jpeg");
 });
+
+test("statsSync and eleventyImage output comparison", async t => {
+  let statsSync = eleventyImage.statsSync("./test/bio-2017.jpg", {
+    widths: [399],
+    formats: ["jpeg"]
+  });
+  let statsByDimensionsSync = eleventyImage.statsByDimensionsSync("./test/bio-2017.jpg", 1280, 853, {
+    widths: [399],
+    formats: ["jpeg"]
+  });
+  let stats = await eleventyImage("./test/bio-2017.jpg", {
+    widths: [399],
+    formats: ["jpeg"],
+    dryRun: true
+  });
+
+  // these aren’t expected in the statsSync method
+  delete stats.jpeg[0].buffer;
+  delete stats.jpeg[0].size;
+
+  t.deepEqual(statsSync, stats);
+  t.deepEqual(statsByDimensionsSync, stats);
+  t.deepEqual(statsSync, statsByDimensionsSync);
+});
