@@ -180,17 +180,12 @@ class Image {
   }
 
   // format is only required for local files
-  static getHash(src, format, options = {}, length = 10) {
+  static getHash(src, options = {}, length = 10) {
     let hash = createHash("sha256");
 
     if(fs.existsSync(src)) {
-      let encoding = null;
-      if(format === "svg") {
-        encoding = "utf8";
-      }
-
       // TODO probably need a cache here
-      let fileContent = fs.readFileSync(src, { encoding });
+      let fileContent = fs.readFileSync(src);
       hash.update(fileContent);
     } else {
       // probably a remote URL
@@ -471,7 +466,7 @@ class ImageStat {
     let outputFilename;
     let outputExtension = options.extensions[format] || format;
 
-    let id = Image.getHash(src, format, options);
+    let id = Image.getHash(src, options);
 
     if(options.urlFormat && typeof options.urlFormat === "function") {
       url = options.urlFormat({
