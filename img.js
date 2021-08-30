@@ -179,12 +179,18 @@ class Image {
     return [];
   }
 
-  // TODO does this need a cache? if so it needs to be based on src and imgOptions
-  static getHash(src, options = {}, length = 10) {
-    const hash = createHash("sha256");
+  // format is only required for local files
+  static getHash(src, format, options = {}, length = 10) {
+    let hash = createHash("sha256");
 
     if(fs.existsSync(src)) {
-      const fileContent = fs.readFileSync(src);
+      let encoding = null;
+      if(format === "svg") {
+        encoding = "utf8";
+      }
+
+      // TODO probably need a cache here
+      let fileContent = fs.readFileSync(src, { encoding });
       hash.update(fileContent);
     } else {
       // probably a remote URL
@@ -260,6 +266,8 @@ class Image {
       // eleventy-cache-assets 2.0.3 and below
       return this.assetCache.fetch(this.cacheOptions);
     }
+
+    // TODO read local file contents here and always return a buffer
     return this.src;
   }
 
@@ -296,7 +304,7 @@ class Image {
           debug("Skipping SVG output for %o: received raster input.", this.src);
           continue;
         }
-      } else { // not SVG
+      } else { // not outputting SVG (might still be SVG input though!)
         let widths = Image.getValidWidths(metadata.width, this.options.widths, metadata.format === "svg" && this.options.svgAllowUpscale);
         for(let width of widths) {
           // Warning: if this is a guess via statsByDimensionsSync and that guess is wrong
@@ -332,6 +340,7 @@ class Image {
         if(this.options.useCache && fs.existsSync(stat.outputPath)){
           stat.size = fs.statSync(stat.outputPath).size;
           if(this.options.dryRun) {
+            // TODO get rid of this duplicate read when input is always a buffer (see TODO in getInput)
             stat.buffer = fs.readFileSync(this.src);
           }
 
@@ -462,7 +471,7 @@ class ImageStat {
     let outputFilename;
     let outputExtension = options.extensions[format] || format;
 
-    let id = Image.getHash(src, options);
+    let id = Image.getHash(src, format, options);
 
     if(options.urlFormat && typeof options.urlFormat === "function") {
       url = options.urlFormat({
