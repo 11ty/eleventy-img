@@ -64,6 +64,30 @@ const FORMAT_ALIASES = {
   "jpg": "jpeg"
 };
 
+class Util {
+  /*
+   * Note if keysToKeep is empty it will keep all keys.
+   */
+  static getSortedObject(unordered) {
+    let keys = Object.keys(unordered).sort();
+    let obj = {};
+    for(let key of keys) {
+      obj[key] = unordered[key];
+    }
+    return obj;
+  }
+
+  static isFullUrl(url) {
+    try {
+      new URL(url);
+      return true;
+    } catch(e) {
+      // invalid url OR local path
+      return false;
+    }
+  }
+}
+
 class Image {
   constructor(src, options) {
     if(!src) {
@@ -71,7 +95,7 @@ class Image {
     }
 
     this.src = src;
-    this.isRemoteUrl = typeof src === "string" && Image.isFullUrl(src);
+    this.isRemoteUrl = typeof src === "string" && Util.isFullUrl(src);
     this.options = this.getFullOptions(options);
 
     if(this.isRemoteUrl) {
@@ -155,28 +179,9 @@ class Image {
     return [];
   }
 
-
   // TODO does this need a cache? if so it needs to be based on src and imgOptions
-  static getHash(src, imgOptions = {}, length = 10) {
+  static getHash(src, options = {}, length = 10) {
     const hash = createHash("sha256");
-
-    let opts = Object.assign({
-      "userOptions": {},
-      "sharpOptions": {},
-      "sharpWebpOptions": {},
-      "sharpPngOptions": {},
-      "sharpJpegOptions": {},
-      "sharpAvifOptions": {},
-    }, imgOptions);
-
-    opts = {
-      userOptions: opts.userOptions,
-      sharpOptions: opts.sharpOptions,
-      sharpWebpOptions: opts.sharpWebpOptions,
-      sharpPngOptions: opts.sharpPngOptions,
-      sharpJpegOptions: opts.sharpJpegOptions,
-      sharpAvifOptions: opts.sharpAvifOptions,
-    };
 
     if(fs.existsSync(src)) {
       const fileContent = fs.readFileSync(src);
@@ -186,19 +191,27 @@ class Image {
       hash.update(src);
     }
 
-    hash.update(JSON.stringify(opts));
+    // We ignore all keys not relevant to the file processing/output (including `widths`, which is a suffix added to the filename)
+    // e.g. `widths: [300]` and `widths: [300, 600]`, with all else being equal the 300px output of each should have the same hash
+    // The code currently assumes these are all Object literals (see Util.getSortedObject)
+    let keysToKeep = [
+      "sharpOptions",
+      "sharpWebpOptions",
+      "sharpPngOptions",
+      "sharpJpegOptions",
+      "sharpAvifOptions"
+    ].sort();
+
+    let hashObject = {};
+    for(let key of keysToKeep) {
+      if(options[key]) {
+        hashObject[key] = Util.getSortedObject(options[key]);
+      }
+    }
+
+    hash.update(JSON.stringify(hashObject));
 
     return base64url.encode(hash.digest()).substring(0, length);
-  }
-
-  static isFullUrl(url) {
-    try {
-      new URL(url);
-      return true;
-    } catch(e) {
-      // invalid url OR local path
-      return false;
-    }
   }
 
   _transformRawFiles(files = [], formats = []) {
@@ -392,7 +405,7 @@ class Image {
   * any files.
   */
   static statsSync(src, opts) {
-    if(typeof src === "string" && Image.isFullUrl(src)) {
+    if(typeof src === "string" && Util.isFullUrl(src)) {
       throw new Error("`statsSync` is not supported with full URL sources. Use `statsByDimensionsSync` instead.");
     }
 
@@ -524,6 +537,10 @@ Object.defineProperty(module.exports, "concurrency", {
     processingQueue.concurrency = concurrency;
   },
 });
+
+module.exports.Util = Util;
+module.exports.Image = Image;
+module.exports.ImageStat = ImageStat;
 
 module.exports.statsSync = Image.statsSync;
 module.exports.statsByDimensionsSync = Image.statsByDimensionsSync;
