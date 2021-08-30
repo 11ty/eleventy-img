@@ -167,13 +167,13 @@ test("Image markup (defaults, inlined)", async t => {
 });
 
 test("svgShortCircuit and generateHTML: Issue #48", async t => {
-  let img = new eleventyImage.Image("./test/Ghostscript_Tiger.svg", {
-    formats: ["webp", "png", "svg"],
-    svgShortCircuit: true,
-    dryRun: true,
-  });
-  let svgStats = eleventyImage.ImageStat.getStat("./test/Ghostscript_Tiger.svg", "svg", "/img/", 900, 900, img.options);
-  console.log( svgStats );
+  // let img = new eleventyImage.Image("./test/Ghostscript_Tiger.svg", {
+  //   formats: ["webp", "png", "svg"],
+  //   svgShortCircuit: true,
+  //   dryRun: true,
+  // });
+  // let svgStats = eleventyImage.ImageStat.getStat("./test/Ghostscript_Tiger.svg", "svg", "/img/", 900, 900, img.options);
+  // console.log( svgStats );
 
   let stats = await eleventyImage("./test/Ghostscript_Tiger.svg", {
     formats: ["webp", "png", "svg"],
@@ -183,12 +183,12 @@ test("svgShortCircuit and generateHTML: Issue #48", async t => {
   t.is(stats.svg.length, 1);
   t.is(stats.webp.length, 0);
   t.is(stats.png.length, 0);
-  t.is(stats.svg[0].url, "/img/W-k0C0bkvk-900.svg");
+  t.is(stats.svg[0].url, "/img/wGeeKEWkof-900.svg");
 
   let html = eleventyImage.generateHTML(stats, {
     alt: "Tiger",
   });
-  t.is(html, `<img alt="Tiger" src="/img/W-k0C0bkvk-900.svg" width="900" height="900">`);
+  t.is(html, `<img alt="Tiger" src="/img/wGeeKEWkof-900.svg" width="900" height="900">`);
 });
 
 test("Filter out empty format arrays", async t => {

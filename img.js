@@ -125,6 +125,7 @@ class Image {
       opts.sourceUrl = this.src.toString();
       opts.__originalSize = this.src.length; // used for hashing
     } else {
+      // TODO @zachleat (multiread): another read
       opts.__originalSize = fs.statSync(this.src).size; // used for hashing
     }
 
@@ -180,12 +181,16 @@ class Image {
   }
 
   // format is only required for local files
-  static getHash(src, options = {}, length = 10) {
+  static getHash(src, format, options = {}, length = 10) {
     let hash = createHash("sha256");
 
     if(fs.existsSync(src)) {
-      // TODO probably need a cache here
+      // TODO @zachleat (multiread): probably need a cache here
       let fileContent = fs.readFileSync(src);
+      if(format === "svg") {
+        // remove all newlines for hashing for better cross-OS hash compatibility (#122)
+        fileContent = fileContent.toString().replace(/\r|\n/g, '');
+      }
       hash.update(fileContent);
     } else {
       // probably a remote URL
@@ -262,7 +267,7 @@ class Image {
       return this.assetCache.fetch(this.cacheOptions);
     }
 
-    // TODO read local file contents here and always return a buffer
+    // TODO @zachleat (multiread): read local file contents here and always return a buffer
     return this.src;
   }
 
@@ -335,7 +340,7 @@ class Image {
         if(this.options.useCache && fs.existsSync(stat.outputPath)){
           stat.size = fs.statSync(stat.outputPath).size;
           if(this.options.dryRun) {
-            // TODO get rid of this duplicate read when input is always a buffer (see TODO in getInput)
+            // TODO @zachleat (multiread): get rid of this duplicate read when input is always a buffer (see TODO in getInput)
             stat.buffer = fs.readFileSync(this.src);
           }
 
@@ -466,7 +471,7 @@ class ImageStat {
     let outputFilename;
     let outputExtension = options.extensions[format] || format;
 
-    let id = Image.getHash(src, options);
+    let id = Image.getHash(src, format, options);
 
     if(options.urlFormat && typeof options.urlFormat === "function") {
       url = options.urlFormat({
