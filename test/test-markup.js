@@ -172,6 +172,10 @@ test("svgShortCircuit and generateHTML: Issue #48", async t => {
     svgShortCircuit: true,
     dryRun: true,
   });
+  t.is(stats.svg.length, 1);
+  t.is(stats.webp.length, 0);
+  t.is(stats.png.length, 0);
+  t.is(stats.svg[0].url, "/img/tZ4Kzy-sde-900.svg");
 
   let html = eleventyImage.generateHTML(stats, {
     alt: "Tiger",
