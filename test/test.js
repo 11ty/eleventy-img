@@ -363,6 +363,11 @@ test("getWidths", t => {
   t.deepEqual(eleventyImage.getWidths(300, ['auto', 150]), [150,300]);
 });
 
+test("getWidths removes duplicates", t => {
+  t.deepEqual(eleventyImage.getWidths(300, [null, 300]), [300]);
+  t.deepEqual(eleventyImage.getWidths(300, [300, 300]), [300]);
+});
+
 test("getWidths allow upscaling", t => {
   t.deepEqual(eleventyImage.getWidths(300, [null], true), [300]); // want original
   t.deepEqual(eleventyImage.getWidths(300, ['auto'], true), [300]); // want original
