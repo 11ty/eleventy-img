@@ -40,7 +40,7 @@ test("getFormats (three) with svg no reorder", t => {
 });
 
 test("getFormats removes duplicates", t => {
-  let formats = eleventyImage.getFormats("svg,webp,png,svg");
+  let formats = eleventyImage.getFormats("svg,webp,png,webp,svg");
   t.is(formats.length, 3);
   // svg should be first
   t.is(formats[0], "svg");
@@ -375,6 +375,7 @@ test("getWidths", t => {
 test("getWidths removes duplicates", t => {
   t.deepEqual(eleventyImage.getWidths(300, [null, 300]), [300]);
   t.deepEqual(eleventyImage.getWidths(300, [300, 300]), [300]);
+  t.deepEqual(eleventyImage.getWidths(600, [300, 400, 300, 500, 400]), [300, 400, 500]);
 });
 
 test("getWidths allow upscaling", t => {
