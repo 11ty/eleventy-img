@@ -39,6 +39,15 @@ test("getFormats (three) with svg no reorder", t => {
   t.is(formats[2], "png");
 });
 
+test("getFormats removes duplicates", t => {
+  let formats = eleventyImage.getFormats("svg,webp,png,svg");
+  t.is(formats.length, 3);
+  // svg should be first
+  t.is(formats[0], "svg");
+  t.is(formats[1], "webp");
+  t.is(formats[2], "png");
+});
+
 test("Sync with jpeg input", t => {
   let stats = eleventyImage.statsSync("./test/bio-2017.jpg");
   t.is(stats.webp.length, 1);

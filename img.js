@@ -202,6 +202,10 @@ class Image {
         return 0;
       });
 
+      // Remove duplicates (e.g., if null happens to coincide with an explicit format
+      // or a user passes in multiple duplicate values)
+      formats = [...new Set(formats)];
+
       return formats;
     }
 
