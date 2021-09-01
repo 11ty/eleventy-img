@@ -52,6 +52,9 @@ const globalOptions = {
   dryRun: false, // Also returns a buffer instance in the return object. Doesn’t write anything to the file system
 
   hashLength: 10, // Truncates the hash to this length
+
+  // Advanced
+  _useCacheValidityInhash: false,
 };
 
 const MIME_TYPES = {
@@ -274,7 +277,7 @@ class Image {
       hash.update(this.src);
 
       // add whether or not the cached asset is still valid per the cache duration (work with empty duration or "*")
-      if(this.isRemoteUrl && this.assetCache && this.cacheOptions) {
+      if(this.options._useCacheValidityInhash && this.isRemoteUrl && this.assetCache && this.cacheOptions) {
         hash.update(`ValidCache:${this.assetCache.isCacheValid(this.cacheOptions.duration)}`);
       }
     }
