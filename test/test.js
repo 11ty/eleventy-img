@@ -496,6 +496,9 @@ test("Dryrun should include the buffer instance", async t => {
   t.truthy(result.webp[0].buffer);
 });
 
+// TODO dryrun buffer with a remote image?
+
+
 test("Test with a string width", async t => {
   let image = await eleventyImage("./test/bio-2017.jpg", {
     widths: ["340"],

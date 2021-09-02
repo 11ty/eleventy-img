@@ -54,7 +54,7 @@ const globalOptions = {
   hashLength: 10, // Truncates the hash to this length
 
   // Advanced
-  _useCacheValidityInhash: false,
+  useCacheValidityInHash: true,
 };
 
 const MIME_TYPES = {
@@ -277,14 +277,13 @@ class Image {
       hash.update(this.src);
 
       // add whether or not the cached asset is still valid per the cache duration (work with empty duration or "*")
-      if(this.options._useCacheValidityInhash && this.isRemoteUrl && this.assetCache && this.cacheOptions) {
+      if(this.options.useCacheValidityInHash && this.isRemoteUrl && this.assetCache && this.cacheOptions) {
         hash.update(`ValidCache:${this.assetCache.isCacheValid(this.cacheOptions.duration)}`);
       }
     }
 
     // We ignore all keys not relevant to the file processing/output (including `widths`, which is a suffix added to the filename)
     // e.g. `widths: [300]` and `widths: [300, 600]`, with all else being equal the 300px output of each should have the same hash
-    // The code currently assumes these are all Object literals (see Util.getSortedObject)
     let keysToKeep = [
       "sharpOptions",
       "sharpWebpOptions",
@@ -294,6 +293,7 @@ class Image {
     ].sort();
 
     let hashObject = {};
+    // The code currently assumes are keysToKeep are Object literals (see Util.getSortedObject)
     for(let key of keysToKeep) {
       if(this.options[key]) {
         hashObject[key] = Util.getSortedObject(this.options[key]);
