@@ -39,6 +39,15 @@ test("getFormats (three) with svg no reorder", t => {
   t.is(formats[2], "png");
 });
 
+test("getFormats removes duplicates", t => {
+  let formats = eleventyImage.getFormats("svg,webp,png,webp,svg");
+  t.is(formats.length, 3);
+  // svg should be first
+  t.is(formats[0], "svg");
+  t.is(formats[1], "webp");
+  t.is(formats[2], "png");
+});
+
 test("Sync with jpeg input", t => {
   let stats = eleventyImage.statsSync("./test/bio-2017.jpg");
   t.is(stats.webp.length, 1);
@@ -361,6 +370,12 @@ test("getWidths", t => {
   t.deepEqual(eleventyImage.getWidths(300, [null, 150]), [150,300]);
   t.deepEqual(eleventyImage.getWidths(300, [150, 'auto']), [150,300]);
   t.deepEqual(eleventyImage.getWidths(300, ['auto', 150]), [150,300]);
+});
+
+test("getWidths removes duplicates", t => {
+  t.deepEqual(eleventyImage.getWidths(300, [null, 300]), [300]);
+  t.deepEqual(eleventyImage.getWidths(300, [300, 300]), [300]);
+  t.deepEqual(eleventyImage.getWidths(600, [300, 400, 300, 500, 400]), [300, 400, 500]);
 });
 
 test("getWidths allow upscaling", t => {

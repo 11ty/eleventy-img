@@ -166,6 +166,10 @@ class Image {
     // Convert strings to numbers, "400" (floats are not allowed in sharp)
     valid = valid.map(width => parseInt(width, 10));
 
+    // Remove duplicates (e.g., if null happens to coincide with an explicit width
+    // or a user passes in multiple duplicate values)
+    valid = [...new Set(valid)];
+
     // filter out large widths if upscaling is disabled
     let filtered = valid.filter(width => allowUpscale || width <= originalWidth);
 
@@ -200,6 +204,10 @@ class Image {
         }
         return 0;
       });
+
+      // Remove duplicates (e.g., if null happens to coincide with an explicit format
+      // or a user passes in multiple duplicate values)
+      formats = [...new Set(formats)];
 
       return formats;
     }
