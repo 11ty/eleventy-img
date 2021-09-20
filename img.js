@@ -66,7 +66,9 @@ const MIME_TYPES = {
 };
 
 const FORMAT_ALIASES = {
-  "jpg": "jpeg"
+  "jpg": "jpeg",
+  // if you’re working from a mime type input, let’s alias it back to svg
+  "svg+xml": "svg",
 };
 
 class Util {
