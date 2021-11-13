@@ -360,6 +360,15 @@ class Image {
     let results = [];
     let outputFormats = Image.getFormatsArray(this.options.formats);
 
+    // Orientation 5 to 8 means dimensions are fliped
+    if (metadata.orientation >= 5) {
+      metadata = {
+        ...metadata,
+        width: metadata.height,
+        height: metadata.width,
+      }
+    }
+
     for(let outputFormat of outputFormats) {
       if(!outputFormat || outputFormat === "auto") {
         outputFormat = metadata.format || this.options.overrideInputFormat;
