@@ -362,11 +362,10 @@ class Image {
 
     // Orientation 5 to 8 means dimensions are fliped
     if (metadata.orientation >= 5) {
-      metadata = {
-        ...metadata,
-        width: metadata.height,
-        height: metadata.width,
-      }
+      let height = metadata.height;
+      let width = metadata.width;
+      metadata.width = height;
+      metadata.height = width;
     }
 
     for(let outputFormat of outputFormats) {
