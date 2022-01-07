@@ -37,13 +37,19 @@ function generateObject(metadata, attributes = {}, options = {}) {
 
   let lowsrc;
   let lowsrcFormat;
-  // TODO handle if empty intersection between format and LOWSRC_FORMAT_PREFERENCE
   for(let format of LOWSRC_FORMAT_PREFERENCE) {
     if((format in metadata) && metadata[format].length) {
       lowsrcFormat = format;
       lowsrc = metadata[lowsrcFormat];
       break;
     }
+  }
+
+  // Handle if empty intersection between format and LOWSRC_FORMAT_PREFERENCE (e.g. gif)
+  // If there’s only one format in the results, use that
+  if(!lowsrc && formats.length === 1) {
+    lowsrcFormat = formats[0];
+    lowsrc = metadata[lowsrcFormat];
   }
 
   if(!lowsrc || !lowsrc.length) {

@@ -224,3 +224,24 @@ test("Filter out empty format arrays", async t => {
   });
   t.truthy(!!html);
 });
+
+test("Image markup (animated gif)", async t => {
+  let results = await eleventyImage("./test/earth-animated.gif", {
+    dryRun: true,
+    formats: ["auto"]
+  });
+
+  t.is(generateHTML(results, {
+    alt: ""
+  }), `<img alt="" src="/img/YQVTYq1wRQ-400.gif" width="400" height="400">`);
+});
+
+test("Image markup (animated gif, two formats)", async t => {
+  let results = await eleventyImage("./test/earth-animated.gif", {
+    dryRun: true,
+    formats: ["tiff", "auto"]
+  });
+
+  let e = t.throws(() => generateHTML(results, { alt: "" }));
+  t.true(e.message.startsWith("Could not find the lowest <img>"));
+});

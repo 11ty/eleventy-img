@@ -70,6 +70,7 @@ const MIME_TYPES = {
   "png": "image/png",
   "svg": "image/svg+xml",
   "avif": "image/avif",
+  "gif": "image/gif",
 };
 
 const FORMAT_ALIASES = {
