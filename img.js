@@ -48,6 +48,13 @@ const globalOptions = {
   // Note: when you use this, metadata will not include .filename or .outputPath
   urlFormat: null,
 
+  // If true, skips all image processing, just return stats. Doesn’t read files, doesn’t write files.
+  // Important to note that `dryRun: true` performs image processing and includes a buffer—this does not.
+  // Useful when used with `urlFormat` above.
+  // Better than .statsSync* functions, because this will use the in-memory cache and de-dupe requests. Those will not.
+  statsOnly: false,
+  remoteImageMetadata: {}, // For `statsOnly` remote images, this needs to be populated with { width, height, format? }
+
   useCache: true, // in-memory cache
   dryRun: false, // Also returns a buffer instance in the return object. Doesn’t write anything to the file system
 
@@ -184,13 +191,19 @@ class Image {
     return filtered.sort((a, b) => a - b);
   }
 
-  static getFormatsArray(formats) {
+  static getFormatsArray(formats, autoFormat) {
     if(formats && formats.length) {
       if(typeof formats === "string") {
         formats = formats.split(",");
       }
 
       formats = formats.map(format => {
+        if(autoFormat) {
+          if((!format || format === "auto")) {
+            format = autoFormat;
+          }
+        }
+
         if(FORMAT_ALIASES[format]) {
           return FORMAT_ALIASES[format];
         }
@@ -321,9 +334,12 @@ class Image {
     let url;
     let outputFilename;
     let outputExtension = this.options.extensions[outputFormat] || outputFormat;
-    let hash = this.getHash();
-
     if(this.options.urlFormat && typeof this.options.urlFormat === "function") {
+      let hash;
+      if(!this.options.statsOnly) {
+        hash = this.getHash();
+      }
+
       url = this.options.urlFormat({
         hash,
         src: this.src,
@@ -331,6 +347,7 @@ class Image {
         format: outputExtension,
       }, this.options);
     } else {
+      let hash = this.getHash();
       outputFilename = ImagePath.getFilename(hash, this.src, width, outputExtension, this.options);
       url = ImagePath.convertFilePathToUrl(this.options.urlPath, outputFilename);
     }
@@ -358,16 +375,12 @@ class Image {
   // src is used to calculate the output file names
   getFullStats(metadata) {
     let results = [];
-    let outputFormats = Image.getFormatsArray(this.options.formats);
+    let outputFormats = Image.getFormatsArray(this.options.formats, metadata.format || this.options.overrideInputFormat);
 
     for(let outputFormat of outputFormats) {
       if(!outputFormat || outputFormat === "auto") {
-        outputFormat = metadata.format || this.options.overrideInputFormat;
-      }
-      if(!outputFormat || outputFormat === "auto") {
         throw new Error("When using statsSync or statsByDimensionsSync, `formats: [null | auto]` to use the native image format is not supported.");
       }
-
       if(outputFormat === "svg") {
         if((metadata.format || this.options.overrideInputFormat) === "svg") {
           let svgStats = this.getStat("svg", metadata.width, metadata.height);
@@ -462,14 +475,14 @@ class Image {
             sharpInstance.toFormat(outputFormat, sharpFormatOptions);
           }
 
-          if(this.options.dryRun) {
-            outputFilePromises.push(sharpInstance.toBuffer({ resolveWithObject: true }).then(({ data, info }) => {
-              stat.buffer = data;
+          if(stat.outputPath) {
+            outputFilePromises.push(sharpInstance.toFile(stat.outputPath).then(info => {
               stat.size = info.size;
               return stat;
             }));
           } else {
-            outputFilePromises.push(sharpInstance.toFile(stat.outputPath).then(info => {
+            outputFilePromises.push(sharpInstance.toBuffer({ resolveWithObject: true }).then(({ data, info }) => {
+              stat.buffer = data;
               stat.size = info.size;
               return stat;
             }));
@@ -571,6 +584,27 @@ function queueImage(src, opts) {
   }
 
   let promise = processingQueue.add(async () => {
+    if(typeof src === "string" && opts && opts.statsOnly) {
+      if(Util.isFullUrl(src)) {
+        if(!opts.remoteImageMetadata || !opts.remoteImageMetadata.width || !opts.remoteImageMetadata.height) {
+          throw new Error("When using `statsOnly` and remote images, you must supply a `remoteImageMetadata` object with { width, height, format? }");
+        }
+        return img.getFullStats({
+          width: opts.remoteImageMetadata.width,
+          height: opts.remoteImageMetadata.height,
+          format: opts.remoteImageMetadata.format, // only required if you want to use the "auto" format
+          guess: true,
+        });
+      } else { // Local images
+        let { width, height, type } = getImageSize(src);
+        return img.getFullStats({
+          width,
+          height,
+          format: type // only required if you want to use the "auto" format
+        });
+      }
+    }
+
     let input = await img.getInput();
     return img.resize(input);
   });

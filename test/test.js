@@ -1,6 +1,7 @@
 const path = require("path");
 const test = require("ava");
 const fs = require("fs");
+const { URL } = require("url");
 const eleventyImage = require("../");
 
 // Remember that any outputPath tests must use path.join to work on Windows
@@ -646,3 +647,161 @@ test("statsSync and eleventyImage output comparison", async t => {
   t.deepEqual(statsByDimensionsSync, stats);
   t.deepEqual(statsSync, statsByDimensionsSync);
 });
+
+test("urlFormat using local image", async t => {
+  let stats = await eleventyImage("./test/bio-2017.jpg", {
+    formats: ["auto"],
+    urlFormat: function({ src }) {
+      let u = new URL(src, "https://www.zachleat.com/");
+      return `https://v1.image.11ty.dev/${encodeURIComponent(u)}/`;
+    }
+  });
+
+  t.truthy(stats);
+  t.truthy(stats.jpeg.length);
+  t.truthy(stats.jpeg[0].buffer);
+  t.truthy(stats.jpeg[0].size);
+
+  t.is(stats.jpeg[0].width, 1280);
+  t.is(stats.jpeg[0].height, 853);
+  t.is(stats.jpeg[0].url, "https://v1.image.11ty.dev/https%3A%2F%2Fwww.zachleat.com%2Ftest%2Fbio-2017.jpg/");
+});
+
+test("urlFormat using remote image", async t => {
+  let stats = await eleventyImage("https://www.zachleat.com/img/avatar-2017.png", {
+    formats: ["auto"],
+    urlFormat: function({ src }) {
+      return `https://v1.image.11ty.dev/${encodeURIComponent(src)}/`;
+    }
+  });
+  t.truthy(stats);
+  t.truthy(stats.png.length);
+  t.truthy(stats.png[0].buffer);
+  t.truthy(stats.png[0].size);
+
+  t.is(stats.png[0].width, 160);
+  t.is(stats.png[0].height, 160);
+  t.is(stats.png[0].url, "https://v1.image.11ty.dev/https%3A%2F%2Fwww.zachleat.com%2Fimg%2Favatar-2017.png/");
+});
+
+
+test("statsOnly using local image", async t => {
+  let stats = await eleventyImage("./test/bio-2017.jpg", {
+    statsOnly: true,
+    formats: ["auto"],
+    urlFormat: function({ src }) {
+      let u = new URL(src, "https://www.zachleat.com/");
+      return `https://v1.image.11ty.dev/${encodeURIComponent(u)}/`;
+    }
+  });
+  t.deepEqual(stats, {
+    jpeg: [
+      {
+        format: 'jpeg',
+        height: 853,
+        sourceType: 'image/jpeg',
+        srcset: 'https://v1.image.11ty.dev/https%3A%2F%2Fwww.zachleat.com%2Ftest%2Fbio-2017.jpg/ 1280w',
+        url: 'https://v1.image.11ty.dev/https%3A%2F%2Fwww.zachleat.com%2Ftest%2Fbio-2017.jpg/',
+        width: 1280,
+      },
+    ],
+  });
+});
+
+test("statsOnly using remote image", async t => {
+  let stats = await eleventyImage("https://www.zachleat.com/img/avatar-2017.png", {
+    statsOnly: true,
+    remoteImageMetadata: {
+      width: 160,
+      height: 160,
+      format: "png"
+    },
+    formats: ["auto"],
+    urlFormat: function({ src }) {
+      return `https://v1.image.11ty.dev/${encodeURIComponent(src)}/`;
+    }
+  });
+  t.deepEqual(stats, {
+    png: [
+      {
+        format: 'png',
+        height: 160,
+        sourceType: 'image/png',
+        srcset: 'https://v1.image.11ty.dev/https%3A%2F%2Fwww.zachleat.com%2Fimg%2Favatar-2017.png/ 160w',
+        url: 'https://v1.image.11ty.dev/https%3A%2F%2Fwww.zachleat.com%2Fimg%2Favatar-2017.png/',
+        width: 160,
+      },
+    ],
+  });
+});
+
+
+test("statsOnly using local image, no urlFormat", async t => {
+  let stats = await eleventyImage("./test/bio-2017.jpg", {
+    statsOnly: true,
+    formats: ["auto"],
+    filenameFormat(hash, src, width, format) {
+      return "this-should-not-exist." + format;
+    }
+  });
+
+  // No buffer
+  t.truthy(stats.jpeg[0]);
+  t.falsy(stats.jpeg[0].buffer);
+
+  // make sure it doesn’t exist.
+  t.true(!fs.existsSync(stats.jpeg[0].outputPath));
+
+  t.deepEqual(stats, {
+    jpeg: [
+      {
+        format: 'jpeg',
+        height: 853,
+        sourceType: 'image/jpeg',
+        filename: "this-should-not-exist.jpeg",
+        outputPath: "img/this-should-not-exist.jpeg",
+        srcset: '/img/this-should-not-exist.jpeg 1280w',
+        url: '/img/this-should-not-exist.jpeg',
+        width: 1280,
+      },
+    ],
+  });
+});
+
+test("statsOnly using remote image, no urlFormat", async t => {
+  let stats = await eleventyImage("https://www.zachleat.com/img/avatar-2017.png", {
+    statsOnly: true,
+    remoteImageMetadata: {
+      width: 160,
+      height: 160,
+      format: "png"
+    },
+    formats: ["auto"],
+    filenameFormat(hash, src, width, format) {
+      return "this-should-not-exist." + format;
+    },
+  });
+
+  // No buffer
+  t.truthy(stats.png[0]);
+  t.falsy(stats.png[0].buffer);
+
+  // make sure it doesn’t exist.
+  t.true(!fs.existsSync(stats.png[0].outputPath));
+
+  t.deepEqual(stats, {
+    png: [
+      {
+        format: 'png',
+        height: 160,
+        sourceType: 'image/png',
+        filename: "this-should-not-exist.png",
+        outputPath: "img/this-should-not-exist.png",
+        srcset: '/img/this-should-not-exist.png 160w',
+        url: '/img/this-should-not-exist.png',
+        width: 160,
+      },
+    ],
+  });
+});
+
