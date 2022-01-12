@@ -93,11 +93,18 @@ class Util {
     return obj;
   }
 
-  static isFullUrl(url) {
+  static isRemoteUrl(url) {
     try {
-      new URL(url);
-      return true;
-    } catch(e) {
+      const validUrl = new URL(url);
+
+      if (validUrl.protocol.startsWith("https:") || validUrl.protocol.startsWith("http:")) {
+        return true;
+      }
+
+      return false;
+    } catch(e)
+
+    {
       // invalid url OR local path
       return false;
     }
@@ -111,7 +118,7 @@ class Image {
     }
 
     this.src = src;
-    this.isRemoteUrl = typeof src === "string" && Util.isFullUrl(src);
+    this.isRemoteUrl = typeof src === "string" && Util.isRemoteUrl(src);
     this.options = Object.assign({}, globalOptions, options);
 
     if(this.isRemoteUrl) {
@@ -506,8 +513,8 @@ class Image {
   * any files.
   */
   static statsSync(src, opts) {
-    if(typeof src === "string" && Util.isFullUrl(src)) {
-      throw new Error("`statsSync` is not supported with full URL sources. Use `statsByDimensionsSync` instead.");
+    if(typeof src === "string" && Util.isRemoteUrl(src)) {
+      throw new Error("`statsSync` is not supported with remote sources. Use `statsByDimensionsSync` instead.");
     }
 
     let dimensions = getImageSize(src);
@@ -586,7 +593,7 @@ function queueImage(src, opts) {
 
   let promise = processingQueue.add(async () => {
     if(typeof src === "string" && opts && opts.statsOnly) {
-      if(Util.isFullUrl(src)) {
+      if(Util.isRemoteUrl(src)) {
         if(!opts.remoteImageMetadata || !opts.remoteImageMetadata.width || !opts.remoteImageMetadata.height) {
           throw new Error("When using `statsOnly` and remote images, you must supply a `remoteImageMetadata` object with { width, height, format? }");
         }

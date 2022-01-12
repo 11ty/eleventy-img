@@ -805,3 +805,26 @@ test("statsOnly using remote image, no urlFormat", async t => {
   });
 });
 
+test("src is recognized as local when using absolute path on Windows", t => {
+  let image = new eleventyImage.Image("C:\\image.jpg");
+
+  t.is(image.isRemoteUrl, false);
+});
+
+test("src is recognized as local when using absolute path on POSIX", t => {
+  let image = new eleventyImage.Image("/home/user/image.jpg");
+
+  t.is(image.isRemoteUrl, false);
+});
+
+test("src is recognized as remote when using https scheme", t => {
+  let image = new eleventyImage.Image("https://example.com/image.jpg");
+
+  t.is(image.isRemoteUrl, true);
+});
+
+test("src is recognized as remote when using http scheme", t => {
+  let image = new eleventyImage.Image("http://example.com/image.jpg");
+
+  t.is(image.isRemoteUrl, true);
+});
