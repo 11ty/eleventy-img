@@ -900,3 +900,19 @@ test("#132: Test EXIF orientation data landscape (8)", async t => {
   t.is(stats.jpeg[0].width, 400);
   t.is(Math.floor(stats.jpeg[0].height), 266);
 });
+
+test("Animated gif", async t => {
+  let stats = await eleventyImage("./test/earth-animated.gif", {
+    dryRun: true,
+    formats: ["auto"],
+    sharpOptions: {
+      animated: true
+    },
+    outputDir: "./test/img/",
+  });
+
+  t.is(stats.gif.length, 1);
+  t.is(stats.gif[0].width, 400);
+  // it’s a big boi
+  t.true( stats.gif[0].size > 1000*1000 );
+});
