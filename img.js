@@ -111,6 +111,9 @@ class Util {
   }
 }
 
+// Temporary alias for changes made in https://github.com/11ty/eleventy-img/pull/138
+Util.isFullUrl = Util.isRemoteUrl;
+
 class Image {
   constructor(src, options) {
     if(!src) {
