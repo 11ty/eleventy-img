@@ -240,18 +240,6 @@ test("Use exact same width as original", async t => {
   t.is(stats.jpeg[0].width, 1280);
 });
 
-test("Maintains orientation", async t => {
-  let stats = await eleventyImage("./test/orientation.jpg", {
-    widths: [151],
-    formats: ["jpeg"],
-    outputDir: "./test/img/"
-  });
-
-  t.is(stats.jpeg.length, 1);
-  t.is(stats.jpeg[0].width, 76);
-  t.is(stats.jpeg[0].height, 151);
-});
-
 test("Try to use a width larger than original (statsSync)", t => {
   let stats = eleventyImage.statsSync("./test/bio-2017.jpg", {
     widths: [1500],
@@ -840,4 +828,75 @@ test("src is recognized as remote when using http scheme", t => {
   let image = new eleventyImage.Image("http://example.com/image.jpg");
 
   t.is(image.isRemoteUrl, true);
+});
+
+test("Maintains orientation #132", async t => {
+  let stats = await eleventyImage("./test/orientation.jpg", {
+    // upscaling rules apply:
+    //  even though the image is 76px wide and has exif width: 151,
+    //  any number above 76 will return a 76px width image
+    widths: [151],
+    formats: ["jpeg"],
+    outputDir: "./test/img/",
+    dryRun: true,
+  });
+
+  t.is(stats.jpeg.length, 1);
+  t.is(stats.jpeg[0].width, 76);
+  t.is(stats.jpeg[0].height, 151);
+});
+
+// Broken test cases from https://github.com/recurser/exif-orientation-examples
+test("#132: Test EXIF orientation data landscape (5)", async t => {
+  let stats = await eleventyImage("./test/exif-Landscape_5.jpg", {
+    widths: [400, "auto"],
+    formats: ['auto'],
+    outputDir: "./test/img/",
+    dryRun: true,
+  });
+
+  t.is(stats.jpeg.length, 2);
+  t.is(stats.jpeg[0].width, 400);
+  t.is(stats.jpeg[1].width, 1800);
+  t.is(Math.floor(stats.jpeg[0].height), 266);
+  t.is(stats.jpeg[1].height, 1200);
+});
+
+test("#132: Test EXIF orientation data landscape (6)", async t => {
+  let stats = await eleventyImage("./test/exif-Landscape_6.jpg", {
+    widths: [400],
+    formats: ['auto'],
+    outputDir: "./test/img/",
+    dryRun: true,
+  });
+
+  t.is(stats.jpeg.length, 1);
+  t.is(stats.jpeg[0].width, 400);
+  t.is(Math.floor(stats.jpeg[0].height), 266);
+});
+
+test("#132: Test EXIF orientation data landscape (7)", async t => {
+  let stats = await eleventyImage("./test/exif-Landscape_7.jpg", {
+    widths: [400],
+    formats: ['auto'],
+    outputDir: "./test/img/",
+    dryRun: true,
+  });
+
+  t.is(stats.jpeg.length, 1);
+  t.is(stats.jpeg[0].width, 400);
+  t.is(Math.floor(stats.jpeg[0].height), 266);
+});
+
+test("#132: Test EXIF orientation data landscape (8)", async t => {
+  let stats = await eleventyImage("./test/exif-Landscape_8.jpg", {
+    widths: [400],
+    formats: ['auto'],
+    outputDir: "./test/img/",
+    // dryRun: true,
+  });
+
+  t.is(stats.jpeg.length, 1);
+  t.is(stats.jpeg[0].width, 400);
+  t.is(Math.floor(stats.jpeg[0].height), 266);
 });
