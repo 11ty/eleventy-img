@@ -240,6 +240,18 @@ test("Use exact same width as original", async t => {
   t.is(stats.jpeg[0].width, 1280);
 });
 
+test("Maintains orientation", async t => {
+  let stats = await eleventyImage("./test/orientation.jpg", {
+    widths: [151],
+    formats: ["jpeg"],
+    outputDir: "./test/img/"
+  });
+
+  t.is(stats.jpeg.length, 1);
+  t.is(stats.jpeg[0].width, 76);
+  t.is(stats.jpeg[0].height, 151);
+});
+
 test("Try to use a width larger than original (statsSync)", t => {
   let stats = eleventyImage.statsSync("./test/bio-2017.jpg", {
     widths: [1500],

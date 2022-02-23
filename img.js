@@ -388,6 +388,14 @@ class Image {
     let results = [];
     let outputFormats = Image.getFormatsArray(this.options.formats, metadata.format || this.options.overrideInputFormat);
 
+    // Orientation 5 to 8 means dimensions are fliped
+    if (metadata.orientation >= 5) {
+      let height = metadata.height;
+      let width = metadata.width;
+      metadata.width = height;
+      metadata.height = width;
+    }
+
     for(let outputFormat of outputFormats) {
       if(!outputFormat || outputFormat === "auto") {
         throw new Error("When using statsSync or statsByDimensionsSync, `formats: [null | auto]` to use the native image format is not supported.");
@@ -458,7 +466,10 @@ class Image {
           if(metadata.format !== "svg" || !this.options.svgAllowUpscale) {
             resizeOptions.withoutEnlargement = true;
           }
+          sharpInstance.rotate();
           sharpInstance.resize(resizeOptions);
+        } else if (stat.width === metadata.width && metadata.format !== "svg") {
+          sharpInstance.rotate();
         }
 
         if(!this.options.dryRun) {
