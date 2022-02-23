@@ -228,8 +228,7 @@ test("Filter out empty format arrays", async t => {
 test("Image markup (animated gif)", async t => {
   let results = await eleventyImage("./test/earth-animated.gif", {
     dryRun: true,
-    formats: ["auto"],
-    outputDir: "./test/img/",
+    formats: ["auto"]
   });
 
   t.is(generateHTML(results, {
@@ -240,8 +239,7 @@ test("Image markup (animated gif)", async t => {
 test("Image markup (animated gif, two formats)", async t => {
   let results = await eleventyImage("./test/earth-animated.gif", {
     dryRun: true,
-    formats: ["tiff", "auto"],
-    outputDir: "./test/img/",
+    formats: ["tiff", "auto"]
   });
 
   let e = t.throws(() => generateHTML(results, { alt: "" }));
