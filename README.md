@@ -32,3 +32,9 @@ npm run test
 
 - We use the [ava JavaScript test runner](https://github.com/avajs/ava) ([Assertions documentation](https://github.com/avajs/ava/blob/master/docs/03-assertions.md))
 - ℹ️ To keep tests fast, thou shalt try to avoid writing files in tests.
+
+## Community Roadmap
+
+- [Top Feature Requests](https://github.com/11ty/eleventy-img/issues?q=label%3Aneeds-votes+sort%3Areactions-%2B1-desc) (Add your own votes using the 👍 reaction)
+- [Top Bugs 😱](https://github.com/11ty/eleventy-img/issues?q=is%3Aissue+is%3Aopen+label%3Abug+sort%3Areactions-%2B1-desc) (Add your own votes using the 👍 reaction)
+- [Newest Bugs 🙀](https://github.com/11ty/eleventy-img/issues?q=is%3Aopen+is%3Aissue+label%3Abug)
