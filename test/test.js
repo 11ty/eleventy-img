@@ -694,6 +694,7 @@ test("statsOnly using local image", async t => {
       return `https://v1.image.11ty.dev/${encodeURIComponent(u)}/`;
     }
   });
+
   t.deepEqual(stats, {
     jpeg: [
       {
@@ -759,7 +760,7 @@ test("statsOnly using local image, no urlFormat", async t => {
         height: 853,
         sourceType: 'image/jpeg',
         filename: "this-should-not-exist.jpeg",
-        outputPath: "img/this-should-not-exist.jpeg",
+        outputPath: path.join("img", "this-should-not-exist.jpeg"),
         srcset: '/img/this-should-not-exist.jpeg 1280w',
         url: '/img/this-should-not-exist.jpeg',
         width: 1280,
@@ -796,7 +797,7 @@ test("statsOnly using remote image, no urlFormat", async t => {
         height: 160,
         sourceType: 'image/png',
         filename: "this-should-not-exist.png",
-        outputPath: "img/this-should-not-exist.png",
+        outputPath: path.join("img", "this-should-not-exist.png"),
         srcset: '/img/this-should-not-exist.png 160w',
         url: '/img/this-should-not-exist.png',
         width: 160,
