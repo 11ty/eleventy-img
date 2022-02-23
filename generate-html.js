@@ -65,7 +65,9 @@ function generateObject(metadata, attributes = {}, options = {}) {
 
   // <img>: one format and one size
   if(entryCount === 1) {
-    return { "img": attributesWithoutSizes };
+    return {
+      "img": attributesWithoutSizes
+    };
   }
 
   let missingSizesErrorMessage = `Missing \`sizes\` attribute on eleventy-img shortcode from: ${originalSrc || attributes.src}`;
@@ -73,8 +75,9 @@ function generateObject(metadata, attributes = {}, options = {}) {
   // <img srcset>: one format and multiple sizes
   if(formats.length === 1) { // implied entryCount > 1
     if(entryCount > 1 && !attributes.sizes) {
-      // Per the HTML specification sizes is required when multiple sources are in srcset
-      // The default "100vw" is okay
+      // Per the HTML specification sizes is required srcset is using the `w` unit
+      // https://html.spec.whatwg.org/dev/semantics.html#the-link-element:attr-link-imagesrcset-4
+      // Using the default "100vw" is okay
       throw new Error(missingSizesErrorMessage);
     }
 
@@ -83,7 +86,9 @@ function generateObject(metadata, attributes = {}, options = {}) {
     imgAttributes.srcset = srcsetAttrValue;
     imgAttributes.sizes = attributes.sizes;
 
-    return { "img": imgAttributes };
+    return {
+      img: imgAttributes
+    };
   }
 
   let children = [];
@@ -91,8 +96,9 @@ function generateObject(metadata, attributes = {}, options = {}) {
     return imageFormat.length > 0 && (lowsrcFormat !== imageFormat[0].format || imageFormat.length !== 1);
   }).forEach(imageFormat => {
     if(imageFormat.length > 1 && !attributes.sizes) {
-      // Per the HTML specification sizes is required when multiple sources are in srcset
-      // The default "100vw" is okay
+      // Per the HTML specification sizes is required srcset is using the `w` unit
+      // https://html.spec.whatwg.org/dev/semantics.html#the-link-element:attr-link-imagesrcset-4
+      // Using the default "100vw" is okay
       throw new Error(missingSizesErrorMessage);
     }
 
