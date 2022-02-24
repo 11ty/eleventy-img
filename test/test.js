@@ -916,3 +916,15 @@ test("Animated gif", async t => {
   // it’s a big boi
   t.true( stats.gif[0].size > 1000*1000 );
 });
+
+test("Change hashLength", async t => {
+  let stats = await eleventyImage("./test/bio-2017.jpg", {
+    widths: [null],
+    hashLength: 6,
+    formats: ['auto'],
+    dryRun: true,
+  });
+
+  t.is(stats.jpeg.length, 1);
+  t.is(stats.jpeg[0].outputPath, path.join("img/KkPMmH-1280.jpeg"));
+});
