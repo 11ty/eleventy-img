@@ -382,14 +382,19 @@ class Image {
     return stats;
   }
 
+  // https://jdhao.github.io/2019/07/31/image_rotation_exif_info/
+  // Orientation 5 to 8 means image is rotated (width/height are flipped)
+  needsRotation(orientation) {
+    return orientation >= 5;
+  }
+
   // metadata so far: width, height, format
   // src is used to calculate the output file names
   getFullStats(metadata) {
     let results = [];
     let outputFormats = Image.getFormatsArray(this.options.formats, metadata.format || this.options.overrideInputFormat);
 
-    // Orientation 5 to 8 means dimensions are fliped
-    if (metadata.orientation >= 5) {
+    if (this.needsRotation(metadata.orientation)) {
       let height = metadata.height;
       let width = metadata.width;
       metadata.width = height;
@@ -466,10 +471,14 @@ class Image {
           if(metadata.format !== "svg" || !this.options.svgAllowUpscale) {
             resizeOptions.withoutEnlargement = true;
           }
-          sharpInstance.rotate();
+          if(this.needsRotation(metadata.orientation)) {
+            sharpInstance.rotate();
+          }
           sharpInstance.resize(resizeOptions);
         } else if (stat.width === metadata.width && metadata.format !== "svg") {
-          sharpInstance.rotate();
+          if(this.needsRotation(metadata.orientation)) {
+            sharpInstance.rotate();
+          }
         }
 
         if(!this.options.dryRun) {
