@@ -11,7 +11,7 @@ const debug = require("debug")("EleventyImg");
 
 const svgHook = require("./format-hooks/svg");
 
-const {RemoteAssetCache, queue} = require("@11ty/eleventy-cache-assets");
+const {RemoteAssetCache, queue} = require("@11ty/eleventy-fetch");
 const MemoryCache = require("./memory-cache");
 
 const globalOptions = {
@@ -127,7 +127,7 @@ class Image {
     if(this.isRemoteUrl) {
       this.cacheOptions = Object.assign({
         duration: this.options.cacheDuration, // deprecated
-        dryRun: this.options.dryRun, // Issue #117: re-use eleventy-img dryRun option value for eleventy-cache-assets dryRun
+        dryRun: this.options.dryRun, // Issue #117: re-use eleventy-img dryRun option value for eleventy-fetch dryRun
         type: "buffer"
       }, this.options.cacheOptions);
 
@@ -280,7 +280,7 @@ class Image {
     if(this.isRemoteUrl) {
       // fetch remote image Buffer
       if(queue) {
-        // eleventy-cache-assets 2.0.4 and up
+        // eleventy-fetch 3.0+ and eleventy-cache-assets 2.0.4+
         return queue(this.src, () => this.assetCache.fetch());
       }
 
