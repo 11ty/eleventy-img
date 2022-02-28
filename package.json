@@ -36,7 +36,6 @@
   "homepage": "https://github.com/11ty/eleventy-img#readme",
   "dependencies": {
     "@11ty/eleventy-fetch": "^3.0.0",
-    "base64url": "^3.0.1",
     "debug": "^4.3.3",
     "image-size": "^1.0.1",
     "p-queue": "^6.6.2",

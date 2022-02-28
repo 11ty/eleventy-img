@@ -4,7 +4,6 @@ const fsp = fs.promises;
 const { URL } = require("url");
 const { createHash } = require("crypto");
 const {default: PQueue} = require("p-queue");
-const base64url = require("base64url");
 const getImageSize = require("image-size");
 const sharp = require("sharp");
 const debug = require("debug")("EleventyImg");
@@ -338,7 +337,12 @@ class Image {
 
     // TODO allow user to update other things into hash
 
-    return base64url.encode(hash.digest()).substring(0, this.options.hashLength);
+    // Get hash in base64, and make it URL safe.
+    // NOTE: When increasing minimum Node version to 14,
+    // replace with hash.digest('base64url')
+    let base64hash =  hash.digest('base64').replace(/=/g, "").replace(/\+/g, "-").replace(/\//g, "_");
+
+    return base64hash.substring(0, this.options.hashLength);
   }
 
   getStat(outputFormat, width, height) {
