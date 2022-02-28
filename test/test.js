@@ -901,8 +901,7 @@ test("#132: Test EXIF orientation data landscape (8)", async t => {
   t.is(Math.floor(stats.jpeg[0].height), 266);
 });
 
-// Failing on Windows GitHub Actions
-test.skip("Animated gif", async t => {
+test("Animated gif", async t => {
   let stats = await eleventyImage("./test/earth-animated.gif", {
     dryRun: true,
     formats: ["auto"],
