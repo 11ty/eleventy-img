@@ -311,7 +311,14 @@ class Image {
 
       // add whether or not the cached asset is still valid per the cache duration (work with empty duration or "*")
       if(this.options.useCacheValidityInHash && this.isRemoteUrl && this.assetCache && this.cacheOptions) {
-        hash.update(`ValidCache:${this.assetCache.isCacheValid(this.cacheOptions.duration)}`);
+        if(this.assetCache.needsToFetch()) {
+          // Assume cache is valid if asset is yet to be fetched. See #146.
+          // isCacheValid returns false while asset is being fetched
+          // and that results in a different hash.
+          hash.update(`ValidCache:true`);
+        } else {
+          hash.update(`ValidCache:${this.assetCache.isCacheValid(this.cacheOptions.duration)}`);
+        }
       }
     }
 
