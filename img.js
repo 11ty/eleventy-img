@@ -340,7 +340,7 @@ class Image {
     // Get hash in base64, and make it URL safe.
     // NOTE: When increasing minimum Node version to 14,
     // replace with hash.digest('base64url')
-    let base64hash =  hash.digest('base64').replace(/=/g, "").replace(/\+/g, "-").replace(/\//g, "_");
+    let base64hash = hash.digest('base64').replace(/=/g, "").replace(/\+/g, "-").replace(/\//g, "_");
 
     return base64hash.substring(0, this.options.hashLength);
   }
@@ -510,7 +510,8 @@ class Image {
             sharpInstance.toFormat(outputFormat, sharpFormatOptions);
           }
 
-          if(stat.outputPath) {
+          if(!this.options.dryRun && stat.outputPath) {
+            // Should never write when dryRun is true
             outputFilePromises.push(sharpInstance.toFile(stat.outputPath).then(info => {
               stat.size = info.size;
               return stat;

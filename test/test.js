@@ -928,3 +928,24 @@ test("Change hashLength", async t => {
   t.is(stats.jpeg.length, 1);
   t.is(stats.jpeg[0].outputPath, path.join("img/KkPMmH-1280.jpeg"));
 });
+
+test("Remote image with dryRun should have a buffer property", async t => {
+  let stats = await eleventyImage("https://www.zachleat.com/img/avatar-2017.png", {
+    dryRun: true,
+    widths: ["auto"],
+    formats: ["auto"],
+  });
+
+  t.truthy(stats.png[0].buffer);
+});
+
+test("Remote image with dryRun should have a buffer property, useCache: false", async t => {
+  let stats = await eleventyImage("https://www.zachleat.com/img/avatar-2017.png", {
+    dryRun: true,
+    useCache: false,
+    widths: ["auto"],
+    formats: ["auto"],
+  });
+
+  t.truthy(stats.png[0].buffer);
+});
