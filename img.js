@@ -299,7 +299,7 @@ class Image {
 
       // remove all newlines for hashing for better cross-OS hash compatibility (Issue #122)
       let fileContentsStr = fileContents.toString();
-      let firstFour = fileContentsStr.trim().substr(0, 5);
+      let firstFour = fileContentsStr.trim().slice(0, 5);
       if(firstFour === "<svg " || firstFour === "<?xml") {
         fileContents = fileContentsStr.replace(/\r|\n/g, '');
       }
@@ -342,7 +342,7 @@ class Image {
     // replace with hash.digest('base64url')
     let base64hash = hash.digest('base64').replace(/=/g, "").replace(/\+/g, "-").replace(/\//g, "_");
 
-    return base64hash.substring(0, this.options.hashLength);
+    return base64hash.slice(0, this.options.hashLength);
   }
 
   getStat(outputFormat, width, height) {

@@ -323,7 +323,7 @@ test("Upscale an SVG, Issue #32", async t => {
   });
 
   t.is(stats.png.length, 1);
-  t.is(stats.png[0].filename.substr(-9), "-3000.png"); // should include width in filename
+  t.is(stats.png[0].filename.slice(-9), "-3000.png"); // should include width in filename
   t.is(stats.png[0].width, 3000);
   t.is(stats.png[0].height, 4179);
 });
@@ -337,7 +337,7 @@ test("Upscale an SVG (disallowed in option), Issue #32", async t => {
   });
 
   t.is(stats.png.length, 1);
-  t.not(stats.png[0].filename.substr(-9), "-3000.png"); // should not include width in filename
+  t.not(stats.png[0].filename.slice(-9), "-3000.png"); // should not include width in filename
   t.is(stats.png[0].width, 1569);
   t.is(stats.png[0].height, 2186);
 });
