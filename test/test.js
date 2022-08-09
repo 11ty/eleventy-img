@@ -323,7 +323,7 @@ test("Upscale an SVG, Issue #32", async t => {
   });
 
   t.is(stats.png.length, 1);
-  t.is(stats.png[0].filename.substr(-9), "-3000.png"); // should include width in filename
+  t.is(stats.png[0].filename.slice(-9), "-3000.png"); // should include width in filename
   t.is(stats.png[0].width, 3000);
   t.is(stats.png[0].height, 4179);
 });
@@ -337,7 +337,7 @@ test("Upscale an SVG (disallowed in option), Issue #32", async t => {
   });
 
   t.is(stats.png.length, 1);
-  t.not(stats.png[0].filename.substr(-9), "-3000.png"); // should not include width in filename
+  t.not(stats.png[0].filename.slice(-9), "-3000.png"); // should not include width in filename
   t.is(stats.png[0].width, 1569);
   t.is(stats.png[0].height, 2186);
 });
@@ -927,4 +927,25 @@ test("Change hashLength", async t => {
 
   t.is(stats.jpeg.length, 1);
   t.is(stats.jpeg[0].outputPath, path.join("img/KkPMmH-1280.jpeg"));
+});
+
+test("Remote image with dryRun should have a buffer property", async t => {
+  let stats = await eleventyImage("https://www.zachleat.com/img/avatar-2017.png", {
+    dryRun: true,
+    widths: ["auto"],
+    formats: ["auto"],
+  });
+
+  t.truthy(stats.png[0].buffer);
+});
+
+test("Remote image with dryRun should have a buffer property, useCache: false", async t => {
+  let stats = await eleventyImage("https://www.zachleat.com/img/avatar-2017.png", {
+    dryRun: true,
+    useCache: false,
+    widths: ["auto"],
+    formats: ["auto"],
+  });
+
+  t.truthy(stats.png[0].buffer);
 });
