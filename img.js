@@ -3,14 +3,14 @@ const fs = require("fs");
 const fsp = fs.promises;
 const { URL } = require("url");
 const { createHash } = require("crypto");
-const { default: PQueue } = require("p-queue");
+const {default: PQueue} = require("p-queue");
 const getImageSize = require("image-size");
 const sharp = require("sharp");
 const debug = require("debug")("EleventyImg");
 
 const svgHook = require("./format-hooks/svg");
 
-const { RemoteAssetCache, queue } = require("@11ty/eleventy-fetch");
+const {RemoteAssetCache, queue} = require("@11ty/eleventy-fetch");
 const MemoryCache = require("./memory-cache");
 
 const globalOptions = {
@@ -64,16 +64,16 @@ const globalOptions = {
 };
 
 const MIME_TYPES = {
-  jpeg: "image/jpeg",
-  webp: "image/webp",
-  png: "image/png",
-  svg: "image/svg+xml",
-  avif: "image/avif",
-  gif: "image/gif",
+  "jpeg": "image/jpeg",
+  "webp": "image/webp",
+  "png": "image/png",
+  "svg": "image/svg+xml",
+  "avif": "image/avif",
+  "gif": "image/gif",
 };
 
 const FORMAT_ALIASES = {
-  jpg: "jpeg",
+  "jpg": "jpeg",
   // if you’re working from a mime type input, let’s alias it back to svg
   "svg+xml": "svg",
 };
@@ -86,7 +86,7 @@ class Util {
   static getSortedObject(unordered) {
     let keys = Object.keys(unordered).sort();
     let obj = {};
-    for (let key of keys) {
+    for(let key of keys) {
       obj[key] = unordered[key];
     }
     return obj;
@@ -96,15 +96,14 @@ class Util {
     try {
       const validUrl = new URL(url);
 
-      if (
-        validUrl.protocol.startsWith("https:") ||
-        validUrl.protocol.startsWith("http:")
-      ) {
+      if (validUrl.protocol.startsWith("https:") || validUrl.protocol.startsWith("http:")) {
         return true;
       }
 
       return false;
-    } catch (e) {
+    } catch(e)
+
+    {
       // invalid url OR local path
       return false;
     }
@@ -116,31 +115,22 @@ Util.isFullUrl = Util.isRemoteUrl;
 
 class Image {
   constructor(src, options) {
-    if (!src) {
-      throw new Error(
-        "`src` is a required argument to the eleventy-img utility (can be a String file path, String URL, or Buffer)."
-      );
+    if(!src) {
+      throw new Error("`src` is a required argument to the eleventy-img utility (can be a String file path, String URL, or Buffer).");
     }
 
     this.src = src;
     this.isRemoteUrl = typeof src === "string" && Util.isRemoteUrl(src);
     this.options = Object.assign({}, globalOptions, options);
 
-    if (this.isRemoteUrl) {
-      this.cacheOptions = Object.assign(
-        {
-          duration: this.options.cacheDuration, // deprecated
-          dryRun: this.options.dryRun, // Issue #117: re-use eleventy-img dryRun option value for eleventy-fetch dryRun
-          type: "buffer",
-        },
-        this.options.cacheOptions
-      );
+    if(this.isRemoteUrl) {
+      this.cacheOptions = Object.assign({
+        duration: this.options.cacheDuration, // deprecated
+        dryRun: this.options.dryRun, // Issue #117: re-use eleventy-img dryRun option value for eleventy-fetch dryRun
+        type: "buffer"
+      }, this.options.cacheOptions);
 
-      this.assetCache = new RemoteAssetCache(
-        src,
-        this.cacheOptions.directory,
-        this.cacheOptions
-      );
+      this.assetCache = new RemoteAssetCache(src, this.cacheOptions.directory, this.cacheOptions);
     }
   }
 
@@ -151,16 +141,14 @@ class Image {
 
     opts.__originalSrc = this.src;
 
-    if (this.isRemoteUrl) {
+    if(this.isRemoteUrl) {
       opts.sourceUrl = this.src; // the source url
 
-      if (this.assetCache && this.cacheOptions) {
+      if(this.assetCache && this.cacheOptions) {
         // valid only if asset cached file is still valid
-        opts.__validAssetCache = this.assetCache.isCacheValid(
-          this.cacheOptions.duration
-        );
+        opts.__validAssetCache = this.assetCache.isCacheValid(this.cacheOptions.duration);
       }
-    } else if (Buffer.isBuffer(this.src)) {
+    } else if(Buffer.isBuffer(this.src)) {
       opts.sourceUrl = this.src.toString();
       opts.__originalSize = this.src.length;
     } else {
@@ -168,21 +156,22 @@ class Image {
       opts.__originalSize = fs.statSync(this.src).size;
     }
 
+
     return JSON.stringify(opts);
   }
 
   getFileContents() {
-    if (this.isRemoteUrl) {
+    if(this.isRemoteUrl) {
       return false;
     }
 
     // perf: check to make sure it’s not a string first
-    if (typeof this.src !== "string" && Buffer.isBuffer(this.src)) {
+    if(typeof this.src !== "string" && Buffer.isBuffer(this.src)) {
       this._contents = this.src;
     }
 
     // TODO @zachleat add a smarter cache here (not too aggressive! must handle input file changes)
-    if (!this._contents) {
+    if(!this._contents) {
       this._contents = fs.readFileSync(this.src);
     }
 
@@ -191,24 +180,20 @@ class Image {
 
   static getValidWidths(originalWidth, widths = [], allowUpscale = false) {
     // replace any falsy values with the original width
-    let valid = widths.map((width) =>
-      !width || width === "auto" ? originalWidth : width
-    );
+    let valid = widths.map(width => !width || width === 'auto' ? originalWidth : width);
 
     // Convert strings to numbers, "400" (floats are not allowed in sharp)
-    valid = valid.map((width) => parseInt(width, 10));
+    valid = valid.map(width => parseInt(width, 10));
 
     // Remove duplicates (e.g., if null happens to coincide with an explicit width
     // or a user passes in multiple duplicate values)
     valid = [...new Set(valid)];
 
     // filter out large widths if upscaling is disabled
-    let filtered = valid.filter(
-      (width) => allowUpscale || width <= originalWidth
-    );
+    let filtered = valid.filter(width => allowUpscale || width <= originalWidth);
 
     // if the only valid width was larger than the original (and no upscaling), then use the original width
-    if (valid.length > 0 && filtered.length === 0) {
+    if(valid.length > 0 && filtered.length === 0) {
       filtered.push(originalWidth);
     }
 
@@ -217,19 +202,19 @@ class Image {
   }
 
   static getFormatsArray(formats, autoFormat) {
-    if (formats && formats.length) {
-      if (typeof formats === "string") {
+    if(formats && formats.length) {
+      if(typeof formats === "string") {
         formats = formats.split(",");
       }
 
-      formats = formats.map((format) => {
-        if (autoFormat) {
-          if (!format || format === "auto") {
+      formats = formats.map(format => {
+        if(autoFormat) {
+          if((!format || format === "auto")) {
             format = autoFormat;
           }
         }
 
-        if (FORMAT_ALIASES[format]) {
+        if(FORMAT_ALIASES[format]) {
           return FORMAT_ALIASES[format];
         }
         return format;
@@ -237,9 +222,9 @@ class Image {
 
       // svg must come first for possible short circuiting
       formats.sort((a, b) => {
-        if (a === "svg") {
+        if(a === "svg") {
           return -1;
-        } else if (b === "svg") {
+        } else if(b === "svg") {
           return 1;
         }
         return 0;
@@ -257,18 +242,18 @@ class Image {
 
   _transformRawFiles(files = [], formats = []) {
     let byType = {};
-    for (let format of formats) {
-      if (format && format !== "auto") {
+    for(let format of formats) {
+      if(format && format !== 'auto') {
         byType[format] = [];
       }
     }
-    for (let file of files) {
-      if (!byType[file.format]) {
+    for(let file of files) {
+      if(!byType[file.format]) {
         byType[file.format] = [];
       }
       byType[file.format].push(file);
     }
-    for (let type in byType) {
+    for(let type in byType) {
       // sort by width, ascending (for `srcset`)
       byType[type].sort((a, b) => {
         return a.width - b.width;
@@ -278,22 +263,22 @@ class Image {
   }
 
   getSharpOptionsForFormat(format) {
-    if (format === "webp") {
+    if(format === "webp") {
       return this.options.sharpWebpOptions;
-    } else if (format === "jpeg") {
+    } else if(format === "jpeg") {
       return this.options.sharpJpegOptions;
-    } else if (format === "png") {
+    } else if(format === "png") {
       return this.options.sharpPngOptions;
-    } else if (format === "avif") {
+    } else if(format === "avif") {
       return this.options.sharpAvifOptions;
     }
     return {};
   }
 
   async getInput() {
-    if (this.isRemoteUrl) {
+    if(this.isRemoteUrl) {
       // fetch remote image Buffer
-      if (queue) {
+      if(queue) {
         // eleventy-fetch 3.0+ and eleventy-cache-assets 2.0.4+
         return queue(this.src, () => this.assetCache.fetch());
       }
@@ -309,14 +294,14 @@ class Image {
   getHash() {
     let hash = createHash("sha256");
 
-    if (fs.existsSync(this.src)) {
+    if(fs.existsSync(this.src)) {
       let fileContents = this.getFileContents();
 
       // remove all newlines for hashing for better cross-OS hash compatibility (Issue #122)
       let fileContentsStr = fileContents.toString();
       let firstFour = fileContentsStr.trim().slice(0, 5);
-      if (firstFour === "<svg " || firstFour === "<?xml") {
-        fileContents = fileContentsStr.replace(/\r|\n/g, "");
+      if(firstFour === "<svg " || firstFour === "<?xml") {
+        fileContents = fileContentsStr.replace(/\r|\n/g, '');
       }
 
       hash.update(fileContents);
@@ -325,17 +310,8 @@ class Image {
       hash.update(this.src);
 
       // add whether or not the cached asset is still valid per the cache duration (work with empty duration or "*")
-      if (
-        this.options.useCacheValidityInHash &&
-        this.isRemoteUrl &&
-        this.assetCache &&
-        this.cacheOptions
-      ) {
-        hash.update(
-          `ValidCache:${this.assetCache.isCacheValid(
-            this.cacheOptions.duration
-          )}`
-        );
+      if(this.options.useCacheValidityInHash && this.isRemoteUrl && this.assetCache && this.cacheOptions) {
+        hash.update(`ValidCache:${this.assetCache.isCacheValid(this.cacheOptions.duration)}`);
       }
     }
 
@@ -346,13 +322,13 @@ class Image {
       "sharpWebpOptions",
       "sharpPngOptions",
       "sharpJpegOptions",
-      "sharpAvifOptions",
+      "sharpAvifOptions"
     ].sort();
 
     let hashObject = {};
     // The code currently assumes are keysToKeep are Object literals (see Util.getSortedObject)
-    for (let key of keysToKeep) {
-      if (this.options[key]) {
+    for(let key of keysToKeep) {
+      if(this.options[key]) {
         hashObject[key] = Util.getSortedObject(this.options[key]);
       }
     }
@@ -364,11 +340,7 @@ class Image {
     // Get hash in base64, and make it URL safe.
     // NOTE: When increasing minimum Node version to 14,
     // replace with hash.digest('base64url')
-    let base64hash = hash
-      .digest("base64")
-      .replace(/=/g, "")
-      .replace(/\+/g, "-")
-      .replace(/\//g, "_");
+    let base64hash = hash.digest('base64').replace(/=/g, "").replace(/\+/g, "-").replace(/\//g, "_");
 
     return base64hash.slice(0, this.options.hashLength);
   }
@@ -377,37 +349,22 @@ class Image {
     let url;
     let outputFilename;
     let outputExtension = this.options.extensions[outputFormat] || outputFormat;
-    if (
-      this.options.urlFormat &&
-      typeof this.options.urlFormat === "function"
-    ) {
+    if(this.options.urlFormat && typeof this.options.urlFormat === "function") {
       let hash;
-      if (!this.options.statsOnly) {
+      if(!this.options.statsOnly) {
         hash = this.getHash();
       }
 
-      url = this.options.urlFormat(
-        {
-          hash,
-          src: this.src,
-          width,
-          format: outputExtension,
-        },
-        this.options
-      );
+      url = this.options.urlFormat({
+        hash,
+        src: this.src,
+        width,
+        format: outputExtension,
+      }, this.options);
     } else {
       let hash = this.getHash();
-      outputFilename = ImagePath.getFilename(
-        hash,
-        this.src,
-        width,
-        outputExtension,
-        this.options
-      );
-      url = ImagePath.convertFilePathToUrl(
-        this.options.urlPath,
-        outputFilename
-      );
+      outputFilename = ImagePath.getFilename(hash, this.src, width, outputExtension, this.options);
+      url = ImagePath.convertFilePathToUrl(this.options.urlPath, outputFilename);
     }
 
     let stats = {
@@ -421,7 +378,7 @@ class Image {
       // size // only after processing
     };
 
-    if (outputFilename) {
+    if(outputFilename) {
       stats.filename = outputFilename; // optional
       stats.outputPath = path.join(this.options.outputDir, outputFilename); // optional
     }
@@ -439,10 +396,7 @@ class Image {
   // src is used to calculate the output file names
   getFullStats(metadata) {
     let results = [];
-    let outputFormats = Image.getFormatsArray(
-      this.options.formats,
-      metadata.format || this.options.overrideInputFormat
-    );
+    let outputFormats = Image.getFormatsArray(this.options.formats, metadata.format || this.options.overrideInputFormat);
 
     if (this.needsRotation(metadata.orientation)) {
       let height = metadata.height;
@@ -451,23 +405,21 @@ class Image {
       metadata.height = width;
     }
 
-    for (let outputFormat of outputFormats) {
-      if (!outputFormat || outputFormat === "auto") {
-        throw new Error(
-          "When using statsSync or statsByDimensionsSync, `formats: [null | auto]` to use the native image format is not supported."
-        );
+    for(let outputFormat of outputFormats) {
+      if(!outputFormat || outputFormat === "auto") {
+        throw new Error("When using statsSync or statsByDimensionsSync, `formats: [null | auto]` to use the native image format is not supported.");
       }
-      if (outputFormat === "svg") {
-        if ((metadata.format || this.options.overrideInputFormat) === "svg") {
+      if(outputFormat === "svg") {
+        if((metadata.format || this.options.overrideInputFormat) === "svg") {
           let svgStats = this.getStat("svg", metadata.width, metadata.height);
           // SVG metadata.size is only available with Buffer input (remote urls)
-          if (metadata.size) {
+          if(metadata.size) {
             // Note this is unfair for comparison with raster formats because its uncompressed (no GZIP, etc)
             svgStats.size = metadata.size;
           }
           results.push(svgStats);
 
-          if (this.options.svgShortCircuit) {
+          if(this.options.svgShortCircuit) {
             break;
           } else {
             continue;
@@ -476,17 +428,12 @@ class Image {
           debug("Skipping SVG output for %o: received raster input.", this.src);
           continue;
         }
-      } else {
-        // not outputting SVG (might still be SVG input though!)
-        let widths = Image.getValidWidths(
-          metadata.width,
-          this.options.widths,
-          metadata.format === "svg" && this.options.svgAllowUpscale
-        );
-        for (let width of widths) {
+      } else { // not outputting SVG (might still be SVG input though!)
+        let widths = Image.getValidWidths(metadata.width, this.options.widths, metadata.format === "svg" && this.options.svgAllowUpscale);
+        for(let width of widths) {
           // Warning: if this is a guess via statsByDimensionsSync and that guess is wrong
           // The aspect ratio will be wrong and any height/widths returned will be wrong!
-          let height = Math.floor((width * metadata.height) / metadata.width);
+          let height = Math.floor(width * metadata.height / metadata.width);
 
           results.push(this.getStat(outputFormat, width, height));
         }
@@ -498,15 +445,9 @@ class Image {
 
   // src should be a file path to an image or a buffer
   async resize(input) {
-    let sharpImage = sharp(
-      input,
-      Object.assign(
-        {
-          failOnError: false,
-        },
-        this.options.sharpOptions
-      )
-    );
+    let sharpImage = sharp(input, Object.assign({
+      failOnError: false
+    }, this.options.sharpOptions));
 
     // Must find the image format from the metadata
     // File extensions lie or may not be present in the src url!
@@ -514,11 +455,11 @@ class Image {
     let outputFilePromises = [];
 
     let fullStats = this.getFullStats(metadata);
-    for (let outputFormat in fullStats) {
-      for (let stat of fullStats[outputFormat]) {
-        if (this.options.useCache && fs.existsSync(stat.outputPath)) {
+    for(let outputFormat in fullStats) {
+      for(let stat of fullStats[outputFormat]) {
+        if(this.options.useCache && fs.existsSync(stat.outputPath)){
           stat.size = fs.statSync(stat.outputPath).size;
-          if (this.options.dryRun) {
+          if(this.options.dryRun) {
             stat.buffer = this.getFileContents();
           }
 
@@ -527,14 +468,11 @@ class Image {
         }
 
         let sharpInstance = sharpImage.clone();
-        if (
-          stat.width < metadata.width ||
-          (this.options.svgAllowUpscale && metadata.format === "svg")
-        ) {
+        if(stat.width < metadata.width || (this.options.svgAllowUpscale && metadata.format === "svg")) {
           let resizeOptions = {
-            width: stat.width,
+            width: stat.width
           };
-          if (metadata.format !== "svg" || !this.options.svgAllowUpscale) {
+          if(metadata.format !== "svg" || !this.options.svgAllowUpscale) {
             resizeOptions.withoutEnlargement = true;
           }
           sharpInstance.rotate();
@@ -543,86 +481,64 @@ class Image {
           sharpInstance.rotate();
         }
 
-        if (!this.options.dryRun) {
+        if(!this.options.dryRun) {
           await fsp.mkdir(this.options.outputDir, {
-            recursive: true,
+            recursive: true
           });
         }
 
         // format hooks are only used for SVG out of the box
-        if (
-          this.options.formatHooks &&
-          this.options.formatHooks[outputFormat]
-        ) {
-          let hookResult = await this.options.formatHooks[outputFormat].call(
-            stat,
-            sharpInstance
-          );
-          if (hookResult) {
+        if(this.options.formatHooks && this.options.formatHooks[outputFormat]) {
+          let hookResult = await this.options.formatHooks[outputFormat].call(stat, sharpInstance);
+          if(hookResult) {
             stat.size = hookResult.length;
-            if (this.options.dryRun) {
+            if(this.options.dryRun) {
               stat.buffer = Buffer.from(hookResult);
               outputFilePromises.push(Promise.resolve(stat));
             } else {
-              outputFilePromises.push(
-                fsp.writeFile(stat.outputPath, hookResult).then(() => stat)
-              );
+              outputFilePromises.push(fsp.writeFile(stat.outputPath, hookResult).then(() => stat));
             }
           }
-        } else {
-          // not a format hook
+        } else { // not a format hook
           let sharpFormatOptions = this.getSharpOptionsForFormat(outputFormat);
           let hasFormatOptions = Object.keys(sharpFormatOptions).length > 0;
-          if (
-            hasFormatOptions ||
-            (outputFormat && metadata.format !== outputFormat)
-          ) {
+          if(hasFormatOptions || outputFormat && metadata.format !== outputFormat) {
             sharpInstance.toFormat(outputFormat, sharpFormatOptions);
           }
 
-          if (!this.options.dryRun && stat.outputPath) {
+          if(!this.options.dryRun && stat.outputPath) {
             // Should never write when dryRun is true
-            outputFilePromises.push(
-              sharpInstance.toFile(stat.outputPath).then((info) => {
-                stat.size = info.size;
-                return stat;
-              })
-            );
+            outputFilePromises.push(sharpInstance.toFile(stat.outputPath).then(info => {
+              stat.size = info.size;
+              return stat;
+            }));
           } else {
-            outputFilePromises.push(
-              sharpInstance
-                .toBuffer({ resolveWithObject: true })
-                .then(({ data, info }) => {
-                  stat.buffer = data;
-                  stat.size = info.size;
-                  return stat;
-                })
-            );
+            outputFilePromises.push(sharpInstance.toBuffer({ resolveWithObject: true }).then(({ data, info }) => {
+              stat.buffer = data;
+              stat.size = info.size;
+              return stat;
+            }));
           }
         }
-        debug("Wrote %o", stat.outputPath);
+        debug( "Wrote %o", stat.outputPath );
       }
     }
 
-    return Promise.all(outputFilePromises).then((files) =>
-      this._transformRawFiles(files, Object.keys(fullStats))
-    );
+    return Promise.all(outputFilePromises).then(files => this._transformRawFiles(files, Object.keys(fullStats)));
   }
 
   /* `statsSync` doesn’t generate any files, but will tell you where
-   * the asynchronously generated files will end up! This is useful
-   * in synchronous-only template environments where you need the
-   * image URLs synchronously but can’t rely on the files being in
-   * the correct location yet.
-   *
-   * `options.dryRun` is still asynchronous but also doesn’t generate
-   * any files.
-   */
+  * the asynchronously generated files will end up! This is useful
+  * in synchronous-only template environments where you need the
+  * image URLs synchronously but can’t rely on the files being in
+  * the correct location yet.
+  *
+  * `options.dryRun` is still asynchronous but also doesn’t generate
+  * any files.
+  */
   static statsSync(src, opts) {
-    if (typeof src === "string" && Util.isRemoteUrl(src)) {
-      throw new Error(
-        "`statsSync` is not supported with remote sources. Use `statsByDimensionsSync` instead."
-      );
+    if(typeof src === "string" && Util.isRemoteUrl(src)) {
+      throw new Error("`statsSync` is not supported with remote sources. Use `statsByDimensionsSync` instead.");
     }
 
     let dimensions = getImageSize(src);
@@ -639,7 +555,7 @@ class Image {
     let dimensions = {
       width,
       height,
-      guess: true,
+      guess: true
     };
 
     let img = new Image(src, opts);
@@ -648,8 +564,7 @@ class Image {
 }
 
 class ImagePath {
-  static filenameFormat(id, src, width, format) {
-    // and options
+  static filenameFormat(id, src, width, format) { // and options
     if (width) {
       return `${id}-${width}.${format}`;
     }
@@ -661,7 +576,7 @@ class ImagePath {
     if (typeof options.filenameFormat === "function") {
       let filename = options.filenameFormat(id, src, width, format, options);
       // if options.filenameFormat returns falsy, use fallback filename
-      if (filename) {
+      if(filename) {
         return filename;
       }
     }
@@ -680,39 +595,31 @@ let memCache = new MemoryCache();
 
 /* Queue */
 let processingQueue = new PQueue({
-  concurrency: globalOptions.concurrency,
+  concurrency: globalOptions.concurrency
 });
 processingQueue.on("active", () => {
-  debug(
-    `Concurrency: ${processingQueue.concurrency}, Size: ${processingQueue.size}, Pending: ${processingQueue.pending}`
-  );
+  debug( `Concurrency: ${processingQueue.concurrency}, Size: ${processingQueue.size}, Pending: ${processingQueue.pending}` );
 });
 
 function queueImage(src, opts) {
   let img = new Image(src, opts);
   let key;
 
-  if (img.options.useCache) {
+  if(img.options.useCache) {
     // we don’t know the output format yet, but this hash is just for the in memory cache
     key = img.getInMemoryCacheKey();
     let cached = memCache.get(key);
-    if (cached) {
+    if(cached) {
       debug("Found cached, returning %o", cached);
       return cached;
     }
   }
 
   let promise = processingQueue.add(async () => {
-    if (typeof src === "string" && opts && opts.statsOnly) {
-      if (Util.isRemoteUrl(src)) {
-        if (
-          !opts.remoteImageMetadata ||
-          !opts.remoteImageMetadata.width ||
-          !opts.remoteImageMetadata.height
-        ) {
-          throw new Error(
-            "When using `statsOnly` and remote images, you must supply a `remoteImageMetadata` object with { width, height, format? }"
-          );
+    if(typeof src === "string" && opts && opts.statsOnly) {
+      if(Util.isRemoteUrl(src)) {
+        if(!opts.remoteImageMetadata || !opts.remoteImageMetadata.width || !opts.remoteImageMetadata.height) {
+          throw new Error("When using `statsOnly` and remote images, you must supply a `remoteImageMetadata` object with { width, height, format? }");
         }
         return img.getFullStats({
           width: opts.remoteImageMetadata.width,
@@ -720,13 +627,12 @@ function queueImage(src, opts) {
           format: opts.remoteImageMetadata.format, // only required if you want to use the "auto" format
           guess: true,
         });
-      } else {
-        // Local images
+      } else { // Local images
         let { width, height, type } = getImageSize(src);
         return img.getFullStats({
           width,
           height,
-          format: type, // only required if you want to use the "auto" format
+          format: type // only required if you want to use the "auto" format
         });
       }
     }
@@ -735,7 +641,7 @@ function queueImage(src, opts) {
     return img.resize(input);
   });
 
-  if (img.options.useCache) {
+  if(img.options.useCache) {
     memCache.add(key, promise);
   }
 
@@ -747,10 +653,10 @@ function queueImage(src, opts) {
 module.exports = queueImage;
 
 Object.defineProperty(module.exports, "concurrency", {
-  get: function () {
+  get: function() {
     return processingQueue.concurrency;
   },
-  set: function (concurrency) {
+  set: function(concurrency) {
     processingQueue.concurrency = concurrency;
   },
 });
