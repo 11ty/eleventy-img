@@ -56,7 +56,7 @@ function generateObject(metadata, attributes = {}, options = {}) {
     throw new Error(`Could not find the lowest <img> source for responsive markup for ${originalSrc}`);
   }
 
-  attributes.src = lowsrc[0].url;
+  attributes.src = lowsrc[lowsrc.length - 1].url;
   attributes.width = lowsrc[lowsrc.length - 1].width;
   attributes.height = lowsrc[lowsrc.length - 1].height;
 
