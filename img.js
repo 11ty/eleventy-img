@@ -292,6 +292,10 @@ class Image {
   }
 
   getHash() {
+    if (this.computedHash) {
+      return this.computedHash;
+    }
+
     let hash = createHash("sha256");
 
     if(fs.existsSync(this.src)) {
@@ -342,7 +346,9 @@ class Image {
     // replace with hash.digest('base64url')
     let base64hash = hash.digest('base64').replace(/=/g, "").replace(/\+/g, "-").replace(/\//g, "_");
 
-    return base64hash.slice(0, this.options.hashLength);
+    const resultHash = base64hash.substring(0, this.options.hashLength);
+    this.computedHash = resultHash;
+    return resultHash;
   }
 
   getStat(outputFormat, width, height) {
