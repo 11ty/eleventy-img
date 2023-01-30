@@ -12,7 +12,7 @@
   "scripts": {
     "clean": "ava reset-cache",
     "pretest": "eslint img.js test/**.js",
-    "test": "ava --serial",
+    "test": "ava --no-worker-threads",
     "sample": "cd sample && node sample.js"
   },
   "repository": {
