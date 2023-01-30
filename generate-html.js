@@ -1,3 +1,5 @@
+const { escapeAttribute } = require("entities/lib/escape.js");
+
 const DEFAULT_ATTRIBUTES = {
   // loading: "lazy",
   // decoding: "async",
@@ -128,6 +130,10 @@ function generateObject(metadata, attributes = {}, options = {}) {
 function mapObjectToHTML(tagName, attrs = {}) {
   let attrHtml = Object.entries(attrs).map(entry => {
     let [key, value] = entry;
+    if(key === "alt") {
+      return `${key}="${value ? escapeAttribute(value) : ""}"`;
+    }
+
     return `${key}="${value}"`;
   }).join(" ");
 

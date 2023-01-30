@@ -39,6 +39,7 @@
   "dependencies": {
     "@11ty/eleventy-fetch": "^3.0.0",
     "debug": "^4.3.4",
+    "entities": "^4.4.0",
     "image-size": "^1.0.2",
     "p-queue": "^6.6.2",
     "sharp": "^0.31.3"

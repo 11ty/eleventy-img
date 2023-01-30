@@ -245,3 +245,14 @@ test("Image markup (animated gif, two formats)", async t => {
   let e = t.throws(() => generateHTML(results, { alt: "" }));
   t.true(e.message.startsWith("Could not find the lowest <img>"));
 });
+
+test("Image markup (escaped `alt`)", async t => {
+  let results = await eleventyImage("./test/bio-2017.jpg", {
+    formats: ["auto"],
+    dryRun: true,
+  });
+
+  t.is(generateHTML(results, {
+    alt: "This is a \"test"
+  }), `<img alt="This is a &quot;test" src="/img/KkPMmHd3hP-1280.jpeg" width="1280" height="853">`);
+});
