@@ -10,6 +10,7 @@
     "node": ">=14.15.0"
   },
   "scripts": {
+    "pretest": "eslint img.js test/**.js",
     "test": "ava",
     "sample": "cd sample && node sample.js"
   },
@@ -43,7 +44,8 @@
     "sharp": "^0.31.3"
   },
   "devDependencies": {
-    "ava": "^5.1.1"
+    "ava": "^4.3.3",
+    "eslint": "^8.33.0"
   },
   "ava": {
     "failFast": false,
