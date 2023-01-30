@@ -6,9 +6,6 @@
     "access": "public"
   },
   "main": "img.js",
-  "engines": {
-    "node": ">=14.15.0"
-  },
   "scripts": {
     "pretest": "eslint img.js test/**.js",
     "test": "ava",
@@ -44,8 +41,8 @@
     "sharp": "^0.30.7"
   },
   "devDependencies": {
-    "ava": "^5.1.1",
-    "eslint": "^8.33.0"
+    "ava": "4.3.0",
+    "eslint": "8.18.0"
   },
   "ava": {
     "failFast": false,
