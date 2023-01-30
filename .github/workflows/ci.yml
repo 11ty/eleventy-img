@@ -18,6 +18,7 @@ jobs:
           node-version: ${{ matrix.node }}
           # cache: npm
       - run: npm install
+      - run: npm run clean
       - run: npm test
 env:
   YARN_GPG: no

@@ -10,8 +10,9 @@
     "node": ">=14.15.0"
   },
   "scripts": {
+    "clean": "ava reset-cache",
     "pretest": "eslint img.js test/**.js",
-    "test": "ava",
+    "test": "ava --serial",
     "sample": "cd sample && node sample.js"
   },
   "repository": {
