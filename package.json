@@ -6,6 +6,9 @@
     "access": "public"
   },
   "main": "img.js",
+  "engines": {
+    "node": ">=14.15.0"
+  },
   "scripts": {
     "test": "eslint img.js test/**.js && ava",
     "posttest": "rm -rf test/img/",
@@ -37,13 +40,13 @@
   "dependencies": {
     "@11ty/eleventy-fetch": "^3.0.0",
     "debug": "^4.3.4",
-    "image-size": "^1.0.1",
+    "image-size": "^1.0.2",
     "p-queue": "^6.6.2",
-    "sharp": "^0.30.7"
+    "sharp": "^0.31.3"
   },
   "devDependencies": {
-    "ava": "^4.3.0",
-    "eslint": "^8.18.0"
+    "ava": "^5.1.1",
+    "eslint": "^8.33.0"
   },
   "ava": {
     "failFast": false,
