@@ -472,7 +472,7 @@ test("Keep a cache, don’t reuse with if the image changes, check promise equal
   t.not(promise1, promise2);
 });
 
-test.skip("Keep a cache, don’t reuse with if the image changes, check output", async t => {
+test("Keep a cache, don’t reuse with if the image changes, check output", async t => {
   fs.copyFileSync("./test/modify2-bio-original.jpg", "./test/generated-modify2-bio.jpg");
 
   let stats1 = await eleventyImage("./test/generated-modify2-bio.jpg", {
