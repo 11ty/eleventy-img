@@ -41,10 +41,10 @@
     "debug": "^4.3.4",
     "image-size": "^1.0.2",
     "p-queue": "^6.6.2",
-    "sharp": "^0.31.3"
+    "sharp": "^0.30.7"
   },
   "devDependencies": {
-    "ava": "^4.3.3",
+    "ava": "^5.1.1",
     "eslint": "^8.33.0"
   },
   "ava": {
