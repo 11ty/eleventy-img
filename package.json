@@ -10,7 +10,6 @@
     "node": ">=14.15.0"
   },
   "scripts": {
-    "clean": "ava reset-cache",
     "pretest": "eslint img.js test/**.js",
     "test": "ava --no-worker-threads",
     "sample": "cd sample && node sample.js"
