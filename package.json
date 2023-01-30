@@ -10,8 +10,8 @@
     "node": ">=14.15.0"
   },
   "scripts": {
-    "test": "eslint img.js test/**.js && ava",
-    "posttest": "rm -rf test/img/",
+    "pretest": "eslint img.js test/**.js",
+    "test": "ava",
     "test-verbose": "DEBUG=ava:watcher npm test -- --watch --verbose",
     "sample": "cd sample && node sample.js"
   },
