@@ -340,6 +340,7 @@ class Image {
     // Get hash in base64, and make it URL safe.
     // NOTE: When increasing minimum Node version to 14,
     // replace with hash.digest('base64url')
+    // ANOTHER NOTE: some risk here as I found that not all Nodes have this (e.g. Stackblitz’s Node 16 does not)
     let base64hash = hash.digest('base64').replace(/=/g, "").replace(/\+/g, "-").replace(/\//g, "_");
 
     return base64hash.slice(0, this.options.hashLength);
