@@ -172,6 +172,7 @@ class Image {
 
     // TODO @zachleat add a smarter cache here (not too aggressive! must handle input file changes)
     if(!this._contents) {
+      debug("Reading from file system: %o", this.src);
       this._contents = fs.readFileSync(this.src);
     }
 
@@ -292,6 +293,11 @@ class Image {
   }
 
   getHash() {
+    if (this.computedHash) {
+      debug("Re-using computed hash for %o: %o", this.src, this.computedHash);
+      return this.computedHash;
+    }
+
     let hash = createHash("sha256");
 
     if(fs.existsSync(this.src)) {
@@ -343,7 +349,11 @@ class Image {
     // ANOTHER NOTE: some risk here as I found that not all Nodes have this (e.g. Stackblitz’s Node 16 does not)
     let base64hash = hash.digest('base64').replace(/=/g, "").replace(/\+/g, "-").replace(/\//g, "_");
 
-    return base64hash.slice(0, this.options.hashLength);
+    const resultHash = base64hash.substring(0, this.options.hashLength);
+
+    this.computedHash = resultHash;
+
+    return resultHash;
   }
 
   getStat(outputFormat, width, height) {
@@ -525,7 +535,10 @@ class Image {
             }));
           }
         }
-        debug( "Wrote %o", stat.outputPath );
+
+        if(stat.outputPath) {
+          debug( "Wrote %o", stat.outputPath );
+        }
       }
     }
 
@@ -615,10 +628,11 @@ function queueImage(src, opts) {
     key = img.getInMemoryCacheKey();
     let cached = memCache.get(key);
     if(cached) {
-      debug("Found cached, returning %o", cached);
       return cached;
     }
   }
+
+  debug("In-memory cache miss for %o, options: %o", src, opts);
 
   let promise = processingQueue.add(async () => {
     if(typeof src === "string" && opts && opts.statsOnly) {
