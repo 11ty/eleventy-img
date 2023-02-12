@@ -2,7 +2,7 @@
 
 # eleventy-img
 
-Requires Node 12+
+Requires Node 14.15+
 
 Low level utility to perform build-time image transformations for both vector and raster images. Output multiple sizes, save multiple formats, cache remote images locally. Uses the [sharp](https://sharp.pixelplumbing.com/) image processor.
 
