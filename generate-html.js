@@ -16,7 +16,7 @@ const LOWSRC_FORMAT_PREFERENCE = ["jpeg", "png", "svg", "webp", "avif"];
     { img: { alt: "", src: "" } },
   ]}
  */
-function generateObject(metadata, attributes = {}, options = {}) {
+function generateObject(metadata, attributes = {}) {
   attributes = Object.assign({}, DEFAULT_ATTRIBUTES, attributes);
   // The attributes.src gets overwritten later on. Save it here to make the error outputs less cryptic.
   const originalSrc = attributes.src;
