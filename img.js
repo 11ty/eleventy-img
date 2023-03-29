@@ -697,7 +697,7 @@ const generateHTML = require("./generate-html");
 module.exports.generateHTML = generateHTML;
 module.exports.generateObject = generateHTML.generateObject;
 
-module.exports.eleventyPlugin = function(eleventyConfig, options = {}) {
+module.exports.eleventyImagePlugin = function(eleventyConfig, options = {}) {
   let eleventyDirectories;
   eleventyConfig.on("eleventy.directories", (dirs) => {
     eleventyDirectories = dirs;
