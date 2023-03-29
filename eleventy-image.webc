@@ -52,10 +52,10 @@ async function imagePlugin(attributes, globalPluginOptions) {
 	if(attributes.formats) {
 		if(typeof attributes.formats === "string") {
 			instanceOptions.formats = attributes.formats.split(",").map(entry => entry.trim());
-      delete attributes.formats;
+			delete attributes.formats;
 		} else if(Array.isArray(attributes.formats)) {
 			instanceOptions.formats = attributes.formats;
-      delete attributes.formats;
+			delete attributes.formats;
 		}
 	}
 
@@ -70,10 +70,15 @@ async function imagePlugin(attributes, globalPluginOptions) {
 		}
 	}
 
-	// Overrides via attributes
+	// Overrides via attributes (hopefully you don’t need these)
 	if(attributes.urlPath) {
 		instanceOptions.urlPath = attributes.urlPath;
 		delete attributes.urlPath;
+
+		if(eleventy.directories && !attributes.outputDir) {
+			// use output folder if available (Eleventy v2.0.2+)
+			instanceOptions.outputDir = path.join(eleventy.directories.output, instanceOptions.urlPath);
+		}
 	}
 
 	if(attributes.outputDir) {
