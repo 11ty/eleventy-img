@@ -103,6 +103,10 @@ async function imagePlugin(attributes, globalPluginOptions) {
 		globalPluginOptions = __private_eleventyImageConfigurationOptions();
 	}
 
+  if(!("filterPublicAttributes" in webc)) {
+    throw new Error("The <eleventy-image> WebC component requires WebC v0.10.1+");
+  }
+
 	let attributes = webc.filterPublicAttributes(webc.attributes);
 	return imagePlugin(attributes, globalPluginOptions)
 })();
