@@ -705,7 +705,10 @@ module.exports.eleventyImagePlugin = function(eleventyConfig, options = {}) {
 
   eleventyConfig.addJavaScriptFunction("__private_eleventyImageConfigurationOptions", () => {
     return Object.assign({
-      outputDir: path.join(eleventyDirectories.output, options.urlPath),
+      packages: {
+        image: module.exports,
+      },
+      outputDir: path.join(eleventyDirectories.output, options.urlPath || ""),
     }, options);
   });
 
