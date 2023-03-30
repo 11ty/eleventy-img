@@ -22,19 +22,26 @@
 <script webc:type="js">
 const path = require("path");
 
-async function imagePlugin(attributes, globalPluginOptions, packages = {}) {
-	let imagePackage = packages?.image || require("@11ty/eleventy-img");
-
+async function imagePlugin(attributes, globalPluginOptions) {
 	if(!attributes.src) {
 		throw new Error("Missing `src` attribute on <eleventy-image>");
 	}
 
 	// TODO allow remote optimization automatically on full urls
 
+	let imagePackage;
 	let defaultGlobalAttributes;
+
 	if(globalPluginOptions) {
 		defaultGlobalAttributes = globalPluginOptions.defaultAttributes;
 		delete globalPluginOptions.defaultAttributes;
+
+		imagePackage = globalPluginOptions.packages?.image;
+		delete globalPluginOptions.packages;
+	}
+
+	if(!imagePackage) {
+		imagePackage = require("@11ty/eleventy-img");
 	}
 
 	let instanceOptions = {};
@@ -104,14 +111,12 @@ async function imagePlugin(attributes, globalPluginOptions, packages = {}) {
 	if(typeof __private_eleventyImageConfigurationOptions === "function") {
 		globalPluginOptions = __private_eleventyImageConfigurationOptions();
 	}
-	let { packages } = globalPluginOptions;
-	delete globalPluginOptions.packages;
 
 	if(!("filterPublicAttributes" in webc)) {
 		throw new Error("The <eleventy-image> WebC component requires WebC v0.10.1+");
 	}
 
 	let attributes = webc.filterPublicAttributes(webc.attributes);
-	return imagePlugin(attributes, globalPluginOptions, packages);
+	return imagePlugin(attributes, globalPluginOptions);
 })();
 </script>
