@@ -42,7 +42,7 @@
     "entities": "^4.4.0",
     "image-size": "^1.0.2",
     "p-queue": "^6.6.2",
-    "sharp": "^0.32.0"
+    "sharp": "^0.32.5"
   },
   "devDependencies": {
     "@11ty/eleventy": "^2.0.1",
