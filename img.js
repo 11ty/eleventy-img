@@ -179,7 +179,7 @@ class Image {
   }
 
   static getValidWidths(originalWidth, widths = [], allowUpscale = false) {
-    // replace any falsy values with the original width; also
+    // replace any falsy values with the original width
     let valid = widths.map(width => !width || width === 'auto' ? originalWidth : width);
 
     // Convert strings to numbers, "400" (floats are not allowed in sharp)
