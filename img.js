@@ -179,26 +179,26 @@ class Image {
   }
 
   static getValidWidths(originalWidth, widths = [], allowUpscale = false) {
-    // replace any falsy values with the original width
+    // replace any falsy values with the original width; also
     let valid = widths.map(width => !width || width === 'auto' ? originalWidth : width);
 
     // Convert strings to numbers, "400" (floats are not allowed in sharp)
     valid = valid.map(width => parseInt(width, 10));
 
-    // Remove duplicates (e.g., if null happens to coincide with an explicit width
-    // or a user passes in multiple duplicate values)
-    valid = [...new Set(valid)];
-
-    // filter out large widths if upscaling is disabled
-    let filtered = valid.filter(width => allowUpscale || width <= originalWidth);
-
-    // if the only valid width was larger than the original (and no upscaling), then use the original width
-    if(valid.length > 0 && filtered.length === 0) {
-      filtered.push(originalWidth);
+    // Replace any larger-than-original widths with the original width if upscaling is not allowed.
+    // This ensures that if a larger width has been requested, we're at least providing the closest
+    // non-upscaled image that we can.
+    if (!allowUpscale) {
+      valid = valid.map(width => width > originalWidth ? originalWidth : width);
     }
 
+    // Remove duplicates (e.g., if null happens to coincide with an explicit width
+    // or a user passes in multiple duplicate values, or multiple larger-than-original
+    // widths have resulted in the original width being included multiple times)
+    valid = [...new Set(valid)];
+
     // sort ascending
-    return filtered.sort((a, b) => a - b);
+    return valid.sort((a, b) => a - b);
   }
 
   static getFormatsArray(formats, autoFormat) {

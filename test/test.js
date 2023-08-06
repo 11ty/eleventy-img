@@ -948,3 +948,18 @@ test("Remote image with dryRun should have a buffer property, useCache: false", 
 
   t.truthy(stats.png[0].buffer);
 });
+
+test("#184: Ensure original size is included if any widths are larger", async t => {
+  // Test image is 1280px wide; before PR for 184, asking for [1500, 900] would
+  // result in only the 900px image. Now, it should result in 900px *and* 1280px
+  // images.
+  let stats = await eleventyImage("./test/bio-2017.jpg", {
+    widths: [1500, 900],
+    formats: ['jpeg'],
+    dryRun: true,
+  });
+
+  t.is(stats.jpeg.length, 2);
+  t.is(stats.jpeg[0].width, 900);
+  t.is(stats.jpeg[1].width, 1280);
+});
