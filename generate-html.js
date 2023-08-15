@@ -95,7 +95,7 @@ function generateObject(metadata, attributes = {}) {
 
   let children = [];
   values.filter(imageFormat => {
-    return imageFormat.length > 0 && (lowsrcFormat !== imageFormat[0].format || imageFormat.length !== 1);
+    return imageFormat.length > 0 && (lowsrcFormat !== imageFormat[0].format);
   }).forEach(imageFormat => {
     if(imageFormat.length > 1 && !attributes.sizes) {
       // Per the HTML specification sizes is required srcset is using the `w` unit
@@ -118,8 +118,31 @@ function generateObject(metadata, attributes = {}) {
     });
   });
 
+  /*
+  Add lowsrc as an img, for browsers that don’t support picture or the formats provided in source
+
+  If we have more than one size, we can use srcset and sizes.
+  If the browser doesn't support those attributes, it should ignore them.
+   */
+  let imgAttributes = Object.assign({}, attributesWithoutSizes);
+  if (Object.values(lowsrc).length > 1) {
+    if (!attributes.sizes) {
+      // Per the HTML specification sizes is required srcset is using the `w` unit
+      // https://html.spec.whatwg.org/dev/semantics.html#the-link-element:attr-link-imagesrcset-4
+      // Using the default "100vw" is okay
+      throw new Error(missingSizesErrorMessage);
+    }
+
+    let srcsetAttrValue = Object.values(lowsrc).map(entry => entry.srcset).join(", ");
+    if (srcsetAttrValue) {
+      imgAttributes.srcset = srcsetAttrValue;
+
+      imgAttributes.sizes = attributes.sizes;
+    }
+  }
+
   children.push({
-    "img": attributesWithoutSizes
+    "img": imgAttributes
   });
 
   return {
