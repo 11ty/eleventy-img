@@ -10,10 +10,11 @@ const LOWSRC_FORMAT_PREFERENCE = ["jpeg", "png", "svg", "webp", "avif"];
 /*
   Returns:
   e.g. { img: { alt: "", src: "" }
+  e.g. { img: { alt: "", src: "", srcset: "", sizes: "" } }
   e.g. { picture: [
     { source: { srcset: "", sizes: "" } },
     { source: { srcset: "", sizes: "" } },
-    { img: { alt: "", src: "" } },
+    { img: { alt: "", src: "", srcset: "", sizes: "" } },
   ]}
  */
 function generateObject(metadata, attributes = {}) {
