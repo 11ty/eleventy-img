@@ -80,8 +80,7 @@ const FORMAT_ALIASES = {
 
 class Util {
   /*
-   * Does not mutate, returns new Object
-   * Note if keysToKeep is empty it will keep all keys.
+   * Does not mutate, returns new Object.
    */
   static getSortedObject(unordered) {
     let keys = Object.keys(unordered).sort();
@@ -705,3 +704,21 @@ module.exports.getHash = function getHash(src, options) {
 const generateHTML = require("./generate-html");
 module.exports.generateHTML = generateHTML;
 module.exports.generateObject = generateHTML.generateObject;
+
+module.exports.eleventyImagePlugin = function(eleventyConfig, options = {}) {
+  let eleventyDirectories;
+  eleventyConfig.on("eleventy.directories", (dirs) => {
+    eleventyDirectories = dirs;
+  });
+
+  eleventyConfig.addJavaScriptFunction("__private_eleventyImageConfigurationOptions", () => {
+    return Object.assign({
+      packages: {
+        image: module.exports,
+      },
+      outputDir: path.join(eleventyDirectories.output, options.urlPath || ""),
+    }, options);
+  });
+
+  // TODO expose the `imagePlugin` in eleventy-image.webc for re-use in a provided shortcode.
+};
