@@ -239,11 +239,12 @@ test("Image markup (animated gif)", async t => {
 test("Image markup (animated gif, two formats)", async t => {
   let results = await eleventyImage("./test/earth-animated.gif", {
     dryRun: true,
-    formats: ["tiff", "auto"]
+    formats: ["webp", "auto"]
   });
 
-  let e = t.throws(() => generateHTML(results, { alt: "" }));
-  t.true(e.message.startsWith("Could not find the lowest <img>"));
+  t.is(generateHTML(results, {
+    alt: ""
+  }), `<picture><source type="image/webp" srcset="/img/YQVTYq1wRQ-400.webp 400w"><img alt="" src="/img/YQVTYq1wRQ-400.gif" width="400" height="400"></picture>`);
 });
 
 test("Image markup (escaped `alt`)", async t => {

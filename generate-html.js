@@ -5,7 +5,7 @@ const DEFAULT_ATTRIBUTES = {
   // decoding: "async",
 };
 
-const LOWSRC_FORMAT_PREFERENCE = ["jpeg", "png", "svg", "webp", "avif"];
+const LOWSRC_FORMAT_PREFERENCE = ["gif", "jpeg", "png", "svg", "webp", "avif"];
 
 /*
   Returns:
