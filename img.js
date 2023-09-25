@@ -399,7 +399,8 @@ class Image {
   // https://jdhao.github.io/2019/07/31/image_rotation_exif_info/
   // Orientations 5 to 8 mean image is rotated ±90º (width/height are flipped)
   isQuarterTurn(orientation) {
-    return orientation >= 5;
+    // Sharp's metadata API exposes undefined EXIF orientations >8 as 1 (normal) but check anyways
+    return orientation >= 5 && orientation <= 8;
   }
 
   // metadata so far: width, height, format
