@@ -892,7 +892,7 @@ test("#132: Test EXIF orientation data landscape (8)", async t => {
     widths: [400],
     formats: ['auto'],
     outputDir: "./test/img/",
-    // dryRun: true,
+    dryRun: true,
   });
 
   t.is(stats.jpeg.length, 1);

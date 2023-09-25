@@ -397,8 +397,8 @@ class Image {
   }
 
   // https://jdhao.github.io/2019/07/31/image_rotation_exif_info/
-  // Orientation 5 to 8 means image is rotated (width/height are flipped)
-  needsRotation(orientation) {
+  // Orientations 5 to 8 mean image is rotated ±90º (width/height are flipped)
+  isQuarterTurn(orientation) {
     return orientation >= 5;
   }
 
@@ -408,11 +408,8 @@ class Image {
     let results = [];
     let outputFormats = Image.getFormatsArray(this.options.formats, metadata.format || this.options.overrideInputFormat);
 
-    if (this.needsRotation(metadata.orientation)) {
-      let height = metadata.height;
-      let width = metadata.width;
-      metadata.width = height;
-      metadata.height = width;
+    if (this.isQuarterTurn(metadata.orientation)) {
+      [metadata.height, metadata.width] = [metadata.width, metadata.height];
     }
 
     for(let outputFormat of outputFormats) {
@@ -478,6 +475,11 @@ class Image {
         }
 
         let sharpInstance = sharpImage.clone();
+        // Output images do not include orientation metadata (https://github.com/11ty/eleventy-img/issues/52)
+        // Use sharp.rotate to bake orientation into the image (https://github.com/lovell/sharp/blob/v0.32.6/docs/api-operation.md#rotate):
+        // > If no angle is provided, it is determined from the EXIF data. Mirroring is supported and may infer the use of a flip operation.
+        // > The use of rotate without an angle will remove the EXIF Orientation tag, if any.
+        sharpInstance.rotate();
         if(stat.width < metadata.width || (this.options.svgAllowUpscale && metadata.format === "svg")) {
           let resizeOptions = {
             width: stat.width
@@ -485,14 +487,7 @@ class Image {
           if(metadata.format !== "svg" || !this.options.svgAllowUpscale) {
             resizeOptions.withoutEnlargement = true;
           }
-          if(this.needsRotation(metadata.orientation)) {
-            sharpInstance.rotate();
-          }
           sharpInstance.resize(resizeOptions);
-        } else if (stat.width === metadata.width && metadata.format !== "svg") {
-          if(this.needsRotation(metadata.orientation)) {
-            sharpInstance.rotate();
-          }
         }
 
         if(!this.options.dryRun) {
