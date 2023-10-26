@@ -203,7 +203,7 @@ class Image {
     return filtered.sort((a, b) => a - b);
   }
 
-  static getFormatsArray(formats, autoFormat) {
+  static getFormatsArray(formats, autoFormat, svgShortCircuit) {
     if(formats && formats.length) {
       if(typeof formats === "string") {
         formats = formats.split(",");
@@ -222,15 +222,17 @@ class Image {
         return format;
       });
 
-      // svg must come first for possible short circuiting
-      formats.sort((a, b) => {
-        if(a === "svg") {
-          return -1;
-        } else if(b === "svg") {
-          return 1;
-        }
-        return 0;
-      });
+      if(svgShortCircuit !== "size") {
+        // svg must come first for possible short circuiting
+        formats.sort((a, b) => {
+          if(a === "svg") {
+            return -1;
+          } else if(b === "svg") {
+            return 1;
+          }
+          return 0;
+        });
+      }
 
       // Remove duplicates (e.g., if null happens to coincide with an explicit format
       // or a user passes in multiple duplicate values)
@@ -426,7 +428,7 @@ class Image {
   // src is used to calculate the output file names
   getFullStats(metadata) {
     let results = [];
-    let outputFormats = Image.getFormatsArray(this.options.formats, metadata.format || this.options.overrideInputFormat);
+    let outputFormats = Image.getFormatsArray(this.options.formats, metadata.format || this.options.overrideInputFormat, this.options.svgShortCircuit);
 
     if (this.needsRotation(metadata.orientation)) {
       let height = metadata.height;
