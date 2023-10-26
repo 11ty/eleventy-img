@@ -265,20 +265,23 @@ class Image {
     }
 
     let filterLargeRasterImages = this.options.svgShortCircuit === "size";
-    let svgSize = byType.svg && byType.svg.length && byType.svg[0].size;
+    let svgEntry = byType.svg;
+    let svgSize = svgEntry && svgEntry.length && svgEntry[0].size;
     if(filterLargeRasterImages && svgSize) {
       for(let type of Object.keys(byType)) {
         if(type === "svg") {
           continue;
         }
 
-        byType[type] = byType[type].filter(entry => {
+        byType[type] = byType[type].map(entry => {
           if(entry.size > svgSize) {
-            return false;
+            return svgEntry[0];
           }
-          return true;
+          return entry;
         });
       }
+
+      byType.svg = [];
     }
 
     return byType;

@@ -957,11 +957,13 @@ test("SVG files svgShortCircuit based on file size", async t => {
     svgShortCircuit: "size",
   });
 
-  t.is(stats.svg.length, 1);
-  t.is(stats.svg[0].width, 900);
-  t.truthy(stats.svg[0].size > 65000);
+  t.is(stats.svg.length, 0);
 
-  t.is(stats.webp.length, 1);
+  t.is(stats.webp.length, 2);
+  t.is(stats.webp[0].format, "webp");
   t.is(stats.webp[0].width, 100);
   t.truthy(stats.webp[0].size < 20000);
+
+  t.is(stats.webp[1].format, "svg");
+  t.is(stats.webp[1].width, 900);
 });
