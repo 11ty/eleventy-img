@@ -267,6 +267,7 @@ class Image {
     let filterLargeRasterImages = this.options.svgShortCircuit === "size";
     let svgEntry = byType.svg;
     let svgSize = svgEntry && svgEntry.length && svgEntry[0].size;
+
     if(filterLargeRasterImages && svgSize) {
       for(let type of Object.keys(byType)) {
         if(type === "svg") {
@@ -280,8 +281,6 @@ class Image {
           return entry;
         });
       }
-
-      byType.svg = [];
     }
 
     return byType;

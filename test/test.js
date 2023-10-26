@@ -957,7 +957,9 @@ test("SVG files svgShortCircuit based on file size", async t => {
     svgShortCircuit: "size",
   });
 
-  t.is(stats.svg.length, 0);
+  t.deepEqual(Object.keys(stats), ["svg", "webp"]);
+
+  t.is(stats.svg.length, 1);
 
   t.is(stats.webp.length, 2);
   t.is(stats.webp[0].format, "webp");
