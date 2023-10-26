@@ -19,7 +19,9 @@ const globalOptions = {
   concurrency: 10,
   urlPath: "/img/",
   outputDir: "img/",
-  svgShortCircuit: false, // skip raster formats if SVG input is found
+  // true to skip raster formats if SVG input is found
+  // "size" to skip raster formats if larger than SVG input
+  svgShortCircuit: false,
   svgAllowUpscale: true,
   // overrideInputFormat: false, // internal, used to force svg output in statsSync et al
   sharpOptions: {}, // options passed to the Sharp constructor
@@ -259,6 +261,24 @@ class Image {
         return a.width - b.width;
       });
     }
+
+    let filterLargeRasterImages = this.options.svgShortCircuit === "size";
+    let svgSize = byType.svg && byType.svg.length && byType.svg[0].size;
+    if(filterLargeRasterImages && svgSize) {
+      for(let type of Object.keys(byType)) {
+        if(type === "svg") {
+          continue;
+        }
+
+        byType[type] = byType[type].filter(entry => {
+          if(entry.size > svgSize) {
+            return false;
+          }
+          return true;
+        });
+      }
+    }
+
     return byType;
   }
 
@@ -429,7 +449,7 @@ class Image {
           }
           results.push(svgStats);
 
-          if(this.options.svgShortCircuit) {
+          if(this.options.svgShortCircuit === true) {
             break;
           } else {
             continue;
