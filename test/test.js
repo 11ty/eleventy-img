@@ -952,7 +952,7 @@ test("Remote image with dryRun should have a buffer property, useCache: false", 
 test("SVG files svgShortCircuit based on file size", async t => {
   let stats = await eleventyImage("./test/Ghostscript_Tiger.svg", {
     formats: ["svg", "webp"],
-    widths: [100, 3000],
+    widths: [100, 1000, 1100],
     dryRun: true,
     svgShortCircuit: "size",
   });
@@ -962,10 +962,26 @@ test("SVG files svgShortCircuit based on file size", async t => {
   t.is(stats.svg.length, 1);
 
   t.is(stats.webp.length, 2);
+  t.is(stats.webp.filter(entry => entry.format === "svg").length, 1);
+
   t.is(stats.webp[0].format, "webp");
   t.is(stats.webp[0].width, 100);
   t.truthy(stats.webp[0].size < 20000);
 
   t.is(stats.webp[1].format, "svg");
   t.is(stats.webp[1].width, 900);
+});
+
+test("SVG files svgShortCircuit based on file size (small SVG, exclusively SVG output)", async t => {
+  let stats = await eleventyImage("./test/logo.svg", {
+    formats: ["svg", "webp"],
+    widths: [500],
+    dryRun: true,
+    svgShortCircuit: "size",
+  });
+
+  t.deepEqual(Object.keys(stats), ["svg", "webp"]);
+
+  t.is(stats.svg.length, 1);
+  t.is(stats.webp.length, 0);
 });

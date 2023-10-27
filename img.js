@@ -274,12 +274,26 @@ class Image {
           continue;
         }
 
+        let svgAdded = false;
+        let originalFormatKept = false;
         byType[type] = byType[type].map(entry => {
           if(entry.size > svgSize) {
-            return svgEntry[0];
+            if(!svgAdded) {
+              svgAdded = true;
+              // need at least one raster smaller than SVG to do this trick
+              if(originalFormatKept) {
+                return svgEntry[0];
+              }
+              // all rasters are bigger
+              return false;
+            }
+
+            return false;
           }
+
+          originalFormatKept = true;
           return entry;
-        });
+        }).filter(entry => entry);
       }
     }
 
