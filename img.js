@@ -508,9 +508,20 @@ class Image {
     for(let outputFormat in fullStats) {
       for(let stat of fullStats[outputFormat]) {
         if(this.options.useCache && fs.existsSync(stat.outputPath)){
-          stat.size = fs.statSync(stat.outputPath).size;
+          // Cached images already exist in output
+          let contents;
           if(this.options.dryRun) {
-            stat.buffer = this.getFileContents();
+            contents = this.getFileContents();
+            stat.buffer = contents;
+          }
+
+          if(outputFormat === "svg" && this.options.svgCompressionSize === "br") {
+            if(!contents) {
+              contents = this.getFileContents();
+            }
+            stat.size = brotliSize.sync(contents);
+          } else {
+            stat.size = fs.statSync(stat.outputPath).size;
           }
 
           outputFilePromises.push(Promise.resolve(stat));
