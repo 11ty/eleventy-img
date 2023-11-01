@@ -6,6 +6,7 @@ const { createHash } = require("crypto");
 const {default: PQueue} = require("p-queue");
 const getImageSize = require("image-size");
 const sharp = require("sharp");
+const brotliSize = require("brotli-size");
 const debug = require("debug")("EleventyImg");
 
 const svgHook = require("./format-hooks/svg");
@@ -23,6 +24,7 @@ const globalOptions = {
   // "size" to skip raster formats if larger than SVG input
   svgShortCircuit: false,
   svgAllowUpscale: true,
+  svgCompressionSize: "", // "br" to report SVG `size` property in metadata as Brotli compressed
   // overrideInputFormat: false, // internal, used to force svg output in statsSync et al
   sharpOptions: {}, // options passed to the Sharp constructor
   sharpWebpOptions: {}, // options passed to the Sharp webp output method
@@ -156,7 +158,6 @@ class Image {
       // TODO @zachleat (multiread): another read
       opts.__originalSize = fs.statSync(this.src).size;
     }
-
 
     return JSON.stringify(opts);
   }
@@ -460,6 +461,7 @@ class Image {
       if(outputFormat === "svg") {
         if((metadata.format || this.options.overrideInputFormat) === "svg") {
           let svgStats = this.getStat("svg", metadata.width, metadata.height);
+
           // SVG metadata.size is only available with Buffer input (remote urls)
           if(metadata.size) {
             // Note this is unfair for comparison with raster formats because its uncompressed (no GZIP, etc)
@@ -543,7 +545,12 @@ class Image {
         if(this.options.formatHooks && this.options.formatHooks[outputFormat]) {
           let hookResult = await this.options.formatHooks[outputFormat].call(stat, sharpInstance);
           if(hookResult) {
-            stat.size = hookResult.length;
+            if(this.options.svgCompressionSize === "br") {
+              stat.size = brotliSize.sync(hookResult);
+            } else {
+              stat.size = hookResult.length;
+            }
+
             if(this.options.dryRun) {
               stat.buffer = Buffer.from(hookResult);
               outputFilePromises.push(Promise.resolve(stat));

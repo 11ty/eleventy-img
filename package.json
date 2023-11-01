@@ -38,6 +38,7 @@
   "homepage": "https://github.com/11ty/eleventy-img#readme",
   "dependencies": {
     "@11ty/eleventy-fetch": "^4.0.0",
+    "brotli-size": "^4.0.0",
     "debug": "^4.3.4",
     "entities": "^4.5.0",
     "image-size": "^1.0.2",
