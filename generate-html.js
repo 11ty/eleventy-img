@@ -148,7 +148,9 @@ function generateHTML(metadata, attributes = {}, options = {}) {
     if(!Array.isArray(obj[tag])) {
       markup.push(mapObjectToHTML(tag, obj[tag]));
     } else {
-      markup.push(`<${tag}>`);
+      // <picture>
+      markup.push(mapObjectToHTML(tag, options.pictureAttributes || {}));
+
       for(let child of obj[tag]) {
         let childTagName = Object.keys(child)[0];
         markup.push((!isInline ? "  " : "") + mapObjectToHTML(childTagName, child[childTagName]));

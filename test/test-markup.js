@@ -256,3 +256,23 @@ test("Image markup (escaped `alt`)", async t => {
     alt: "This is a \"test"
   }), `<img alt="This is a &quot;test" src="/img/KkPMmHd3hP-1280.jpeg" width="1280" height="853">`);
 });
+
+test.only("Image markup (<picture> with attributes issue #197)", async t => {
+  let results = await eleventyImage("./test/bio-2017.jpg", {
+    dryRun: true,
+    widths: [200,400]
+  });
+
+  t.is(generateHTML(results, {
+    alt: "",
+    sizes: "100vw",
+  }, {
+    pictureAttributes: {
+      class: "pic"
+    }
+  }), [`<picture class="pic">`,
+    `<source type="image/webp" srcset="/img/KkPMmHd3hP-200.webp 200w, /img/KkPMmHd3hP-400.webp 400w" sizes="100vw">`,
+    `<source type="image/jpeg" srcset="/img/KkPMmHd3hP-200.jpeg 200w, /img/KkPMmHd3hP-400.jpeg 400w" sizes="100vw">`,
+    `<img alt="" src="/img/KkPMmHd3hP-200.jpeg" width="400" height="266">`,
+    `</picture>`].join(""));
+});
