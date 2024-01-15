@@ -63,8 +63,11 @@ const globalOptions = {
 
   hashLength: 10, // Truncates the hash to this length
 
+  fixOrientation: false, // always rotate images to ensure correct orientation
+
   // Advanced
   useCacheValidityInHash: true,
+
 };
 
 const MIME_TYPES = {
@@ -545,10 +548,14 @@ class Image {
           if(metadata.format !== "svg" || !this.options.svgAllowUpscale) {
             resizeOptions.withoutEnlargement = true;
           }
-          sharpInstance.rotate();
+          if(this.options.fixOrientation || this.needsRotation(metadata.orientation)) {
+            sharpInstance.rotate();
+          }
           sharpInstance.resize(resizeOptions);
         } else if (metadata.format !== "svg") {
-          sharpInstance.rotate();
+          if(this.options.fixOrientation || stat.width === metadata.width && this.needsRotation(metadata.orientation)) {
+            sharpInstance.rotate();
+          }
         }
 
         if(!this.options.dryRun) {
