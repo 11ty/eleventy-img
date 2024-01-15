@@ -440,7 +440,7 @@ class Image {
 
   // https://jdhao.github.io/2019/07/31/image_rotation_exif_info/
   // Orientations 5 to 8 mean image is rotated ±90º (width/height are flipped)
-  isQuarterTurn(orientation) {
+  needsRotation(orientation) {
     // Sharp's metadata API exposes undefined EXIF orientations >8 as 1 (normal) but check anyways
     return orientation >= 5 && orientation <= 8;
   }
@@ -451,7 +451,7 @@ class Image {
     let results = [];
     let outputFormats = Image.getFormatsArray(this.options.formats, metadata.format || this.options.overrideInputFormat, this.options.svgShortCircuit);
 
-    if (this.isQuarterTurn(metadata.orientation)) {
+    if (this.needsRotation(metadata.orientation)) {
       [metadata.height, metadata.width] = [metadata.width, metadata.height];
     }
 
