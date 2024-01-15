@@ -268,7 +268,7 @@ test("Image markup (escaped `alt`)", async t => {
   }), `<img alt="This is a &quot;test" src="/img/KkPMmHd3hP-1280.jpeg" width="1280" height="853">`);
 });
 
-test.only("Image markup (<picture> with attributes issue #197)", async t => {
+test("Image markup (<picture> with attributes issue #197)", async t => {
   let results = await eleventyImage("./test/bio-2017.jpg", {
     dryRun: true,
     widths: [200,400]
