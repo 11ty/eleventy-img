@@ -953,6 +953,7 @@ test("Animated gif", async t => {
 
   t.is(stats.gif.length, 1);
   t.is(stats.gif[0].width, 400);
+  t.is(stats.gif[0].height, 400);
   // it’s a big boi
   t.true( stats.gif[0].size > 1000*1000 );
 });
@@ -988,4 +989,67 @@ test("Remote image with dryRun should have a buffer property, useCache: false", 
   });
 
   t.truthy(stats.png[0].buffer);
+});
+
+test("SVG files svgShortCircuit based on file size", async t => {
+  let stats = await eleventyImage("./test/Ghostscript_Tiger.svg", {
+    formats: ["svg", "webp"],
+    widths: [100, 1000, 1100],
+    dryRun: true,
+    svgShortCircuit: "size",
+  });
+
+  t.deepEqual(Object.keys(stats), ["svg", "webp"]);
+
+  t.is(stats.svg.length, 1);
+
+  t.is(stats.webp.length, 2);
+  t.is(stats.webp.filter(entry => entry.format === "svg").length, 1);
+
+  t.is(stats.webp[0].format, "webp");
+  t.is(stats.webp[0].width, 100);
+  t.truthy(stats.webp[0].size < 20000);
+
+  t.is(stats.webp[1].format, "svg");
+  t.is(stats.webp[1].width, 900);
+});
+
+test("SVG files svgShortCircuit based on file size (small SVG, exclusively SVG output)", async t => {
+  let stats = await eleventyImage("./test/logo.svg", {
+    formats: ["svg", "webp"],
+    widths: [500],
+    dryRun: true,
+    svgShortCircuit: "size",
+  });
+
+  t.deepEqual(Object.keys(stats), ["svg", "webp"]);
+
+  t.is(stats.svg.length, 1);
+  t.is(stats.webp.length, 0);
+});
+
+
+test("SVG files svgShortCircuit based on file size (brotli compression)", async t => {
+  let stats = await eleventyImage("./test/Ghostscript_Tiger.svg", {
+    formats: ["svg", "webp"],
+    widths: [100, 1000, 1100],
+    dryRun: true,
+    svgShortCircuit: "size",
+    svgCompressionSize: "br",
+  });
+
+  t.deepEqual(Object.keys(stats), ["svg", "webp"]);
+
+  t.is(stats.svg.length, 1);
+  t.true(stats.svg[0].size < 30000); // original was ~68000, br compression was applied.
+
+  t.is(stats.webp.length, 2);
+  t.is(stats.webp.filter(entry => entry.format === "svg").length, 1);
+
+  t.is(stats.webp[0].format, "webp");
+  t.is(stats.webp[0].width, 100);
+  t.truthy(stats.webp[0].size < 20000);
+
+  t.is(stats.webp[1].format, "svg");
+  t.is(stats.webp[1].width, 900);
 });
