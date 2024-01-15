@@ -3,6 +3,8 @@ const test = require("ava");
 const fs = require("fs");
 const { URL } = require("url");
 const eleventyImage = require("../");
+const sharp = require("sharp");
+const pixelmatch = require('pixelmatch');
 
 // Remember that any outputPath tests must use path.join to work on Windows
 
@@ -846,6 +848,32 @@ test("Maintains orientation #132", async t => {
 });
 
 // Broken test cases from https://github.com/recurser/exif-orientation-examples
+test("#158: Test EXIF orientation data landscape (3)", async t => {
+  let stats = await eleventyImage("./test/exif-Landscape_3.jpg", {
+    widths: [200, "auto"],
+    formats: ['auto'],
+    useCache: false,
+    dryRun: true,
+  });
+
+  t.is(stats.jpeg.length, 2);
+  t.is(stats.jpeg[0].width, 200);
+  t.is(stats.jpeg[1].width, 1800);
+  t.is(Math.floor(stats.jpeg[0].height), 133);
+  t.is(stats.jpeg[1].height, 1200);
+
+  // This orientation (180º rotation) preserves image dimensions and requires an image diff
+  const readToRaw = async input => {
+    // pixelmatch requires 4 bytes/pixel, hence alpha
+    return sharp(input).ensureAlpha().toFormat(sharp.format.raw).toBuffer();
+  };
+  for (const [inSrc, outStat] of [["./test/exif-Landscape_3-bakedOrientation-200.jpg", stats.jpeg[0]], ["./test/exif-Landscape_3-bakedOrientation.jpg", stats.jpeg[1]]]) {
+    const inRaw = await readToRaw(inSrc);
+    const outRaw = await readToRaw(outStat.buffer);
+    t.is(pixelmatch(inRaw, outRaw, null, outStat.width, outStat.height, { threshold: 0.15 }), 0);
+  }
+});
+
 test("#132: Test EXIF orientation data landscape (5)", async t => {
   let stats = await eleventyImage("./test/exif-Landscape_5.jpg", {
     widths: [400, "auto"],
@@ -892,7 +920,20 @@ test("#132: Test EXIF orientation data landscape (8)", async t => {
     widths: [400],
     formats: ['auto'],
     outputDir: "./test/img/",
-    // dryRun: true,
+    dryRun: true,
+  });
+
+  t.is(stats.jpeg.length, 1);
+  t.is(stats.jpeg[0].width, 400);
+  t.is(Math.floor(stats.jpeg[0].height), 266);
+});
+
+test("#158: Test EXIF orientation data landscape (15)", async t => {
+  let stats = await eleventyImage("./test/exif-Landscape_15.jpg", {
+    widths: [400],
+    formats: ['auto'],
+    outputDir: "./test/img/",
+    dryRun: true,
   });
 
   t.is(stats.jpeg.length, 1);
