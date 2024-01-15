@@ -848,12 +848,13 @@ test("Maintains orientation #132", async t => {
 });
 
 // Broken test cases from https://github.com/recurser/exif-orientation-examples
-test("#158: Test EXIF orientation data landscape (3)", async t => {
+test("#158: Test EXIF orientation data landscape (3) with fixOrientation", async t => {
   let stats = await eleventyImage("./test/exif-Landscape_3.jpg", {
     widths: [200, "auto"],
     formats: ['auto'],
     useCache: false,
     dryRun: true,
+    fixOrientation: true,
   });
 
   t.is(stats.jpeg.length, 2);
@@ -867,10 +868,38 @@ test("#158: Test EXIF orientation data landscape (3)", async t => {
     // pixelmatch requires 4 bytes/pixel, hence alpha
     return sharp(input).ensureAlpha().toFormat(sharp.format.raw).toBuffer();
   };
-  for (const [inSrc, outStat] of [["./test/exif-Landscape_3-bakedOrientation-200.jpg", stats.jpeg[0]], ["./test/exif-Landscape_3-bakedOrientation.jpg", stats.jpeg[1]]]) {
+  for (const [inSrc, outStat] of [
+    ["./test/exif-Landscape_3-bakedOrientation-200.jpg", stats.jpeg[0]],
+    ["./test/exif-Landscape_3-bakedOrientation.jpg", stats.jpeg[1]]]) {
     const inRaw = await readToRaw(inSrc);
     const outRaw = await readToRaw(outStat.buffer);
     t.is(pixelmatch(inRaw, outRaw, null, outStat.width, outStat.height, { threshold: 0.15 }), 0);
+  }
+});
+
+test("#158: Test EXIF orientation data landscape (3) without fixOrientation", async t => {
+  let stats = await eleventyImage("./test/exif-Landscape_3.jpg", {
+    widths: [200, "auto"],
+    formats: ['auto'],
+    useCache: false,
+    dryRun: true,
+    fixOrientation: false,
+  });
+
+  // This orientation (180º rotation) preserves image dimensions and requires an image diff
+  const readToRaw = async input => {
+    // pixelmatch requires 4 bytes/pixel, hence alpha
+    return sharp(input).ensureAlpha().toFormat(sharp.format.raw).toBuffer();
+  };
+  for (const [inSrc, outStat] of [
+    ["./test/exif-Landscape_3-bakedOrientation-200.jpg", stats.jpeg[0]],
+    ["./test/exif-Landscape_3-bakedOrientation.jpg", stats.jpeg[1]]]) {
+    const inRaw = await readToRaw(inSrc);
+    const outRaw = await readToRaw(outStat.buffer);
+
+    // rotation did not happen and the images are different
+    // when/if fixOrientation is defaulted to true this test will have to be === 0
+    t.true(pixelmatch(inRaw, outRaw, null, outStat.width, outStat.height, { threshold: 0.15 }) > 0);
   }
 });
 
@@ -928,12 +957,27 @@ test("#132: Test EXIF orientation data landscape (8)", async t => {
   t.is(Math.floor(stats.jpeg[0].height), 266);
 });
 
-test("#158: Test EXIF orientation data landscape (15)", async t => {
+test("#158: Test EXIF orientation data landscape (15) without fixOrientation", async t => {
   let stats = await eleventyImage("./test/exif-Landscape_15.jpg", {
     widths: [400],
     formats: ['auto'],
     outputDir: "./test/img/",
     dryRun: true,
+  });
+
+  t.is(stats.jpeg.length, 1);
+  t.is(stats.jpeg[0].width, 400);
+  t.is(Math.floor(stats.jpeg[0].height), 266);
+});
+
+
+test("#158: Test EXIF orientation data landscape (15) with fixOrientation", async t => {
+  let stats = await eleventyImage("./test/exif-Landscape_15.jpg", {
+    widths: [400],
+    formats: ['auto'],
+    outputDir: "./test/img/",
+    dryRun: true,
+    fixOrientation: true,
   });
 
   t.is(stats.jpeg.length, 1);
