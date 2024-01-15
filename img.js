@@ -436,7 +436,7 @@ class Image {
   }
 
   // https://jdhao.github.io/2019/07/31/image_rotation_exif_info/
-  // Orientation 5 to 8 means image is rotated (width/height are flipped)
+  // Orientation 5 to 8 means width/height are flipped
   needsRotation(orientation) {
     return orientation >= 5;
   }
@@ -545,14 +545,10 @@ class Image {
           if(metadata.format !== "svg" || !this.options.svgAllowUpscale) {
             resizeOptions.withoutEnlargement = true;
           }
-          if(this.needsRotation(metadata.orientation)) {
-            sharpInstance.rotate();
-          }
+          sharpInstance.rotate();
           sharpInstance.resize(resizeOptions);
-        } else if (stat.width === metadata.width && metadata.format !== "svg") {
-          if(this.needsRotation(metadata.orientation)) {
-            sharpInstance.rotate();
-          }
+        } else if (metadata.format !== "svg") {
+          sharpInstance.rotate();
         }
 
         if(!this.options.dryRun) {
