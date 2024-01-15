@@ -5,7 +5,7 @@ const DEFAULT_ATTRIBUTES = {
   // decoding: "async",
 };
 
-const LOWSRC_FORMAT_PREFERENCE = ["gif", "jpeg", "png", "svg", "webp", "avif"];
+const LOWSRC_FORMAT_PREFERENCE = ["jpeg", "png", "gif", "svg", "webp", "avif"];
 
 /*
   Returns:
@@ -72,6 +72,7 @@ function generateObject(metadata, attributes = {}) {
     };
   }
 
+  // TODO work with sizes="auto" https://groups.google.com/a/chromium.org/g/blink-dev/c/OAsmCbjPJz0/m/jzuTJzs1AAAJ
   let missingSizesErrorMessage = `Missing \`sizes\` attribute on eleventy-img shortcode from: ${originalSrc || attributes.src}`;
 
   // <img srcset>: one format and multiple sizes
