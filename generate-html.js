@@ -5,21 +5,31 @@ const DEFAULT_ATTRIBUTES = {
   // decoding: "async",
 };
 
-const LOWSRC_FORMAT_PREFERENCE = ["jpeg", "png", "svg", "webp", "avif"];
+const LOWSRC_FORMAT_PREFERENCE = ["jpeg", "png", "gif", "svg", "webp", "avif"];
+
+function generateSrcset(metadataFormatEntry) {
+  if(!Array.isArray(metadataFormatEntry)) {
+    return "";
+  }
+
+  return metadataFormatEntry.map(entry => entry.srcset).join(", ");
+}
 
 /*
   Returns:
   e.g. { img: { alt: "", src: "" }
+  e.g. { img: { alt: "", src: "", srcset: "", sizes: "" } }
   e.g. { picture: [
     { source: { srcset: "", sizes: "" } },
     { source: { srcset: "", sizes: "" } },
-    { img: { alt: "", src: "" } },
+    { img: { alt: "", src: "", srcset: "", sizes: "" } },
   ]}
  */
-function generateObject(metadata, attributes = {}) {
-  attributes = Object.assign({}, DEFAULT_ATTRIBUTES, attributes);
+function generateObject(metadata, userDefinedAttributes = {}) {
+  let attributes = Object.assign({}, DEFAULT_ATTRIBUTES, userDefinedAttributes);
+
   // The attributes.src gets overwritten later on. Save it here to make the error outputs less cryptic.
-  const originalSrc = attributes.src;
+  let originalSrc = attributes.src;
 
   if(attributes.alt === undefined) {
     // You bet we throw an error on missing alt (alt="" works okay)
@@ -68,24 +78,25 @@ function generateObject(metadata, attributes = {}) {
   // <img>: one format and one size
   if(entryCount === 1) {
     return {
-      "img": attributesWithoutSizes
+      img: attributesWithoutSizes
     };
   }
 
+  // TODO work with sizes="auto" https://groups.google.com/a/chromium.org/g/blink-dev/c/OAsmCbjPJz0/m/jzuTJzs1AAAJ
+
+  // Per the HTML specification sizes is required srcset is using the `w` unit
+  // https://html.spec.whatwg.org/dev/semantics.html#the-link-element:attr-link-imagesrcset-4
+  // Using the default "100vw" is okay
   let missingSizesErrorMessage = `Missing \`sizes\` attribute on eleventy-img shortcode from: ${originalSrc || attributes.src}`;
 
   // <img srcset>: one format and multiple sizes
   if(formats.length === 1) { // implied entryCount > 1
     if(entryCount > 1 && !attributes.sizes) {
-      // Per the HTML specification sizes is required srcset is using the `w` unit
-      // https://html.spec.whatwg.org/dev/semantics.html#the-link-element:attr-link-imagesrcset-4
-      // Using the default "100vw" is okay
       throw new Error(missingSizesErrorMessage);
     }
 
     let imgAttributes = Object.assign({}, attributesWithoutSizes);
-    let srcsetAttrValue = Object.values(lowsrc).map(entry => entry.srcset).join(", ");
-    imgAttributes.srcset = srcsetAttrValue;
+    imgAttributes.srcset = generateSrcset(lowsrc);
     imgAttributes.sizes = attributes.sizes;
 
     return {
@@ -95,18 +106,15 @@ function generateObject(metadata, attributes = {}) {
 
   let children = [];
   values.filter(imageFormat => {
-    return imageFormat.length > 0 && (lowsrcFormat !== imageFormat[0].format || imageFormat.length !== 1);
+    return imageFormat.length > 0 && (lowsrcFormat !== imageFormat[0].format);
   }).forEach(imageFormat => {
     if(imageFormat.length > 1 && !attributes.sizes) {
-      // Per the HTML specification sizes is required srcset is using the `w` unit
-      // https://html.spec.whatwg.org/dev/semantics.html#the-link-element:attr-link-imagesrcset-4
-      // Using the default "100vw" is okay
       throw new Error(missingSizesErrorMessage);
     }
 
     let sourceAttrs = {
       type: imageFormat[0].sourceType,
-      srcset: imageFormat.map(entry => entry.srcset).join(", "),
+      srcset: generateSrcset(imageFormat),
     };
 
     if(attributes.sizes) {
@@ -118,8 +126,27 @@ function generateObject(metadata, attributes = {}) {
     });
   });
 
+  /*
+  Add lowsrc as an img, for browsers that don’t support picture or the formats provided in source
+
+  If we have more than one size, we can use srcset and sizes.
+  If the browser doesn't support those attributes, it should ignore them.
+   */
+  let imgAttributes = Object.assign({}, attributesWithoutSizes);
+  if (lowsrc.length > 1) {
+    if (!attributes.sizes) {
+      // Per the HTML specification sizes is required srcset is using the `w` unit
+      // https://html.spec.whatwg.org/dev/semantics.html#the-link-element:attr-link-imagesrcset-4
+      // Using the default "100vw" is okay
+      throw new Error(missingSizesErrorMessage);
+    }
+
+    imgAttributes.srcset = generateSrcset(lowsrc);
+    imgAttributes.sizes = attributes.sizes;
+  }
+
   children.push({
-    "img": attributesWithoutSizes
+    "img": imgAttributes
   });
 
   return {
@@ -148,7 +175,9 @@ function generateHTML(metadata, attributes = {}, options = {}) {
     if(!Array.isArray(obj[tag])) {
       markup.push(mapObjectToHTML(tag, obj[tag]));
     } else {
-      markup.push(`<${tag}>`);
+      // <picture>
+      markup.push(mapObjectToHTML(tag, options.pictureAttributes || {}));
+
       for(let child of obj[tag]) {
         let childTagName = Object.keys(child)[0];
         markup.push((!isInline ? "  " : "") + mapObjectToHTML(childTagName, child[childTagName]));

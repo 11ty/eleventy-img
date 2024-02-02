@@ -6,6 +6,7 @@ const { createHash } = require("crypto");
 const {default: PQueue} = require("p-queue");
 const getImageSize = require("image-size");
 const sharp = require("sharp");
+const brotliSize = require("brotli-size");
 const debug = require("debug")("EleventyImg");
 
 const svgHook = require("./format-hooks/svg");
@@ -19,8 +20,11 @@ const globalOptions = {
   concurrency: 10,
   urlPath: "/img/",
   outputDir: "img/",
-  svgShortCircuit: false, // skip raster formats if SVG input is found
+  // true to skip raster formats if SVG input is found
+  // "size" to skip raster formats if larger than SVG input
+  svgShortCircuit: false,
   svgAllowUpscale: true,
+  svgCompressionSize: "", // "br" to report SVG `size` property in metadata as Brotli compressed
   // overrideInputFormat: false, // internal, used to force svg output in statsSync et al
   sharpOptions: {}, // options passed to the Sharp constructor
   sharpWebpOptions: {}, // options passed to the Sharp webp output method
@@ -59,8 +63,11 @@ const globalOptions = {
 
   hashLength: 10, // Truncates the hash to this length
 
+  fixOrientation: false, // always rotate images to ensure correct orientation
+
   // Advanced
   useCacheValidityInHash: true,
+
 };
 
 const MIME_TYPES = {
@@ -155,7 +162,6 @@ class Image {
       opts.__originalSize = fs.statSync(this.src).size;
     }
 
-
     return JSON.stringify(opts);
   }
 
@@ -201,7 +207,7 @@ class Image {
     return valid.sort((a, b) => a - b);
   }
 
-  static getFormatsArray(formats, autoFormat) {
+  static getFormatsArray(formats, autoFormat, svgShortCircuit) {
     if(formats && formats.length) {
       if(typeof formats === "string") {
         formats = formats.split(",");
@@ -220,15 +226,17 @@ class Image {
         return format;
       });
 
-      // svg must come first for possible short circuiting
-      formats.sort((a, b) => {
-        if(a === "svg") {
-          return -1;
-        } else if(b === "svg") {
-          return 1;
-        }
-        return 0;
-      });
+      if(svgShortCircuit !== "size") {
+        // svg must come first for possible short circuiting
+        formats.sort((a, b) => {
+          if(a === "svg") {
+            return -1;
+          } else if(b === "svg") {
+            return 1;
+          }
+          return 0;
+        });
+      }
 
       // Remove duplicates (e.g., if null happens to coincide with an explicit format
       // or a user passes in multiple duplicate values)
@@ -259,6 +267,40 @@ class Image {
         return a.width - b.width;
       });
     }
+
+    let filterLargeRasterImages = this.options.svgShortCircuit === "size";
+    let svgEntry = byType.svg;
+    let svgSize = svgEntry && svgEntry.length && svgEntry[0].size;
+
+    if(filterLargeRasterImages && svgSize) {
+      for(let type of Object.keys(byType)) {
+        if(type === "svg") {
+          continue;
+        }
+
+        let svgAdded = false;
+        let originalFormatKept = false;
+        byType[type] = byType[type].map(entry => {
+          if(entry.size > svgSize) {
+            if(!svgAdded) {
+              svgAdded = true;
+              // need at least one raster smaller than SVG to do this trick
+              if(originalFormatKept) {
+                return svgEntry[0];
+              }
+              // all rasters are bigger
+              return false;
+            }
+
+            return false;
+          }
+
+          originalFormatKept = true;
+          return entry;
+        }).filter(entry => entry);
+      }
+    }
+
     return byType;
   }
 
@@ -397,22 +439,29 @@ class Image {
   }
 
   // https://jdhao.github.io/2019/07/31/image_rotation_exif_info/
-  // Orientation 5 to 8 means image is rotated (width/height are flipped)
+  // Orientations 5 to 8 mean image is rotated ±90º (width/height are flipped)
   needsRotation(orientation) {
-    return orientation >= 5;
+    // Sharp's metadata API exposes undefined EXIF orientations >8 as 1 (normal) but check anyways
+    return orientation >= 5 && orientation <= 8;
   }
 
   // metadata so far: width, height, format
   // src is used to calculate the output file names
   getFullStats(metadata) {
     let results = [];
-    let outputFormats = Image.getFormatsArray(this.options.formats, metadata.format || this.options.overrideInputFormat);
+    let outputFormats = Image.getFormatsArray(this.options.formats, metadata.format || this.options.overrideInputFormat, this.options.svgShortCircuit);
 
     if (this.needsRotation(metadata.orientation)) {
-      let height = metadata.height;
-      let width = metadata.width;
-      metadata.width = height;
-      metadata.height = width;
+      [metadata.height, metadata.width] = [metadata.width, metadata.height];
+    }
+
+    if(metadata.pageHeight) {
+      // When the { animated: true } option is provided to sharp, animated
+      // image formats like gifs or webp will have an inaccurate `height` value
+      // in their metadata which is actually the height of every single frame added together.
+      // In these cases, the metadata will contain an additional `pageHeight` property which
+      // is the height that the image should be displayed at.
+      metadata.height = metadata.pageHeight;
     }
 
     for(let outputFormat of outputFormats) {
@@ -422,6 +471,7 @@ class Image {
       if(outputFormat === "svg") {
         if((metadata.format || this.options.overrideInputFormat) === "svg") {
           let svgStats = this.getStat("svg", metadata.width, metadata.height);
+
           // SVG metadata.size is only available with Buffer input (remote urls)
           if(metadata.size) {
             // Note this is unfair for comparison with raster formats because its uncompressed (no GZIP, etc)
@@ -429,7 +479,7 @@ class Image {
           }
           results.push(svgStats);
 
-          if(this.options.svgShortCircuit) {
+          if(this.options.svgShortCircuit === true) {
             break;
           } else {
             continue;
@@ -468,9 +518,20 @@ class Image {
     for(let outputFormat in fullStats) {
       for(let stat of fullStats[outputFormat]) {
         if(this.options.useCache && fs.existsSync(stat.outputPath)){
-          stat.size = fs.statSync(stat.outputPath).size;
+          // Cached images already exist in output
+          let contents;
           if(this.options.dryRun) {
-            stat.buffer = this.getFileContents();
+            contents = this.getFileContents();
+            stat.buffer = contents;
+          }
+
+          if(outputFormat === "svg" && this.options.svgCompressionSize === "br") {
+            if(!contents) {
+              contents = this.getFileContents();
+            }
+            stat.size = brotliSize.sync(contents);
+          } else {
+            stat.size = fs.statSync(stat.outputPath).size;
           }
 
           outputFilePromises.push(Promise.resolve(stat));
@@ -478,6 +539,13 @@ class Image {
         }
 
         let sharpInstance = sharpImage.clone();
+        // Output images do not include orientation metadata (https://github.com/11ty/eleventy-img/issues/52)
+        // Use sharp.rotate to bake orientation into the image (https://github.com/lovell/sharp/blob/v0.32.6/docs/api-operation.md#rotate):
+        // > If no angle is provided, it is determined from the EXIF data. Mirroring is supported and may infer the use of a flip operation.
+        // > The use of rotate without an angle will remove the EXIF Orientation tag, if any.
+        if(this.options.fixOrientation || this.needsRotation(metadata.orientation)) {
+          sharpInstance.rotate();
+        }
         if(stat.width < metadata.width || (this.options.svgAllowUpscale && metadata.format === "svg")) {
           let resizeOptions = {
             width: stat.width
@@ -485,14 +553,8 @@ class Image {
           if(metadata.format !== "svg" || !this.options.svgAllowUpscale) {
             resizeOptions.withoutEnlargement = true;
           }
-          if(this.needsRotation(metadata.orientation)) {
-            sharpInstance.rotate();
-          }
+
           sharpInstance.resize(resizeOptions);
-        } else if (stat.width === metadata.width && metadata.format !== "svg") {
-          if(this.needsRotation(metadata.orientation)) {
-            sharpInstance.rotate();
-          }
         }
 
         if(!this.options.dryRun) {
@@ -505,7 +567,12 @@ class Image {
         if(this.options.formatHooks && this.options.formatHooks[outputFormat]) {
           let hookResult = await this.options.formatHooks[outputFormat].call(stat, sharpInstance);
           if(hookResult) {
-            stat.size = hookResult.length;
+            if(this.options.svgCompressionSize === "br") {
+              stat.size = brotliSize.sync(hookResult);
+            } else {
+              stat.size = hookResult.length;
+            }
+
             if(this.options.dryRun) {
               stat.buffer = Buffer.from(hookResult);
               outputFilePromises.push(Promise.resolve(stat));

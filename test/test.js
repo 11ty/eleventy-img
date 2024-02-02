@@ -3,6 +3,8 @@ const test = require("ava");
 const fs = require("fs");
 const { URL } = require("url");
 const eleventyImage = require("../");
+const sharp = require("sharp");
+const pixelmatch = require('pixelmatch');
 
 // Remember that any outputPath tests must use path.join to work on Windows
 
@@ -846,6 +848,61 @@ test("Maintains orientation #132", async t => {
 });
 
 // Broken test cases from https://github.com/recurser/exif-orientation-examples
+test("#158: Test EXIF orientation data landscape (3) with fixOrientation", async t => {
+  let stats = await eleventyImage("./test/exif-Landscape_3.jpg", {
+    widths: [200, "auto"],
+    formats: ['auto'],
+    useCache: false,
+    dryRun: true,
+    fixOrientation: true,
+  });
+
+  t.is(stats.jpeg.length, 2);
+  t.is(stats.jpeg[0].width, 200);
+  t.is(stats.jpeg[1].width, 1800);
+  t.is(Math.floor(stats.jpeg[0].height), 133);
+  t.is(stats.jpeg[1].height, 1200);
+
+  // This orientation (180º rotation) preserves image dimensions and requires an image diff
+  const readToRaw = async input => {
+    // pixelmatch requires 4 bytes/pixel, hence alpha
+    return sharp(input).ensureAlpha().toFormat(sharp.format.raw).toBuffer();
+  };
+  for (const [inSrc, outStat] of [
+    ["./test/exif-Landscape_3-bakedOrientation-200.jpg", stats.jpeg[0]],
+    ["./test/exif-Landscape_3-bakedOrientation.jpg", stats.jpeg[1]]]) {
+    const inRaw = await readToRaw(inSrc);
+    const outRaw = await readToRaw(outStat.buffer);
+    t.is(pixelmatch(inRaw, outRaw, null, outStat.width, outStat.height, { threshold: 0.15 }), 0);
+  }
+});
+
+test("#158: Test EXIF orientation data landscape (3) without fixOrientation", async t => {
+  let stats = await eleventyImage("./test/exif-Landscape_3.jpg", {
+    widths: [200, "auto"],
+    formats: ['auto'],
+    useCache: false,
+    dryRun: true,
+    fixOrientation: false,
+  });
+
+  // This orientation (180º rotation) preserves image dimensions and requires an image diff
+  const readToRaw = async input => {
+    // pixelmatch requires 4 bytes/pixel, hence alpha
+    return sharp(input).ensureAlpha().toFormat(sharp.format.raw).toBuffer();
+  };
+  for (const [inSrc, outStat] of [
+    ["./test/exif-Landscape_3-bakedOrientation-200.jpg", stats.jpeg[0]],
+    ["./test/exif-Landscape_3-bakedOrientation.jpg", stats.jpeg[1]]]) {
+    const inRaw = await readToRaw(inSrc);
+    const outRaw = await readToRaw(outStat.buffer);
+
+    // rotation did not happen and the images are different
+    // when/if fixOrientation is defaulted to true this test will have to be === 0
+    t.true(pixelmatch(inRaw, outRaw, null, outStat.width, outStat.height, { threshold: 0.15 }) > 0);
+  }
+});
+
 test("#132: Test EXIF orientation data landscape (5)", async t => {
   let stats = await eleventyImage("./test/exif-Landscape_5.jpg", {
     widths: [400, "auto"],
@@ -892,7 +949,35 @@ test("#132: Test EXIF orientation data landscape (8)", async t => {
     widths: [400],
     formats: ['auto'],
     outputDir: "./test/img/",
-    // dryRun: true,
+    dryRun: true,
+  });
+
+  t.is(stats.jpeg.length, 1);
+  t.is(stats.jpeg[0].width, 400);
+  t.is(Math.floor(stats.jpeg[0].height), 266);
+});
+
+test("#158: Test EXIF orientation data landscape (15) without fixOrientation", async t => {
+  let stats = await eleventyImage("./test/exif-Landscape_15.jpg", {
+    widths: [400],
+    formats: ['auto'],
+    outputDir: "./test/img/",
+    dryRun: true,
+  });
+
+  t.is(stats.jpeg.length, 1);
+  t.is(stats.jpeg[0].width, 400);
+  t.is(Math.floor(stats.jpeg[0].height), 266);
+});
+
+
+test("#158: Test EXIF orientation data landscape (15) with fixOrientation", async t => {
+  let stats = await eleventyImage("./test/exif-Landscape_15.jpg", {
+    widths: [400],
+    formats: ['auto'],
+    outputDir: "./test/img/",
+    dryRun: true,
+    fixOrientation: true,
   });
 
   t.is(stats.jpeg.length, 1);
@@ -912,6 +997,7 @@ test("Animated gif", async t => {
 
   t.is(stats.gif.length, 1);
   t.is(stats.gif[0].width, 400);
+  t.is(stats.gif[0].height, 400);
   // it’s a big boi
   t.true( stats.gif[0].size > 1000*1000 );
 });
@@ -947,6 +1033,69 @@ test("Remote image with dryRun should have a buffer property, useCache: false", 
   });
 
   t.truthy(stats.png[0].buffer);
+});
+
+test("SVG files svgShortCircuit based on file size", async t => {
+  let stats = await eleventyImage("./test/Ghostscript_Tiger.svg", {
+    formats: ["svg", "webp"],
+    widths: [100, 1000, 1100],
+    dryRun: true,
+    svgShortCircuit: "size",
+  });
+
+  t.deepEqual(Object.keys(stats), ["svg", "webp"]);
+
+  t.is(stats.svg.length, 1);
+
+  t.is(stats.webp.length, 2);
+  t.is(stats.webp.filter(entry => entry.format === "svg").length, 1);
+
+  t.is(stats.webp[0].format, "webp");
+  t.is(stats.webp[0].width, 100);
+  t.truthy(stats.webp[0].size < 20000);
+
+  t.is(stats.webp[1].format, "svg");
+  t.is(stats.webp[1].width, 900);
+});
+
+test("SVG files svgShortCircuit based on file size (small SVG, exclusively SVG output)", async t => {
+  let stats = await eleventyImage("./test/logo.svg", {
+    formats: ["svg", "webp"],
+    widths: [500],
+    dryRun: true,
+    svgShortCircuit: "size",
+  });
+
+  t.deepEqual(Object.keys(stats), ["svg", "webp"]);
+
+  t.is(stats.svg.length, 1);
+  t.is(stats.webp.length, 0);
+});
+
+
+test("SVG files svgShortCircuit based on file size (brotli compression)", async t => {
+  let stats = await eleventyImage("./test/Ghostscript_Tiger.svg", {
+    formats: ["svg", "webp"],
+    widths: [100, 1000, 1100],
+    dryRun: true,
+    svgShortCircuit: "size",
+    svgCompressionSize: "br",
+  });
+
+  t.deepEqual(Object.keys(stats), ["svg", "webp"]);
+
+  t.is(stats.svg.length, 1);
+  t.true(stats.svg[0].size < 30000); // original was ~68000, br compression was applied.
+
+  t.is(stats.webp.length, 2);
+  t.is(stats.webp.filter(entry => entry.format === "svg").length, 1);
+
+  t.is(stats.webp[0].format, "webp");
+  t.is(stats.webp[0].width, 100);
+  t.truthy(stats.webp[0].size < 20000);
+
+  t.is(stats.webp[1].format, "svg");
+  t.is(stats.webp[1].width, 900);
 });
 
 test("#184: Ensure original size is included if any widths are larger", async t => {

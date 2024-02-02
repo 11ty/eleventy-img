@@ -1,6 +1,6 @@
 {
   "name": "@11ty/eleventy-img",
-  "version": "3.1.0",
+  "version": "3.1.8",
   "description": "Low level utility to perform build-time image transformations.",
   "publishConfig": {
     "access": "public"
@@ -37,18 +37,20 @@
   },
   "homepage": "https://github.com/11ty/eleventy-img#readme",
   "dependencies": {
-    "@11ty/eleventy-fetch": "^3.0.0",
+    "@11ty/eleventy-fetch": "^4.0.0",
+    "brotli-size": "^4.0.0",
     "debug": "^4.3.4",
-    "entities": "^4.4.0",
+    "entities": "^4.5.0",
     "image-size": "^1.0.2",
     "p-queue": "^6.6.2",
-    "sharp": "^0.32.0"
+    "sharp": "^0.32.6"
   },
   "devDependencies": {
     "@11ty/eleventy": "^2.0.1",
-    "@11ty/eleventy-plugin-webc": "^0.10.1",
-    "ava": "^5.1.1",
-    "eslint": "^8.33.0"
+    "@11ty/eleventy-plugin-webc": "^0.11.1",
+    "ava": "^5.3.1",
+    "eslint": "^8.52.0",
+    "pixelmatch": "^5.3.0"
   },
   "ava": {
     "failFast": false,
