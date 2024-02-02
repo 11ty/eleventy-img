@@ -577,7 +577,11 @@ class Image {
               stat.buffer = Buffer.from(hookResult);
               outputFilePromises.push(Promise.resolve(stat));
             } else {
-              outputFilePromises.push(fsp.writeFile(stat.outputPath, hookResult).then(() => stat));
+              outputFilePromises.push(
+                fsp.mkdir(path.dirname(stat.outputPath), { recursive: true })
+                  .then(() => fsp.writeFile(stat.outputPath, hookResult))
+                  .then(() => stat)
+              );
             }
           }
         } else { // not a format hook
@@ -589,10 +593,14 @@ class Image {
 
           if(!this.options.dryRun && stat.outputPath) {
             // Should never write when dryRun is true
-            outputFilePromises.push(sharpInstance.toFile(stat.outputPath).then(info => {
-              stat.size = info.size;
-              return stat;
-            }));
+            outputFilePromises.push(
+              fsp.mkdir(path.dirname(stat.outputPath), { recursive: true })
+                .then(() => sharpInstance.toFile(stat.outputPath))
+                .then(info => {
+                  stat.size = info.size;
+                  return stat;
+                })       
+            );
           } else {
             outputFilePromises.push(sharpInstance.toBuffer({ resolveWithObject: true }).then(({ data, info }) => {
               stat.buffer = data;
