@@ -70,7 +70,7 @@ const globalOptions = {
 
   // When the original width is smaller than the desired output width, this is the minimum size difference
   // between the next smallest image width that will generate one extra width in the output.
-  // e.g. when using `widths: [400, 800]`, the source image would need to be at least (400 * 1.2 =) 500px wide
+  // e.g. when using `widths: [400, 800]`, the source image would need to be at least (400 * 1.25 =) 500px wide
   // to generate two outputs (400px, 500px). If the source image is less than 500px, only one output will
   // be generated (400px).
   // Read more at https://github.com/11ty/eleventy-img/issues/184 and https://github.com/11ty/eleventy-img/pull/190
