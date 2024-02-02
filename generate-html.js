@@ -82,8 +82,6 @@ function generateObject(metadata, userDefinedAttributes = {}) {
     };
   }
 
-  // TODO work with sizes="auto" https://groups.google.com/a/chromium.org/g/blink-dev/c/OAsmCbjPJz0/m/jzuTJzs1AAAJ
-
   // Per the HTML specification sizes is required srcset is using the `w` unit
   // https://html.spec.whatwg.org/dev/semantics.html#the-link-element:attr-link-imagesrcset-4
   // Using the default "100vw" is okay
