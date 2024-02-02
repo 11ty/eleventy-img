@@ -7,12 +7,12 @@ const {default: PQueue} = require("p-queue");
 const getImageSize = require("image-size");
 const sharp = require("sharp");
 const brotliSize = require("brotli-size");
-const debug = require("debug")("EleventyImg");
+const {RemoteAssetCache, queue} = require("@11ty/eleventy-fetch");
 
 const svgHook = require("./format-hooks/svg");
-
-const {RemoteAssetCache, queue} = require("@11ty/eleventy-fetch");
 const MemoryCache = require("./memory-cache");
+
+const debug = require("debug")("EleventyImg");
 
 const globalOptions = {
   widths: [null],
@@ -68,6 +68,13 @@ const globalOptions = {
   // Advanced
   useCacheValidityInHash: true,
 
+  // When the original width is smaller than the desired output width, this is the minimum size difference
+  // between the next smallest image width that will generate one extra width in the output.
+  // e.g. when using `widths: [400, 800]`, the source image would need to be at least (400 * 1.2 =) 500px wide
+  // to generate two outputs (400px, 500px). If the source image is less than 500px, only one output will
+  // be generated (400px).
+  // Read more at https://github.com/11ty/eleventy-img/issues/184 and https://github.com/11ty/eleventy-img/pull/190
+  minimumThreshold: 1.25,
 };
 
 const MIME_TYPES = {
@@ -184,7 +191,7 @@ class Image {
     return this._contents;
   }
 
-  static getValidWidths(originalWidth, widths = [], allowUpscale = false) {
+  static getValidWidths(originalWidth, widths = [], allowUpscale = false, minimumThreshold = 1) {
     // replace any falsy values with the original width
     let valid = widths.map(width => !width || width === 'auto' ? originalWidth : width);
 
@@ -195,7 +202,19 @@ class Image {
     // This ensures that if a larger width has been requested, we're at least providing the closest
     // non-upscaled image that we can.
     if (!allowUpscale) {
-      valid = valid.map(width => width > originalWidth ? originalWidth : width);
+      let lastWidthWasBigEnough = true; // first one is always valid
+      valid = valid.sort((a, b) => a - b).map(width => {
+        if(width > originalWidth) {
+          if(lastWidthWasBigEnough) {
+            return originalWidth;
+          }
+          return -1;
+        }
+
+        lastWidthWasBigEnough = originalWidth > Math.floor(width * minimumThreshold);
+
+        return width;
+      }).filter(width => width > 0);
     }
 
     // Remove duplicates (e.g., if null happens to coincide with an explicit width
@@ -489,7 +508,7 @@ class Image {
           continue;
         }
       } else { // not outputting SVG (might still be SVG input though!)
-        let widths = Image.getValidWidths(metadata.width, this.options.widths, metadata.format === "svg" && this.options.svgAllowUpscale);
+        let widths = Image.getValidWidths(metadata.width, this.options.widths, metadata.format === "svg" && this.options.svgAllowUpscale, this.options.minimumThreshold);
         for(let width of widths) {
           // Warning: if this is a guess via statsByDimensionsSync and that guess is wrong
           // The aspect ratio will be wrong and any height/widths returned will be wrong!
@@ -599,7 +618,7 @@ class Image {
                 .then(info => {
                   stat.size = info.size;
                   return stat;
-                })       
+                })
             );
           } else {
             outputFilePromises.push(sharpInstance.toBuffer({ resolveWithObject: true }).then(({ data, info }) => {

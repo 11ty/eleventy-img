@@ -219,6 +219,61 @@ test("Try to use a width larger than original (with a null in there)", async t =
   t.is(stats.jpeg[0].width, 1280);
 });
 
+test("Minimum width threshold (valid)", async t => {
+  // original is 1280
+  let stats = await eleventyImage("./test/bio-2017.jpg", {
+    widths: [400, 1300],
+    formats: ["jpeg"],
+    outputDir: "./test/img/",
+    dryRun: true,
+  });
+  t.is(stats.jpeg.length, 2);
+  t.is(stats.jpeg[0].outputPath, path.join("test/img/KkPMmHd3hP-400.jpeg"));
+  t.is(stats.jpeg[0].width, 400);
+  t.is(stats.jpeg[1].outputPath, path.join("test/img/KkPMmHd3hP-1280.jpeg"));
+  t.is(stats.jpeg[1].width, 1280);
+});
+
+
+test("Minimum width threshold (one gets rejected)", async t => {
+  // original is 1280
+  let stats = await eleventyImage("./test/bio-2017.jpg", {
+    widths: [1200, 1300],
+    formats: ["jpeg"],
+    outputDir: "./test/img/",
+    dryRun: true,
+  });
+  t.is(stats.jpeg.length, 1);
+  t.is(stats.jpeg[0].outputPath, path.join("test/img/KkPMmHd3hP-1200.jpeg"));
+  t.is(stats.jpeg[0].width, 1200);
+});
+
+test("Minimum width threshold (one gets rejected, higher max)", async t => {
+  // original is 1280
+  let stats = await eleventyImage("./test/bio-2017.jpg", {
+    widths: [1200, 1500],
+    formats: ["jpeg"],
+    outputDir: "./test/img/",
+    dryRun: true,
+  });
+  t.is(stats.jpeg.length, 1);
+  t.is(stats.jpeg[0].outputPath, path.join("test/img/KkPMmHd3hP-1200.jpeg"));
+  t.is(stats.jpeg[0].width, 1200);
+});
+
+test("Minimum width threshold (one gets rejected, lower min)", async t => {
+  // original is 1280
+  let stats = await eleventyImage("./test/bio-2017.jpg", {
+    widths: [1100, 1500],
+    formats: ["jpeg"],
+    outputDir: "./test/img/",
+    dryRun: true,
+  });
+  t.is(stats.jpeg.length, 1);
+  t.is(stats.jpeg[0].outputPath, path.join("test/img/KkPMmHd3hP-1100.jpeg"));
+  t.is(stats.jpeg[0].width, 1100);
+});
+
 test("Just falsy width", async t => {
   let stats = await eleventyImage("./test/bio-2017.jpg", {
     widths: [null],
