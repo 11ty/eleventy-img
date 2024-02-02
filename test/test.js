@@ -234,6 +234,18 @@ test("Minimum width threshold (valid)", async t => {
   t.is(stats.jpeg[1].width, 1280);
 });
 
+test("Minimum width threshold (one width larger that source)", async t => {
+  // original is 1280
+  let stats = await eleventyImage("./test/bio-2017.jpg", {
+    widths: [1800],
+    formats: ["jpeg"],
+    outputDir: "./test/img/",
+    dryRun: true,
+  });
+  t.is(stats.jpeg.length, 1);
+  t.is(stats.jpeg[0].outputPath, path.join("test/img/KkPMmHd3hP-1280.jpeg"));
+  t.is(stats.jpeg[0].width, 1280);
+});
 
 test("Minimum width threshold (one gets rejected)", async t => {
   // original is 1280
