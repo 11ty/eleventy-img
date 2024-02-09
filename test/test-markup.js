@@ -1,6 +1,6 @@
 const test = require("ava");
 const eleventyImage = require("../");
-const generateHTML = require("../generate-html.js");
+const generateHTML = require("../src/generate-html.js");
 const generateObject = generateHTML.generateObject;
 
 test("Image markup (defaults)", async t => {

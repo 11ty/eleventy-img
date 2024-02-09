@@ -9,8 +9,8 @@ const sharp = require("sharp");
 const brotliSize = require("brotli-size");
 const {RemoteAssetCache, queue} = require("@11ty/eleventy-fetch");
 
-const svgHook = require("./format-hooks/svg");
-const MemoryCache = require("./memory-cache");
+const svgHook = require("./src/format-hooks/svg.js");
+const MemoryCache = require("./src/memory-cache.js");
 
 const debug = require("debug")("EleventyImg");
 
@@ -787,7 +787,7 @@ module.exports.getHash = function getHash(src, options) {
   return img.getHash();
 };
 
-const generateHTML = require("./generate-html");
+const generateHTML = require("./src/generate-html.js");
 module.exports.generateHTML = generateHTML;
 module.exports.generateObject = generateHTML.generateObject;
 
