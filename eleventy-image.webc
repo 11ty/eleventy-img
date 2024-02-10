@@ -22,6 +22,7 @@
 <script webc:type="js">
 const path = require("path");
 
+// TODO expose this for re-use in a provided shortcode.
 async function imagePlugin(attributes, globalPluginOptions) {
 	if(!attributes.src) {
 		throw new Error("Missing `src` attribute on <eleventy-image>");

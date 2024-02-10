@@ -168,7 +168,7 @@ function mapObjectToHTML(tagName, attrs = {}) {
 function generateHTML(metadata, attributes = {}, options = {}) {
   let isInline = options.whitespaceMode !== "block";
   let markup = [];
-  let obj = generateObject(metadata, attributes, options);
+  let obj = generateObject(metadata, attributes);
   for(let tag in obj) {
     if(!Array.isArray(obj[tag])) {
       markup.push(mapObjectToHTML(tag, obj[tag]));
