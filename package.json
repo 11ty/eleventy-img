@@ -1,13 +1,13 @@
 {
   "name": "@11ty/eleventy-img",
-  "version": "3.2.0",
+  "version": "4.0.0",
   "description": "Low level utility to perform build-time image transformations.",
   "publishConfig": {
     "access": "public"
   },
   "main": "img.js",
   "engines": {
-    "node": ">=14.15.0"
+    "node": ">=18"
   },
   "scripts": {
     "pretest": "eslint img.js test/**.js",
