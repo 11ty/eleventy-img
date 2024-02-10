@@ -48,7 +48,7 @@
   "devDependencies": {
     "@11ty/eleventy": "^2.0.1",
     "@11ty/eleventy-plugin-webc": "^0.11.1",
-    "ava": "^6.1.1",
+    "ava": "^5.3.1",
     "eslint": "^8.52.0",
     "pixelmatch": "^5.3.0"
   },
@@ -57,13 +57,11 @@
     "files": [
       "./test/*.js"
     ],
-    "watchMode": {
-      "ignoreChanges": [
-        "./.cache/*",
-        "./img/*",
-        "./test/img/*",
-        "./test/**/generated*"
-      ]
-    }
+    "ignoredByWatcher": [
+      "./.cache/*",
+      "./img/*",
+      "./test/img/*",
+      "./test/**/generated*"
+    ]
   }
 }
