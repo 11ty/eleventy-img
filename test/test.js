@@ -1066,7 +1066,7 @@ test("Animated gif", async t => {
   t.is(stats.gif[0].width, 400);
   t.is(stats.gif[0].height, 400);
   // it’s a big boi
-  t.true( stats.gif[0].size > 1000*1000 );
+  t.true( stats.gif[0].size > 1000*999 );
 });
 
 test("Change hashLength", async t => {

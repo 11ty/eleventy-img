@@ -607,6 +607,11 @@ class Image {
           let sharpFormatOptions = this.getSharpOptionsForFormat(outputFormat);
           let hasFormatOptions = Object.keys(sharpFormatOptions).length > 0;
           if(hasFormatOptions || outputFormat && metadata.format !== outputFormat) {
+            // https://github.com/lovell/sharp/issues/3680
+            // Fix heic regression in sharp 0.33
+            if(outputFormat === "heic" && !sharpFormatOptions.compression) {
+              sharpFormatOptions.compression = "av1";
+            }
             sharpInstance.toFormat(outputFormat, sharpFormatOptions);
           }
 
