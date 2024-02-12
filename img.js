@@ -796,45 +796,9 @@ const generateHTML = require("./src/generate-html.js");
 module.exports.generateHTML = generateHTML;
 module.exports.generateObject = generateHTML.generateObject;
 
-function getGlobalOptions(eleventyDirectories, options) {
-  return Object.assign({
-    packages: {
-      image: module.exports,
-    },
-    outputDir: path.join(eleventyDirectories.output, options.urlPath || ""),
-  }, options);
-}
+const { eleventyWebcOptionsPlugin } = require("./src/webc-options-plugin.js");
+module.exports.eleventyImagePlugin = eleventyWebcOptionsPlugin;
+module.exports.eleventyImageWebcOptionsPlugin = eleventyWebcOptionsPlugin;
 
-module.exports.eleventyImagePlugin = function(eleventyConfig, options = {}) {
-  let eleventyDirectories;
-  eleventyConfig.on("eleventy.directories", (dirs) => {
-    eleventyDirectories = dirs;
-  });
-
-  // Notably, global options are not shared automatically with the `eleventyImageTransformPlugin` below.
-  // Devs can pass in the same object to both if they want!
-  eleventyConfig.addJavaScriptFunction("__private_eleventyImageConfigurationOptions", () => {
-    return getGlobalOptions(eleventyDirectories, options);
-  });
-};
-
-const transformPlugin = require("./src/transformPlugin.js");
-module.exports.eleventyImageTransformPlugin = function(eleventyConfig, options = {}) {
-  options = Object.assign({
-    extensions: "html",
-  }, options);
-
-  let eleventyDirectories;
-  eleventyConfig.on("eleventy.directories", (dirs) => {
-    eleventyDirectories = dirs;
-  });
-
-  // Notably, global options are not shared automatically with the WebC `eleventyImagePlugin` above.
-  // Devs can pass in the same object to both if they want!
-  transformPlugin(eleventyConfig, options, () => {
-    let opts = getGlobalOptions(eleventyDirectories, options);
-    opts.eleventyDirectories = eleventyDirectories;
-    delete opts.packages;
-    return opts;
-  });
-};
+const { eleventyImageTransformPlugin } = require("./src/transform-plugin.js");
+module.exports.eleventyImageTransformPlugin = eleventyImageTransformPlugin;

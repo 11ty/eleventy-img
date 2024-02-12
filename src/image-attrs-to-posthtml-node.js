@@ -1,4 +1,4 @@
-const eleventyImage = require("../");
+const eleventyImage = require("../img");
 
 const ATTR_PREFIX = "eleventy:";
 

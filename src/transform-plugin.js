@@ -1,5 +1,6 @@
 const path = require("path");
-const { imageAttributesToPosthtmlNode, getOutputDirectory, cleanTag, isIgnored } = require("./imageAttributesToPosthtmlNode.js");
+const { imageAttributesToPosthtmlNode, getOutputDirectory, cleanTag, isIgnored } = require("./image-attrs-to-posthtml-node.js");
+const { getGlobalOptions } = require("./global-options.js");
 
 function isFullUrl(url) {
   try {
@@ -75,9 +76,20 @@ function transformTag(context, node, opts) {
   });
 }
 
-module.exports = function(eleventyConfig, options, globalOptionsCallback) {
+function eleventyImageTransformPlugin(eleventyConfig, options = {}) {
+  options = Object.assign({
+    extensions: "html",
+  }, options);
+
+  let eleventyDirectories;
+  eleventyConfig.on("eleventy.directories", (dirs) => {
+    eleventyDirectories = dirs;
+  });
+
   function posthtmlPlugin(context) {
-    let opts = globalOptionsCallback();
+    // Notably, global options are not shared automatically with the WebC `eleventyImagePlugin` above.
+    // Devs can pass in the same object to both if they want!
+    let opts =  getGlobalOptions(eleventyDirectories, options);
 
     return (tree) => {
       let promises = [];
@@ -102,4 +114,8 @@ module.exports = function(eleventyConfig, options, globalOptionsCallback) {
   eleventyConfig.htmlTransformer.addPosthtmlPlugin(options.extensions, posthtmlPlugin, {
     priority: -1, // we want this to go before <base> or inputpath to url
   });
+}
+
+module.exports = {
+  eleventyImageTransformPlugin,
 };
