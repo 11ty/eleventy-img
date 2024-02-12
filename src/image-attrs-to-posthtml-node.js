@@ -35,7 +35,7 @@ async function imageAttributesToPosthtmlNode(attributes, instanceOptions, global
   }
 
   if(!globalPluginOptions) {
-    throw new Error("Missing global defaults for `@11ty/eleventy-img`: did you call addPlugin?")
+    throw new Error("Missing global defaults for `@11ty/eleventy-img`: did you call addPlugin?");
   }
 
   if(!instanceOptions) {
@@ -64,7 +64,7 @@ async function imageAttributesToPosthtmlNode(attributes, instanceOptions, global
   // You bet we throw an error on missing alt in `imageAttributes` (alt="" works okay)
   let obj = await eleventyImage.generateObject(metadata, imageAttributes);
   return convertToPosthtmlNode(obj);
-};
+}
 
 function cleanTag(node) {
   // Delete all prefixed attributes
@@ -88,4 +88,4 @@ module.exports = {
   cleanTag,
   isIgnored,
   getOutputDirectory,
-}
+};
