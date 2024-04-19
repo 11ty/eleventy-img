@@ -1,25 +1,30 @@
 const path = require("path");
 const fs = require("fs");
 const fsp = fs.promises;
-const { URL } = require("url");
+
 const { createHash } = require("crypto");
 const {default: PQueue} = require("p-queue");
 const getImageSize = require("image-size");
 const sharp = require("sharp");
 const brotliSize = require("brotli-size");
-const {RemoteAssetCache, queue} = require("@11ty/eleventy-fetch");
+const { RemoteAssetCache, queue } = require("@11ty/eleventy-fetch");
 
 const svgHook = require("./src/format-hooks/svg.js");
 const MemoryCache = require("./src/memory-cache.js");
+const DiskCache = require("./src/disk-cache.js");
+const Util = require("./src/util.js");
 
-const debug = require("debug")("EleventyImg");
+const debug = require("debug")("Eleventy:Image");
 
-const globalOptions = {
-  widths: [null],
+const GLOBAL_OPTIONS = {
+  widths: ["auto"],
   formats: ["webp", "jpeg"], // "png", "svg", "avif"
-  concurrency: 10,
+
+  concurrency: 20,
+
   urlPath: "/img/",
   outputDir: "img/",
+
   // true to skip raster formats if SVG input is found
   // "size" to skip raster formats if larger than SVG input
   svgShortCircuit: false,
@@ -31,11 +36,13 @@ const globalOptions = {
   sharpPngOptions: {}, // options passed to the Sharp png output method
   sharpJpegOptions: {}, // options passed to the Sharp jpeg output method
   sharpAvifOptions: {}, // options passed to the Sharp avif output method
-  extensions: {},
+
   formatHooks: {
     svg: svgHook,
   },
+
   cacheDuration: "1d", // deprecated, use cacheOptions.duration
+
   // disk cache for remote assets
   cacheOptions: {
     // duration: "1d",
@@ -75,6 +82,12 @@ const globalOptions = {
   // be generated (400px).
   // Read more at https://github.com/11ty/eleventy-img/issues/184 and https://github.com/11ty/eleventy-img/pull/190
   minimumThreshold: 1.25,
+
+  // During --serve mode in Eleventy, this will generate images on request instead of part of the build skipping
+  // writes to the file system and speeding up builds!
+  transformOnRequest: false,
+
+  // v5 `extensions` was removed (option to override output format with new file extension), it wasn’t being used anywhere or documented
 };
 
 const MIME_TYPES = {
@@ -92,49 +105,25 @@ const FORMAT_ALIASES = {
   "svg+xml": "svg",
 };
 
-class Util {
-  /*
-   * Does not mutate, returns new Object.
-   */
-  static getSortedObject(unordered) {
-    let keys = Object.keys(unordered).sort();
-    let obj = {};
-    for(let key of keys) {
-      obj[key] = unordered[key];
-    }
-    return obj;
-  }
-
-  static isRemoteUrl(url) {
-    try {
-      const validUrl = new URL(url);
-
-      if (validUrl.protocol.startsWith("https:") || validUrl.protocol.startsWith("http:")) {
-        return true;
-      }
-
-      return false;
-    } catch(e)
-
-    {
-      // invalid url OR local path
-      return false;
-    }
-  }
-}
-
-// Temporary alias for changes made in https://github.com/11ty/eleventy-img/pull/138
-Util.isFullUrl = Util.isRemoteUrl;
-
 class Image {
-  constructor(src, options) {
+  constructor(src, options = {}) {
     if(!src) {
       throw new Error("`src` is a required argument to the eleventy-img utility (can be a String file path, String URL, or Buffer).");
     }
 
     this.src = src;
     this.isRemoteUrl = typeof src === "string" && Util.isRemoteUrl(src);
-    this.options = Object.assign({}, globalOptions, options);
+
+    this.options = Object.assign({}, GLOBAL_OPTIONS, options);
+
+    // Compatible with eleventy-dev-server and Eleventy 3.0.0-alpha.7+ in serve mode.
+    if(this.options.transformOnRequest && !this.options.urlFormat) {
+      this.options.urlFormat = function({ src, width, format }/*, imageOptions*/) {
+        return `/.11ty/image/?src=${encodeURIComponent(src)}&width=${width}&format=${format}`;
+      };
+
+      this.options.statsOnly = true;
+    }
 
     if(this.isRemoteUrl) {
       this.cacheOptions = Object.assign({
@@ -177,16 +166,18 @@ class Image {
       return false;
     }
 
-    // perf: check to make sure it’s not a string first
-    if(typeof this.src !== "string" && Buffer.isBuffer(this.src)) {
-      this._contents = this.src;
+    if(!this._contents) {
+      // perf: check to make sure it’s not a string first
+      if(typeof this.src !== "string" && Buffer.isBuffer(this.src)) {
+        this._contents = this.src;
+      } else {
+        // TODO @zachleat make this aggressively async.
+        // TODO @zachleat add a smarter cache here (not too aggressive! must handle input file changes)
+        // debug("Reading from file system: %o", this.src);
+        this._contents = fs.readFileSync(this.src);
+      }
     }
 
-    // TODO @zachleat add a smarter cache here (not too aggressive! must handle input file changes)
-    if(!this._contents) {
-      debug("Reading from file system: %o", this.src);
-      this._contents = fs.readFileSync(this.src);
-    }
 
     return this._contents;
   }
@@ -336,28 +327,34 @@ class Image {
     return {};
   }
 
-  async getInput() {
-    if(this.isRemoteUrl) {
-      // fetch remote image Buffer
-      if(queue) {
-        // eleventy-fetch 3.0+ and eleventy-cache-assets 2.0.4+
-        return queue(this.src, () => this.assetCache.fetch());
+  // Returns promise
+  getInput() {
+    // internal cache
+    if(!this.inputPromise) {
+      if(this.isRemoteUrl) {
+        // fetch remote image Buffer
+        if(queue) {
+          // eleventy-fetch 3.0+ and eleventy-cache-assets 2.0.4+
+          this.inputPromise = queue(this.src, () => this.assetCache.fetch());
+        } else {
+          // eleventy-cache-assets 2.0.3 and below
+          this.inputPromise = this.assetCache.fetch(this.cacheOptions);
+        }
+      } else {
+        // TODO @zachleat (multiread): read local file contents here and always return a buffer
+        this.inputPromise = Promise.resolve(this.src);
       }
-
-      // eleventy-cache-assets 2.0.3 and below
-      return this.assetCache.fetch(this.cacheOptions);
     }
 
-    // TODO @zachleat (multiread): read local file contents here and always return a buffer
-    return this.src;
+    return this.inputPromise;
   }
 
   getHash() {
     if (this.computedHash) {
-      debug("Re-using computed hash for %o: %o", this.src, this.computedHash);
       return this.computedHash;
     }
 
+    // debug("Creating hash for %o", this.src);
     let hash = createHash("sha256");
 
     if(fs.existsSync(this.src)) {
@@ -419,7 +416,7 @@ class Image {
   getStat(outputFormat, width, height) {
     let url;
     let outputFilename;
-    let outputExtension = this.options.extensions[outputFormat] || outputFormat;
+
     if(this.options.urlFormat && typeof this.options.urlFormat === "function") {
       let hash;
       if(!this.options.statsOnly) {
@@ -430,11 +427,11 @@ class Image {
         hash,
         src: this.src,
         width,
-        format: outputExtension,
+        format: outputFormat,
       }, this.options);
     } else {
       let hash = this.getHash();
-      outputFilename = ImagePath.getFilename(hash, this.src, width, outputExtension, this.options);
+      outputFilename = ImagePath.getFilename(hash, this.src, width, outputFormat, this.options);
       url = ImagePath.convertFilePathToUrl(this.options.urlPath, outputFilename);
     }
 
@@ -487,6 +484,7 @@ class Image {
       if(!outputFormat || outputFormat === "auto") {
         throw new Error("When using statsSync or statsByDimensionsSync, `formats: [null | auto]` to use the native image format is not supported.");
       }
+
       if(outputFormat === "svg") {
         if((metadata.format || this.options.overrideInputFormat) === "svg") {
           let svgStats = this.getStat("svg", metadata.width, metadata.height);
@@ -536,7 +534,7 @@ class Image {
     let fullStats = this.getFullStats(metadata);
     for(let outputFormat in fullStats) {
       for(let stat of fullStats[outputFormat]) {
-        if(this.options.useCache && fs.existsSync(stat.outputPath)){
+        if(this.options.useCache && diskCache.isCached(stat.outputPath)){
           // Cached images already exist in output
           let contents;
           if(this.options.dryRun) {
@@ -638,7 +636,11 @@ class Image {
         }
 
         if(stat.outputPath) {
-          debug( "Wrote %o", stat.outputPath );
+          if(this.options.dryRun) {
+            debug( "Generated %o", stat.url );
+          } else {
+            debug( "Wrote %o", stat.outputPath );
+          }
         }
       }
     }
@@ -711,10 +713,11 @@ class ImagePath {
 
 /* Size Cache */
 let memCache = new MemoryCache();
+let diskCache = new DiskCache();
 
 /* Queue */
 let processingQueue = new PQueue({
-  concurrency: globalOptions.concurrency
+  concurrency: GLOBAL_OPTIONS.concurrency
 });
 processingQueue.on("active", () => {
   debug( `Concurrency: ${processingQueue.concurrency}, Size: ${processingQueue.size}, Pending: ${processingQueue.pending}` );
@@ -723,8 +726,9 @@ processingQueue.on("active", () => {
 function queueImage(src, opts) {
   let img = new Image(src, opts);
   let key;
+  let resolvedOptions = img.options;
 
-  if(img.options.useCache) {
+  if(resolvedOptions.useCache) {
     // we don’t know the output format yet, but this hash is just for the in memory cache
     key = img.getInMemoryCacheKey();
     let cached = memCache.get(key);
@@ -733,28 +737,32 @@ function queueImage(src, opts) {
     }
   }
 
-  debug("In-memory cache miss for %o, options: %o", src, opts);
+  debug("Processing %o (in-memory cache miss), options: %o", src, opts);
 
   let promise = (async () => {
-    if(typeof src === "string" && opts && opts.statsOnly) {
+    if(typeof src === "string" && resolvedOptions.statsOnly) {
       if(Util.isRemoteUrl(src)) {
-        if(!opts.remoteImageMetadata || !opts.remoteImageMetadata.width || !opts.remoteImageMetadata.height) {
-          throw new Error("When using `statsOnly` and remote images, you must supply a `remoteImageMetadata` object with { width, height, format? }");
+        if(opts.remoteImageMetadata?.width && opts.remoteImageMetadata?.height) {
+          return img.getFullStats({
+            width: opts.remoteImageMetadata.width,
+            height: opts.remoteImageMetadata.height,
+            format: opts.remoteImageMetadata.format, // only required if you want to use the "auto" format
+            guess: true,
+          });
         }
-        return img.getFullStats({
-          width: opts.remoteImageMetadata.width,
-          height: opts.remoteImageMetadata.height,
-          format: opts.remoteImageMetadata.format, // only required if you want to use the "auto" format
-          guess: true,
-        });
-      } else { // Local images
-        let { width, height, type } = getImageSize(src);
-        return img.getFullStats({
-          width,
-          height,
-          format: type // only required if you want to use the "auto" format
-        });
+
+        // Fetch remote image to operate on it
+        src = await img.getInput();
       }
+
+      // Local images
+      let { width, height, type } = getImageSize(src);
+
+      return img.getFullStats({
+        width,
+        height,
+        format: type // only required if you want to use the "auto" format
+      });
     }
 
     let input = await img.getInput();
@@ -805,3 +813,6 @@ module.exports.eleventyImageWebcOptionsPlugin = eleventyWebcOptionsPlugin;
 
 const { eleventyImageTransformPlugin } = require("./src/transform-plugin.js");
 module.exports.eleventyImageTransformPlugin = eleventyImageTransformPlugin;
+
+const { eleventyImageOnRequestDuringServePlugin } = require("./src/on-request-during-serve-plugin.js");
+module.exports.eleventyImageOnRequestDuringServePlugin = eleventyImageOnRequestDuringServePlugin;

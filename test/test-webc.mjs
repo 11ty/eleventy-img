@@ -1,5 +1,7 @@
-const test = require("ava");
-const Eleventy = require("@11ty/eleventy");
+import test from "ava";
+import Eleventy from "@11ty/eleventy";
+import eleventyWebcPlugin from "@11ty/eleventy-plugin-webc";
+import { eleventyImagePlugin } from "../img.js";
 
 test("Using <eleventy-image>", async t => {
   let elev = new Eleventy( "test/webc/simple.webc", "test/webc/_site", {
@@ -37,3 +39,31 @@ test("With url-path", async t => {
   t.is(results[0].content, `<img loading="lazy" src="/some-dir/KkPMmHd3hP-1280.jpeg" alt="photo of my tabby cat" width="1280" height="853">`);
 });
 
+test("With transform on request during dev mode", async t => {
+  let elev = new Eleventy( "test/webc/simple.webc", "test/webc/_site", {
+    config: eleventyConfig => {
+      // WebC
+      eleventyConfig.addPlugin(eleventyWebcPlugin, {
+        components: [
+          // Add as a global WebC component
+          "eleventy-image.webc",
+        ]
+      });
+
+      // Image plugin
+      eleventyConfig.addPlugin(eleventyImagePlugin, {
+        // Set global default options
+        formats: ["auto"],
+        dryRun: true,
+        transformOnRequest: true,
+
+        defaultAttributes: {
+          loading: "lazy",
+        }
+      });
+    }
+  });
+
+  let results = await elev.toJSON();
+  t.is(results[0].content, `<img loading="lazy" src="/.11ty/image/?src=.%2Ftest%2Fbio-2017.jpg&amp;width=1280&amp;format=jpeg" alt="My ugly mug" width="1280" height="853">`);
+});

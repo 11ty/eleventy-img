@@ -1,14 +1,14 @@
 const path = require("path");
 
-function getGlobalOptions(eleventyDirectories, options) {
+function getGlobalOptions(directories, options) {
   let globalOptions = Object.assign({
     packages: {
       image: require("../"),
     },
-    outputDir: path.join(eleventyDirectories.output, options.urlPath || ""),
+    outputDir: path.join(directories.output, options.urlPath || ""),
   }, options);
 
-  globalOptions.eleventyDirectories = eleventyDirectories;
+  globalOptions.directories = directories;
 
   return globalOptions;
 }

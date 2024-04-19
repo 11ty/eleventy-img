@@ -1,8 +1,9 @@
-const debug = require("debug")("EleventyImg");
+const debug = require("debug")("Eleventy:Image");
 
 class MemoryCache {
   constructor() {
     this.cache = {};
+    this.hitCounter = 0;
   }
 
   add(key, results) {
@@ -10,18 +11,17 @@ class MemoryCache {
       results
     };
 
-    debug("Added %o to cache (size: %o)", key, Object.keys(this.cache).length);
+    debug("Unique images processed: %o", Object.keys(this.cache).length);
   }
 
   get(key) {
     if(this.cache[key]) {
+      this.hitCounter++;
+      // debug("Images re-used (via in-memory cache): %o", this.hitCounter);
+
       // may return promise
-      // debug("Cache size %o", Object.keys(this.cache).length);
-      // debug("Found cached for %o", key);
       return this.cache[key].results;
     }
-
-    debug("Cache miss for %o", key);
 
     return false;
   }

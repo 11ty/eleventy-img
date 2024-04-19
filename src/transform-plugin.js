@@ -1,38 +1,16 @@
 const path = require("path");
+const Util = require("./util.js");
 const { imageAttributesToPosthtmlNode, getOutputDirectory, cleanTag, isIgnored } = require("./image-attrs-to-posthtml-node.js");
 const { getGlobalOptions } = require("./global-options.js");
-
-function isFullUrl(url) {
-  try {
-    new URL(url);
-    return true;
-  } catch(e) {
-    return false;
-  }
-}
-
-function normalizeImageSource({ inputPath, contentDir }, src) {
-  if(isFullUrl(src)) {
-    return src;
-  }
-
-  if(!path.isAbsolute(src)) {
-    // if the image src is relative, make it relative to the template file (inputPath);
-    let dir = path.dirname(inputPath);
-    return path.join(dir, src);
-  }
-
-  // if the image src is absolute, make it relative to the content directory.
-  return path.join(contentDir, src);
-}
+const { eleventyImageOnRequestDuringServePlugin } = require("./on-request-during-serve-plugin.js");
 
 function transformTag(context, node, opts) {
   let originalSource = node.attrs.src;
   let { inputPath, outputPath, url } = context.page;
 
-  node.attrs.src = normalizeImageSource({
+  node.attrs.src = Util.normalizeImageSource({
+    input: opts.directories.input,
     inputPath,
-    contentDir: opts.eleventyDirectories.input,
   }, originalSource);
 
   let instanceOptions = {};
@@ -41,12 +19,12 @@ function transformTag(context, node, opts) {
   if(outputDirectory) {
     if(path.isAbsolute(outputDirectory)) {
       instanceOptions = {
-        outputDir: path.join(opts.eleventyDirectories.output, outputDirectory),
+        outputDir: path.join(opts.directories.output, outputDirectory),
         urlPath: outputDirectory,
       };
     } else {
       instanceOptions = {
-        outputDir: path.join(opts.eleventyDirectories.output, url, outputDirectory),
+        outputDir: path.join(opts.directories.output, url, outputDirectory),
         urlPath: path.join(url, outputDirectory),
       };
     }
@@ -55,7 +33,7 @@ function transformTag(context, node, opts) {
   } else if(path.isAbsolute(originalSource)) {
     // if the path is an absolute one (relative to the content directory) write to a global output directory to avoid duplicate writes for identical source images.
     instanceOptions = {
-      outputDir: path.join(opts.eleventyDirectories.output, "/img/"),
+      outputDir: path.join(opts.directories.output, "/img/"),
       urlPath: "/img/",
     };
   } else {
@@ -79,18 +57,23 @@ function transformTag(context, node, opts) {
 function eleventyImageTransformPlugin(eleventyConfig, options = {}) {
   options = Object.assign({
     extensions: "html",
+    transformOnRequest: process.env.ELEVENTY_RUN_MODE === "serve",
   }, options);
 
-  let eleventyDirectories;
-  eleventyConfig.on("eleventy.directories", (dirs) => {
-    eleventyDirectories = dirs;
+  if(options.transformOnRequest !== false) {
+    // Add the on-request plugin automatically (unless opt-out in this plugins options only)
+    eleventyConfig.addPlugin(eleventyImageOnRequestDuringServePlugin);
+  }
+
+  // Notably, global options are not shared automatically with the WebC `eleventyImagePlugin` above.
+  // Devs can pass in the same object to both if they want!
+  let opts = getGlobalOptions(eleventyConfig.directories, options);
+
+  eleventyConfig.addJavaScriptFunction("__private_eleventyImageTransformConfigurationOptions", () => {
+    return opts;
   });
 
   function posthtmlPlugin(context) {
-    // Notably, global options are not shared automatically with the WebC `eleventyImagePlugin` above.
-    // Devs can pass in the same object to both if they want!
-    let opts =  getGlobalOptions(eleventyDirectories, options);
-
     return (tree) => {
       let promises = [];
       tree.match({ tag: 'img' }, (node) => {
