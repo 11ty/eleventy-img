@@ -1,6 +1,6 @@
 const path = require("path");
 const test = require("ava");
-const fs = require("fs-extra");
+const fs = require("fs");
 const { URL } = require("url");
 const eleventyImage = require("../");
 const sharp = require("sharp");
@@ -526,32 +526,36 @@ test("Keep a cache, don’t reuse with same file names and different options", a
 });
 
 test("Keep a cache, don’t reuse with if the image changes, check promise equality", async t => {
-  fs.copySync("./test/modify-bio-original.jpg", "./test/generated-modify-bio.jpg");
+  fs.copyFileSync("./test/modify-bio-original.jpg", "./test/generated-modify-bio.jpg");
 
   let promise1 = eleventyImage("./test/generated-modify-bio.jpg", {
-    outputDir: "./test/img/"
+    outputDir: "./test/img/",
+    dryRun: true,
   });
 
-  fs.copySync("./test/modify-bio-grayscale.jpg", "./test/generated-modify-bio.jpg");
+  fs.copyFileSync("./test/modify-bio-grayscale.jpg", "./test/generated-modify-bio.jpg");
 
   let promise2 = eleventyImage("./test/generated-modify-bio.jpg", {
-    outputDir: "./test/img/"
+    outputDir: "./test/img/",
+    dryRun: true,
   });
 
   t.not(promise1, promise2);
 });
 
 test("Keep a cache, don’t reuse with if the image changes, check output", async t => {
-  fs.copySync("./test/modify2-bio-original.jpg", "./test/generated-modify2-bio.jpg");
+  fs.copyFileSync("./test/modify2-bio-original.jpg", "./test/generated-modify2-bio.jpg");
 
   let stats1 = await eleventyImage("./test/generated-modify2-bio.jpg", {
-    outputDir: "./test/img/"
+    outputDir: "./test/img/",
+    dryRun: true
   });
 
-  fs.copySync("./test/modify2-bio-grayscale.jpg", "./test/generated-modify2-bio.jpg");
+  fs.copyFileSync("./test/modify2-bio-grayscale.jpg", "./test/generated-modify2-bio.jpg");
 
   let stats2 = await eleventyImage("./test/generated-modify2-bio.jpg", {
-    outputDir: "./test/img/"
+    outputDir: "./test/img/",
+    dryRun: true
   });
 
   t.notDeepEqual(stats1, stats2);
