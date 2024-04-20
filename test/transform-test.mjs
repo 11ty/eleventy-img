@@ -1,6 +1,7 @@
 import test from "ava";
 import Eleventy from "@11ty/eleventy";
 import { eleventyImageTransformPlugin } from "../img.js";
+import { normalizeEscapedPaths } from "./util/utils.js";
 
 test("Using the transform plugin", async t => {
   let elev = new Eleventy( "test", "test/_site", {
@@ -71,7 +72,7 @@ test("Using the transform plugin with transform on request during dev mode (with
   });
 
   let results = await elev.toJSON();
-  t.is(results[0].content, `<img loading="lazy" src="/.11ty/image/?src=test%2Fbio-2017.jpg&width=1280&format=jpeg" alt="My ugly mug" width="1280" height="853">`);
+  t.is(normalizeEscapedPaths(results[0].content), `<img loading="lazy" src="/.11ty/image/?src=test%2Fbio-2017.jpg&width=1280&format=jpeg" alt="My ugly mug" width="1280" height="853">`);
 });
 
 

@@ -2,6 +2,7 @@ import test from "ava";
 import Eleventy from "@11ty/eleventy";
 import eleventyWebcPlugin from "@11ty/eleventy-plugin-webc";
 import { eleventyImagePlugin } from "../img.js";
+import { normalizeEscapedPaths } from "./util/utils.js";
 
 test("Using <eleventy-image>", async t => {
   let elev = new Eleventy( "test/webc/simple.webc", "test/webc/_site", {
@@ -65,5 +66,5 @@ test("With transform on request during dev mode", async t => {
   });
 
   let results = await elev.toJSON();
-  t.is(results[0].content, `<img loading="lazy" src="/.11ty/image/?src=.%2Ftest%2Fbio-2017.jpg&amp;width=1280&amp;format=jpeg" alt="My ugly mug" width="1280" height="853">`);
+  t.is(normalizeEscapedPaths(results[0].content), `<img loading="lazy" src="/.11ty/image/?src=.%2Ftest%2Fbio-2017.jpg&amp;width=1280&amp;format=jpeg" alt="My ugly mug" width="1280" height="853">`);
 });
