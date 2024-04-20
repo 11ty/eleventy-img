@@ -51,7 +51,7 @@ test("Using the transform plugin with transform on request during dev mode", asy
   });
 
   let results = await elev.toJSON();
-  t.is(results[0].content, `<img src="/.11ty/image/?src=test%2Fbio-2017.jpg&width=1280&format=jpeg" alt="My ugly mug" width="1280" height="853">`);
+  t.is(normalizeEscapedPaths(results[0].content), `<img src="/.11ty/image/?src=test%2Fbio-2017.jpg&width=1280&format=jpeg" alt="My ugly mug" width="1280" height="853">`);
 });
 
 test("Using the transform plugin with transform on request during dev mode (with default attributes)", async t => {
