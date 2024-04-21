@@ -617,21 +617,18 @@ class Image {
             // Should never write when dryRun is true
             outputFilePromises.push(
               fsp.mkdir(path.dirname(stat.outputPath), { recursive: true })
-                .then(() => processingQueue.add(async () => sharpInstance.toFile(stat.outputPath)))
+                .then(() => sharpInstance.toFile(stat.outputPath))
                 .then(info => {
                   stat.size = info.size;
                   return stat;
                 })
             );
           } else {
-            outputFilePromises.push(
-              processingQueue.add(async () => sharpInstance.toBuffer({ resolveWithObject: true }))
-                .then(({ data, info }) => {
-                  stat.buffer = data;
-                  stat.size = info.size;
-                  return stat;
-                })
-            );
+            outputFilePromises.push(sharpInstance.toBuffer({ resolveWithObject: true }).then(({ data, info }) => {
+              stat.buffer = data;
+              stat.size = info.size;
+              return stat;
+            }));
           }
         }
 
@@ -739,7 +736,7 @@ function queueImage(src, opts) {
 
   debug("Processing %o (in-memory cache miss), options: %o", src, opts);
 
-  let promise = (async () => {
+  let promise = processingQueue.add(async () => {
     if(typeof src === "string" && resolvedOptions.statsOnly) {
       if(Util.isRemoteUrl(src)) {
         if(opts.remoteImageMetadata?.width && opts.remoteImageMetadata?.height) {
@@ -767,7 +764,7 @@ function queueImage(src, opts) {
 
     let input = await img.getInput();
     return img.resize(input);
-  })();
+  });
 
   if(img.options.useCache) {
     memCache.add(key, promise);
