@@ -66,5 +66,5 @@ test("With transform on request during dev mode", async t => {
   });
 
   let results = await elev.toJSON();
-  t.is(normalizeEscapedPaths(results[0].content), `<img loading="lazy" src="/.11ty/image/?src=.%2Ftest%2Fbio-2017.jpg&amp;width=1280&amp;format=jpeg" alt="My ugly mug" width="1280" height="853">`);
+  t.is(normalizeEscapedPaths(results[0].content), `<img loading="lazy" src="/.11ty/image/?src=.%2Ftest%2Fbio-2017.jpg&amp;width=1280&amp;format=jpeg&amp;via=webc" alt="My ugly mug" width="1280" height="853">`);
 });

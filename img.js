@@ -118,8 +118,8 @@ class Image {
 
     // Compatible with eleventy-dev-server and Eleventy 3.0.0-alpha.7+ in serve mode.
     if(this.options.transformOnRequest && !this.options.urlFormat) {
-      this.options.urlFormat = function({ src, width, format }/*, imageOptions*/) {
-        return `/.11ty/image/?src=${encodeURIComponent(src)}&width=${width}&format=${format}`;
+      this.options.urlFormat = function({ src, width, format }/*, imageOptions*/, options) {
+        return `/.11ty/image/?src=${encodeURIComponent(src)}&width=${width}&format=${format}${options.generatedVia ? `&via=${options.generatedVia}` : ""}`;
       };
 
       this.options.statsOnly = true;

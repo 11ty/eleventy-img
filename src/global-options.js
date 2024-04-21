@@ -1,6 +1,6 @@
 const path = require("path");
 
-function getGlobalOptions(directories, options) {
+function getGlobalOptions(directories, options, via) {
   let globalOptions = Object.assign({
     packages: {
       image: require("../"),
@@ -9,6 +9,7 @@ function getGlobalOptions(directories, options) {
   }, options);
 
   globalOptions.directories = directories;
+  globalOptions.generatedVia = via;
 
   return globalOptions;
 }

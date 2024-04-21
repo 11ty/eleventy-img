@@ -67,7 +67,7 @@ function eleventyImageTransformPlugin(eleventyConfig, options = {}) {
 
   // Notably, global options are not shared automatically with the WebC `eleventyImagePlugin` above.
   // Devs can pass in the same object to both if they want!
-  let opts = getGlobalOptions(eleventyConfig.directories, options);
+  let opts = getGlobalOptions(eleventyConfig.directories, options, "transform");
 
   eleventyConfig.addJavaScriptFunction("__private_eleventyImageTransformConfigurationOptions", () => {
     return opts;
