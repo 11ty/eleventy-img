@@ -22,7 +22,7 @@ function eleventyImageOnRequestDuringServePlugin(eleventyConfig, options = {}) {
         // src could be file path or full url
         let src = decodeURIComponent(url.searchParams.get("src"));
         let imageFormat = url.searchParams.get("format");
-        let width = url.searchParams.get("width");
+        let width = parseInt(url.searchParams.get("width"), 10);
         let via = url.searchParams.get("via");
 
         let defaultOptions;

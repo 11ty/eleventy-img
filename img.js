@@ -161,25 +161,30 @@ class Image {
     return JSON.stringify(opts);
   }
 
-  getFileContents() {
+  getFileContents(overridePath) {
     if(this.isRemoteUrl) {
       return false;
     }
 
+    let src = overridePath || this.src;
     if(!this._contents) {
+      this._contents = {};
+    }
+
+    if(!this._contents[src]) {
       // perf: check to make sure it’s not a string first
-      if(typeof this.src !== "string" && Buffer.isBuffer(this.src)) {
-        this._contents = this.src;
+      if(typeof src !== "string" && Buffer.isBuffer(src)) {
+        this._contents[src] = src;
       } else {
         // TODO @zachleat make this aggressively async.
         // TODO @zachleat add a smarter cache here (not too aggressive! must handle input file changes)
-        // debug("Reading from file system: %o", this.src);
-        this._contents = fs.readFileSync(this.src);
+        // debug("Reading from file system: %o", src);
+        this._contents[src] = fs.readFileSync(src);
       }
     }
 
 
-    return this._contents;
+    return this._contents[src];
   }
 
   static getValidWidths(originalWidth, widths = [], allowUpscale = false, minimumThreshold = 1) {
@@ -538,13 +543,13 @@ class Image {
           // Cached images already exist in output
           let contents;
           if(this.options.dryRun) {
-            contents = this.getFileContents();
+            contents = this.getFileContents(stat.outputPath);
             stat.buffer = contents;
           }
 
           if(outputFormat === "svg" && this.options.svgCompressionSize === "br") {
             if(!contents) {
-              contents = this.getFileContents();
+              contents = this.getFileContents(stat.outputPath);
             }
             stat.size = brotliSize.sync(contents);
           } else {
@@ -753,13 +758,17 @@ function queueImage(src, opts) {
       }
 
       // Local images
-      let { width, height, type } = getImageSize(src);
+      try {
+        let { width, height, type } = getImageSize(src);
 
-      return img.getFullStats({
-        width,
-        height,
-        format: type // only required if you want to use the "auto" format
-      });
+        return img.getFullStats({
+          width,
+          height,
+          format: type // only required if you want to use the "auto" format
+        });
+      } catch(e) {
+        throw new Error(`Eleventy Image error (statsOnly): \`image-size\` on "${src}" failed. Original error: ${e.message}`);
+      }
     }
 
     let input = await img.getInput();
