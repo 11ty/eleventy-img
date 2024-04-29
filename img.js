@@ -365,11 +365,17 @@ class Image {
     if(fs.existsSync(this.src)) {
       let fileContents = this.getFileContents();
 
-      // remove all newlines for hashing for better cross-OS hash compatibility (Issue #122)
-      let fileContentsStr = fileContents.toString();
-      let firstFour = fileContentsStr.trim().slice(0, 5);
-      if(firstFour === "<svg " || firstFour === "<?xml") {
-        fileContents = fileContentsStr.replace(/\r|\n/g, '');
+      // If the file starts with whitespace or the '<' character, it might be SVG.
+      // Otherwise, skip the expensive buffer.toString() call
+      // (no point in unicode encoding a binary file)
+      let fileContentsPrefix = fileContents.slice(0, 1).toString().trim();
+      if (!fileContentsPrefix || fileContentsPrefix[0] == "<") {
+        // remove all newlines for hashing for better cross-OS hash compatibility (Issue #122)
+        let fileContentsStr = fileContents.toString();
+        let firstFour = fileContentsStr.trim().slice(0, 5);
+        if(firstFour === "<svg " || firstFour === "<?xml") {
+          fileContents = fileContentsStr.replace(/\r|\n/g, '');
+        }
       }
 
       hash.update(fileContents);
