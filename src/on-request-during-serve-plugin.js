@@ -2,6 +2,7 @@ const fs = require("fs");
 const { TemplatePath } = require("@11ty/eleventy-utils");
 
 const eleventyImage = require("../img.js");
+const KEYS = eleventyImage.keys;
 const Util = require("./util.js");
 
 const debug = require("debug")("Eleventy:Image");
@@ -37,14 +38,23 @@ function eleventyImageOnRequestDuringServePlugin(eleventyConfig, options = {}) {
         let opts = Object.assign({}, defaultOptions, options, {
           widths: [width || "auto"],
           formats: [imageFormat || "auto"],
-          transformOnRequest: false, // use the built images so we don’t go in a loop
 
           dryRun: true,
           cacheOptions: {
             // We *do* want to write files to .cache for re-use here.
             dryRun: false
-          }
+          },
+
+          transformOnRequest: false, // use the built images so we don’t go in a loop
+          generatedVia: KEYS.requested
         });
+
+        if(eleventyConfig) {
+          Object.defineProperty(opts, "eleventyConfig", {
+            value: eleventyConfig,
+            enumerable: false,
+          });
+        }
 
         debug( `%o transformed on request to %o at %o width.`, src, imageFormat, width );
 

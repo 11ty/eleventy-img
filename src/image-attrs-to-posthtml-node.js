@@ -57,7 +57,14 @@ async function imageAttributesToPosthtmlNode(attributes, instanceOptions, global
     }
   }
 
+  let cfg = globalPluginOptions.eleventyConfig;
   let options = Object.assign({}, globalPluginOptions, instanceOptions);
+
+  Object.defineProperty(options, "eleventyConfig", {
+    value: cfg,
+    enumerable: false,
+  });
+
   let metadata = await eleventyImage(attributes.src, options);
   let imageAttributes = Object.assign({}, globalPluginOptions.defaultAttributes, attributes);
 
