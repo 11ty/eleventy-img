@@ -733,50 +733,76 @@ processingQueue.on("active", () => {
   debug( `Concurrency: ${processingQueue.concurrency}, Size: ${processingQueue.size}, Pending: ${processingQueue.pending}` );
 });
 
+function logProcessedMessage(eleventyConfig, src, opts) {
+  if(typeof eleventyConfig?.logger?.logWithOptions !== "function" || opts.transformOnRequest) {
+    return;
+  }
+  let logSrc;
+  if(Util.isRemoteUrl(src)) {
+    logSrc = src;
+  } else {
+    if(path.isAbsolute(src)) {
+      // convert back to relative url
+      logSrc = TemplatePath.addLeadingDotSlash(path.relative(path.resolve("."), src));
+    } else {
+      TemplatePath.addLeadingDotSlash(src);
+    }
+  }
+
+  eleventyConfig.logger.logWithOptions({
+    message: `Processing ${logSrc} (${opts.generatedVia})`,
+    prefix: "[11ty/eleventy-img]"
+  });
+}
+
+function setupLogger(eleventyConfig, opts) {
+  if(typeof eleventyConfig?.logger?.logWithOptions !== "function" || opts.generatedVia === KEYS.requested) {
+    return;
+  }
+
+  buildLogger.setupOnce(eleventyConfig, () => {
+    // before build
+    deferCount = 0;
+    memCache.resetCount();
+    diskCache.resetCount();
+  }, () => {
+    // after build
+    let [memoryCacheHit] = memCache.getCount();
+    let [diskCacheHit, diskCacheMiss] = diskCache.getCount();
+
+    let cachedCount = memoryCacheHit + diskCacheHit;
+    let optimizedCount = diskCacheMiss + diskCacheHit + memoryCacheHit + deferCount;
+
+    let msg = [];
+    msg.push(`${optimizedCount} ${optimizedCount !== 1 ? "images" : "image"} optimized`);
+
+    if(cachedCount > 0 || deferCount > 0) {
+      let innerMsg = [];
+      if(cachedCount > 0) {
+        innerMsg.push(`${cachedCount} cached`);
+      }
+      if(deferCount > 0) {
+        innerMsg.push(`${deferCount} deferred`);
+      }
+      msg.push(` (${innerMsg.join(", ")})`);
+    }
+
+    eleventyConfig?.logger?.logWithOptions({
+      message: msg.join(""),
+      prefix: "[11ty/eleventy-img]",
+      force: true,
+      color: "green",
+    });
+  });
+}
+
 function queueImage(src, opts) {
   let img = new Image(src, opts);
   let eleventyConfig = opts?.eleventyConfig;
   let key;
   let resolvedOptions = img.options;
 
-  if(typeof eleventyConfig?.logger?.logWithOptions === "function") {
-    if(opts.generatedVia !== KEYS.requested) {
-      buildLogger.setupOnce(eleventyConfig, () => {
-        // before build
-        deferCount = 0;
-        memCache.resetCount();
-        diskCache.resetCount();
-      }, () => {
-        // after build
-        let [memoryCacheHit] = memCache.getCount();
-        let [diskCacheHit, diskCacheMiss] = diskCache.getCount();
-
-        let cachedCount = memoryCacheHit + diskCacheHit;
-        let optimizedCount = diskCacheMiss + diskCacheHit + memoryCacheHit + deferCount;
-
-        let msg = [];
-        msg.push(`${optimizedCount} ${optimizedCount !== 1 ? "images" : "image"} optimized`);
-
-        if(cachedCount > 0 || deferCount > 0) {
-          let innerMsg = [];
-          if(cachedCount > 0) {
-            innerMsg.push(`${cachedCount} cached`);
-          }
-          if(deferCount > 0) {
-            innerMsg.push(`${deferCount} deferred`);
-          }
-          msg.push(` (${innerMsg.join(", ")})`);
-        }
-
-        eleventyConfig?.logger?.logWithOptions({
-          message: msg.join(""),
-          prefix: "[11ty/eleventy-img]",
-          force: true,
-          color: "green",
-        });
-      });
-    }
-  }
+  setupLogger(eleventyConfig, opts);
 
   if(opts.transformOnRequest) {
     deferCount++;
@@ -791,15 +817,7 @@ function queueImage(src, opts) {
     }
   }
 
-  if(typeof eleventyConfig?.logger?.logWithOptions === "function") {
-    if(!resolvedOptions.statsOnly) {
-      let logSrc = path.isAbsolute(src) ? TemplatePath.addLeadingDotSlash(path.relative(path.resolve("."), src)) : src;
-      eleventyConfig.logger.logWithOptions({
-        message: `Processing ${logSrc} (${opts.generatedVia})`,
-        prefix: "[11ty/eleventy-img]"
-      });
-    }
-  }
+  logProcessedMessage(eleventyConfig, src, opts);
 
   debug("Processing %o (in-memory cache miss), options: %o", src, opts);
 
