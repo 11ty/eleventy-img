@@ -747,13 +747,13 @@ function logProcessedMessage(eleventyConfig, src, opts) {
   }
 
   eleventyConfig.logger.logWithOptions({
-    message: `Processing ${logSrc} (${opts.generatedVia})`,
+    message: `Processing ${logSrc}${opts.generatedVia ? ` (${opts.generatedVia})` : ""}`,
     prefix: "[11ty/eleventy-img]"
   });
 }
 
 function setupLogger(eleventyConfig, opts) {
-  if(typeof eleventyConfig?.logger?.logWithOptions !== "function" || Util.isRequested(opts.generatedVia)) {
+  if(typeof eleventyConfig?.logger?.logWithOptions !== "function" || Util.isRequested(opts?.generatedVia)) {
     return;
   }
 
@@ -794,8 +794,15 @@ function setupLogger(eleventyConfig, opts) {
 }
 
 function queueImage(src, opts) {
-  let img = new Image(src, opts);
   let eleventyConfig = opts?.eleventyConfig;
+  if(opts?.eleventyConfig && opts.propertyIsEnumerable("eleventyConfig")) {
+    delete opts.eleventyConfig;
+    Util.addConfig(eleventyConfig, opts);
+  }
+
+  let img = new Image(src, opts);
+
+
   let key;
   let resolvedOptions = img.options;
 
@@ -886,6 +893,8 @@ module.exports.getHash = function getHash(src, options) {
   let img = new Image(src, options);
   return img.getHash();
 };
+
+module.exports.setupLogger = setupLogger;
 
 const generateHTML = require("./src/generate-html.js");
 module.exports.generateHTML = generateHTML;

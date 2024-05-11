@@ -2,6 +2,7 @@ const fs = require("fs");
 const { TemplatePath } = require("@11ty/eleventy-utils");
 
 const eleventyImage = require("../img.js");
+const setupLogger = eleventyImage.setupLogger;
 const Util = require("./util.js");
 
 const debug = require("debug")("Eleventy:Image");
@@ -13,6 +14,8 @@ function eleventyImageOnRequestDuringServePlugin(eleventyConfig, options = {}) {
   } catch(e) {
     console.log( `[11ty/eleventy-img] Warning: your version of Eleventy is incompatible with the dynamic image rendering plugin (see \`eleventyImageOnRequestDuringServePlugin\`). Any dynamically rendered images will 404 (be missing) during --serve mode but will not affect the standard build output: ${e.message}` );
   }
+
+  setupLogger(eleventyConfig, {});
 
   // Eleventy 3.0 or newer only.
   eleventyConfig.setServerOptions({
