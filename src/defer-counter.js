@@ -1,11 +1,11 @@
 class DeferCounter {
   constructor() {
-    this.deferCount = 0;
-    this.inputs = new Map();
+    this.resetCount();
   }
 
   resetCount() {
     this.deferCount = 0;
+    this.inputs = new Map();
   }
 
   getCount() {
