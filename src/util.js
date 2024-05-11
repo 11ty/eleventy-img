@@ -51,6 +51,17 @@ class Util {
   static isRequested(generatedVia) {
     return generatedVia === this.KEYS.requested;
   }
+
+  static addConfig(eleventyConfig, options) {
+    if(!eleventyConfig) {
+      return;
+    }
+
+    Object.defineProperty(options, "eleventyConfig", {
+      value: eleventyConfig,
+      enumerable: false,
+    });
+  }
 }
 
 // Temporary alias for changes made in https://github.com/11ty/eleventy-img/pull/138

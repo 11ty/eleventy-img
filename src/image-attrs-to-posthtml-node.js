@@ -1,4 +1,5 @@
 const eleventyImage = require("../img.js");
+const Util = require("./util.js");
 
 const ATTR_PREFIX = "eleventy:";
 
@@ -57,13 +58,8 @@ async function imageAttributesToPosthtmlNode(attributes, instanceOptions, global
     }
   }
 
-  let cfg = globalPluginOptions.eleventyConfig;
   let options = Object.assign({}, globalPluginOptions, instanceOptions);
-
-  Object.defineProperty(options, "eleventyConfig", {
-    value: cfg,
-    enumerable: false,
-  });
+  Util.addConfig(globalPluginOptions.eleventyConfig, options);
 
   let metadata = await eleventyImage(attributes.src, options);
   let imageAttributes = Object.assign({}, globalPluginOptions.defaultAttributes, attributes);

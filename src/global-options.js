@@ -1,4 +1,5 @@
 const path = require("path");
+const Util = require("./util.js");
 
 function getGlobalOptions(eleventyConfig, options, via) {
   let directories = eleventyConfig.directories;
@@ -9,14 +10,10 @@ function getGlobalOptions(eleventyConfig, options, via) {
     outputDir: path.join(directories.output, options.urlPath || ""),
   }, options);
 
-  // globalOptions.eleventyConfig = eleventyConfig;
   globalOptions.directories = directories;
   globalOptions.generatedVia = via;
 
-  Object.defineProperty(globalOptions, "eleventyConfig", {
-    value: eleventyConfig,
-    enumerable: false,
-  });
+  Util.addConfig(eleventyConfig, globalOptions);
 
   return globalOptions;
 }

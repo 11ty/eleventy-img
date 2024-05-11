@@ -98,6 +98,14 @@ async function imagePlugin(attributes, globalPluginOptions) {
 
 	let options = Object.assign({}, globalPluginOptions, instanceOptions);
 
+	// see Util.addConfig
+	if(globalPluginOptions.eleventyConfig) {
+		Object.defineProperty(options, "eleventyConfig", {
+			value: globalPluginOptions.eleventyConfig,
+			enumerable: false,
+		});
+	}
+
 	let metadata = await imagePackage(src, options);
 
 	let imageAttributes = Object.assign({}, defaultGlobalAttributes, attributes);

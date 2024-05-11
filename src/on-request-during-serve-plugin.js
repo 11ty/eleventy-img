@@ -48,12 +48,7 @@ function eleventyImageOnRequestDuringServePlugin(eleventyConfig, options = {}) {
           generatedVia: Util.KEYS.requested,
         });
 
-        if(eleventyConfig) {
-          Object.defineProperty(opts, "eleventyConfig", {
-            value: eleventyConfig,
-            enumerable: false,
-          });
-        }
+        Util.addConfig(eleventyConfig, opts);
 
         debug( `%o transformed on request to %o at %o width.`, src, imageFormat, width );
 
