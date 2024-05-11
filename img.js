@@ -13,6 +13,7 @@ const { TemplatePath } = require("@11ty/eleventy-utils");
 const svgHook = require("./src/format-hooks/svg.js");
 const MemoryCache = require("./src/memory-cache.js");
 const DiskCache = require("./src/disk-cache.js");
+const DeferCounter = require("./src/defer-counter.js");
 const BuildLogger = require("./src/build-logger.js");
 const Util = require("./src/util.js");
 
@@ -718,7 +719,7 @@ class ImagePath {
 /* Size Cache */
 let memCache = new MemoryCache();
 let diskCache = new DiskCache();
-let deferCount = 0;
+let deferCounter = new DeferCounter();
 let buildLogger = new BuildLogger();
 
 /* Queue */
@@ -759,13 +760,15 @@ function setupLogger(eleventyConfig, opts) {
 
   buildLogger.setupOnce(eleventyConfig, () => {
     // before build
-    deferCount = 0;
+    deferCounter.resetCount();
     memCache.resetCount();
     diskCache.resetCount();
   }, () => {
     // after build
     let [memoryCacheHit] = memCache.getCount();
     let [diskCacheHit, diskCacheMiss] = diskCache.getCount();
+    // these are unique images, multiple requests to optimize the same image are de-duplicated
+    let deferCount = deferCounter.getCount();
 
     let cachedCount = memoryCacheHit + diskCacheHit;
     let optimizedCount = diskCacheMiss + diskCacheHit + memoryCacheHit + deferCount;
@@ -809,7 +812,7 @@ function queueImage(src, opts) {
   setupLogger(eleventyConfig, opts);
 
   if(opts.transformOnRequest) {
-    deferCount++;
+    deferCounter.increment(src);
   }
 
   if(resolvedOptions.useCache) {
