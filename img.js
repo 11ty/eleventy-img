@@ -733,6 +733,7 @@ function logProcessedMessage(eleventyConfig, src, opts) {
   if(typeof eleventyConfig?.logger?.logWithOptions !== "function" || opts.transformOnRequest) {
     return;
   }
+
   let logSrc;
   if(Util.isRemoteUrl(src)) {
     logSrc = src;
@@ -741,7 +742,7 @@ function logProcessedMessage(eleventyConfig, src, opts) {
       // convert back to relative url
       logSrc = TemplatePath.addLeadingDotSlash(path.relative(path.resolve("."), src));
     } else {
-      TemplatePath.addLeadingDotSlash(src);
+      logSrc = TemplatePath.addLeadingDotSlash(src);
     }
   }
 
