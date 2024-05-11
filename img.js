@@ -18,10 +18,6 @@ const Util = require("./src/util.js");
 
 const debug = require("debug")("Eleventy:Image");
 
-const KEYS = {
-  requested: "requested"
-};
-
 const GLOBAL_OPTIONS = {
   widths: ["auto"],
   formats: ["webp", "jpeg"], // "png", "svg", "avif"
@@ -545,7 +541,7 @@ class Image {
     let fullStats = this.getFullStats(metadata);
     for(let outputFormat in fullStats) {
       for(let stat of fullStats[outputFormat]) {
-        if(this.options.useCache && diskCache.isCached(stat.outputPath, input, this.options.generatedVia !== KEYS.requested)){
+        if(this.options.useCache && diskCache.isCached(stat.outputPath, input, !Util.isRequested(this.options.generatedVia))) {
           // Cached images already exist in output
           let contents;
           if(this.options.dryRun) {
@@ -756,7 +752,7 @@ function logProcessedMessage(eleventyConfig, src, opts) {
 }
 
 function setupLogger(eleventyConfig, opts) {
-  if(typeof eleventyConfig?.logger?.logWithOptions !== "function" || opts.generatedVia === KEYS.requested) {
+  if(typeof eleventyConfig?.logger?.logWithOptions !== "function" || Util.isRequested(opts.generatedVia)) {
     return;
   }
 
@@ -811,7 +807,7 @@ function queueImage(src, opts) {
   if(resolvedOptions.useCache) {
     // we don’t know the output format yet, but this hash is just for the in memory cache
     key = img.getInMemoryCacheKey();
-    let cached = memCache.get(key, !opts.transformOnRequest && opts.generatedVia !== KEYS.requested);
+    let cached = memCache.get(key, !opts.transformOnRequest && !Util.isRequested(opts.generatedVia));
     if(cached) {
       return cached;
     }
@@ -884,7 +880,6 @@ module.exports.statsSync = Image.statsSync;
 module.exports.statsByDimensionsSync = Image.statsByDimensionsSync;
 module.exports.getFormats = Image.getFormatsArray;
 module.exports.getWidths = Image.getValidWidths;
-module.exports.keys = KEYS;
 
 module.exports.getHash = function getHash(src, options) {
   let img = new Image(src, options);

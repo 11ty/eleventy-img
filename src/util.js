@@ -2,6 +2,10 @@ const path = require("path");
 const { URL } = require("url");
 
 class Util {
+  static KEYS = {
+    requested: "requested"
+  };
+
   /*
    * Does not mutate, returns new Object.
    */
@@ -42,6 +46,10 @@ class Util {
 
     // if the image src is absolute, make it relative to the input/content directory.
     return path.join(input, src);
+  }
+
+  static isRequested(generatedVia) {
+    return generatedVia === this.KEYS.requested;
   }
 }
 

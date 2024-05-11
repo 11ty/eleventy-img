@@ -2,7 +2,6 @@ const fs = require("fs");
 const { TemplatePath } = require("@11ty/eleventy-utils");
 
 const eleventyImage = require("../img.js");
-const KEYS = eleventyImage.keys;
 const Util = require("./util.js");
 
 const debug = require("debug")("Eleventy:Image");
@@ -46,7 +45,7 @@ function eleventyImageOnRequestDuringServePlugin(eleventyConfig, options = {}) {
           },
 
           transformOnRequest: false, // use the built images so we don’t go in a loop
-          generatedVia: KEYS.requested
+          generatedVia: Util.KEYS.requested,
         });
 
         if(eleventyConfig) {
