@@ -787,12 +787,14 @@ function setupLogger(eleventyConfig, opts) {
       msg.push(` (${innerMsg.join(", ")})`);
     }
 
-    eleventyConfig?.logger?.logWithOptions({
-      message: msg.join(""),
-      prefix: "[11ty/eleventy-img]",
-      force: true,
-      color: "green",
-    });
+    if(optimizedCount > 0 || cachedCount > 0 || deferCount > 0) {
+      eleventyConfig?.logger?.logWithOptions({
+        message: msg.join(""),
+        prefix: "[11ty/eleventy-img]",
+        force: true,
+        color: "green",
+      });
+    }
   });
 }
 
