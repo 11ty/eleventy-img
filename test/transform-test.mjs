@@ -100,3 +100,24 @@ test("Using the transform plugin with transform on request during dev mode but d
   t.is(results[0].content, `<img loading="lazy" src="https://example.com/" alt="My ugly mug" width="1280" height="853">`);
 });
 
+test("Throw a good error with a bad remote image request", async t => {
+  let elev = new Eleventy( "test", "test/_site", {
+    config: eleventyConfig => {
+      eleventyConfig.addTemplate("virtual.html", `<img src="https://images.opencollective.com/sdkljflksjdflksdjf_DOES_NOT_EXIST/NOT_EXIST/avatar.png" alt="My ugly mug">`);
+
+      eleventyConfig.addPlugin(eleventyImageTransformPlugin, {
+        formats: ["auto"],
+        // transformOnRequest: true,
+        // dryRun: true, // don’t write image files!
+
+        defaultAttributes: {
+          loading: "lazy",
+        }
+      });
+    }
+  });
+  elev.disableLogger();
+
+  let e = await t.throwsAsync(() => elev.toJSON());
+  t.is(e.message, `Having trouble writing to "./test/_site/virtual/index.html" from "./test/virtual.html"`);
+});

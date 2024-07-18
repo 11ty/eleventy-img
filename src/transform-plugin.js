@@ -55,6 +55,8 @@ function transformTag(context, node, opts) {
     node.attrs = {};
 
     Object.assign(node, obj);
+  }, (error) => {
+    return Promise.reject(error);
   });
 }
 
