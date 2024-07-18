@@ -5,7 +5,11 @@ const { getGlobalOptions } = require("./global-options.js");
 const { eleventyImageOnRequestDuringServePlugin } = require("./on-request-during-serve-plugin.js");
 
 function transformTag(context, node, opts) {
-  let originalSource = node.attrs.src;
+  let originalSource = node.attrs?.src;
+  if(!originalSource) {
+    return node;
+  }
+
   let { inputPath, outputPath, url } = context.page;
 
   node.attrs.src = Util.normalizeImageSource({
