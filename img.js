@@ -791,7 +791,6 @@ function setupLogger(eleventyConfig, opts) {
       eleventyConfig?.logger?.logWithOptions({
         message: msg.join(""),
         prefix: "[11ty/eleventy-img]",
-        force: true,
         color: "green",
       });
     }
