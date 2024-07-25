@@ -1,4 +1,4 @@
-const { escapeAttribute } = require("entities/lib/escape.js");
+const { escapeAttribute } = require("entities");
 
 const DEFAULT_ATTRIBUTES = {
   // loading: "lazy",
