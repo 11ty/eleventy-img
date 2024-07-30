@@ -72,6 +72,9 @@ function eleventyImageOnRequestDuringServePlugin(eleventyConfig, options = {}) {
           if(!stat) {
             throw new Error("Invalid image format.");
           }
+          if(!stat.buffer) {
+            throw new Error("Could not find `buffer` property for image.");
+          }
 
           return {
             headers: {

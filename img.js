@@ -164,12 +164,12 @@ class Image {
     return JSON.stringify(opts);
   }
 
-  getFileContents(overridePath) {
-    if(this.isRemoteUrl) {
+  getFileContents(overrideLocalFilePath) {
+    if(!overrideLocalFilePath && this.isRemoteUrl) {
       return false;
     }
 
-    let src = overridePath || this.src;
+    let src = overrideLocalFilePath || this.src;
     if(!this._contents) {
       this._contents = {};
     }
