@@ -23,7 +23,7 @@ function eleventyImageOnRequestDuringServePlugin(eleventyConfig, options = {}) {
       // TODO work with dev-server’s option for `injectedScriptsFolder`
       "/.11ty/image/": async function({ url }) {
         // src could be file path or full url
-        let src = decodeURIComponent(url.searchParams.get("src"));
+        let src = url.searchParams.get("src");
         let imageFormat = url.searchParams.get("format");
         let width = parseInt(url.searchParams.get("width"), 10);
         let via = url.searchParams.get("via");
