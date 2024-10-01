@@ -371,7 +371,7 @@ class Image {
       // If the file starts with whitespace or the '<' character, it might be SVG.
       // Otherwise, skip the expensive buffer.toString() call
       // (no point in unicode encoding a binary file)
-      let fileContentsPrefix = fileContents.slice(0, 1).toString().trim();
+      let fileContentsPrefix = fileContents?.slice(0, 1)?.toString()?.trim();
       if (!fileContentsPrefix || fileContentsPrefix[0] == "<") {
         // remove all newlines for hashing for better cross-OS hash compatibility (Issue #122)
         let fileContentsStr = fileContents.toString();
