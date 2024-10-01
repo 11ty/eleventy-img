@@ -83,7 +83,7 @@ function eleventyImageTransformPlugin(eleventyConfig, options = {}) {
     return (tree) => {
       let promises = [];
       tree.match({ tag: 'img' }, (node) => {
-        if(isIgnored(node)) {
+        if(isIgnored(node) || node?.attrs?.src?.startsWith("data:")) {
           cleanTag(node);
         } else {
           promises.push(transformTag(context, node, opts));

@@ -18,6 +18,21 @@ test("Using the transform plugin", async t => {
   t.is(results[0].content, `<picture><source type="image/webp" srcset="/virtual/KkPMmHd3hP-1280.webp 1280w"><img src="/virtual/KkPMmHd3hP-1280.jpeg" alt="My ugly mug" width="1280" height="853"></picture>`);
 });
 
+test("Using the transform plugin, data URI #238", async t => {
+  let elev = new Eleventy( "test", "test/_site", {
+    config: eleventyConfig => {
+      eleventyConfig.addTemplate("virtual.html", `<img src="data:image/" alt="My ugly mug">`);
+
+      eleventyConfig.addPlugin(eleventyImageTransformPlugin, {
+        dryRun: true // don’t write image files!
+      });
+    }
+  });
+
+  let results = await elev.toJSON();
+  t.is(results[0].content, `<img src="data:image/" alt="My ugly mug">`);
+});
+
 
 test("Using the transform plugin (override options)", async t => {
   let elev = new Eleventy( "test", "test/_site", {
