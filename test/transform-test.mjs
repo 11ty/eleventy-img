@@ -154,3 +154,37 @@ test("Transform image file with diacritics #253", async t => {
   let results = await elev.toJSON();
   t.is(normalizeEscapedPaths(results[0].content), `<img src="/virtual/KkPMmHd3hP-1280.jpeg" alt="My ugly mug" width="1280" height="853">`);
 });
+
+test("Transform image file in folder with diacritics #253", async t => {
+  let elev = new Eleventy( "test", "test/_site", {
+    config: eleventyConfig => {
+      // Broken:  20240705.île-de-myst-en-lego
+      // Working: 20240705.île-de-myst-en-lego
+      eleventyConfig.addTemplate("virtual.html", `<img src="./20240705.île-de-myst-en-lego/les sous titres automatisés de youtube.jpg" alt="My ugly mug">`);
+      eleventyConfig.addPlugin(eleventyImageTransformPlugin, {
+        formats: ["auto"],
+        dryRun: true, // don’t write image files!
+        defaultAttributes: {}
+      });
+    }
+  });
+
+  let results = await elev.toJSON();
+  t.is(normalizeEscapedPaths(results[0].content), `<img src="/virtual/KkPMmHd3hP-1280.jpeg" alt="My ugly mug" width="1280" height="853">`);
+});
+
+test("Transform image file in folder with *combining* diacritics #253", async t => {
+  let elev = new Eleventy( "test", "test/_site", {
+    config: eleventyConfig => {
+      eleventyConfig.addTemplate("virtual.html", `<img src="./île-de-myst-en-lego/les sous titres automatisés de youtube.jpg" alt="My ugly mug">`);
+      eleventyConfig.addPlugin(eleventyImageTransformPlugin, {
+        formats: ["auto"],
+        dryRun: true, // don’t write image files!
+        defaultAttributes: {}
+      });
+    }
+  });
+
+  let results = await elev.toJSON();
+  t.is(normalizeEscapedPaths(results[0].content), `<img src="/virtual/KkPMmHd3hP-1280.jpeg" alt="My ugly mug" width="1280" height="853">`);
+});
