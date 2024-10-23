@@ -13,6 +13,16 @@ test("Image markup (defaults)", async t => {
   }), `<picture><source type="image/webp" srcset="/img/KkPMmHd3hP-1280.webp 1280w"><img alt="" src="/img/KkPMmHd3hP-1280.jpeg" width="1280" height="853"></picture>`);
 });
 
+test("Image file with diacritics #253", async t => {
+  let results = await eleventyImage("./test/les sous titres automatisés de youtube.jpg", {
+    dryRun: true
+  });
+
+  t.is(generateHTML(results, {
+    alt: ""
+  }), `<picture><source type="image/webp" srcset="/img/KkPMmHd3hP-1280.webp 1280w"><img alt="" src="/img/KkPMmHd3hP-1280.jpeg" width="1280" height="853"></picture>`);
+});
+
 test("Image service", async t => {
   let serviceApiDomain = "https://zachleat.com";
   let siteUrl = "https://heydonworks.com/";

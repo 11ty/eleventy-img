@@ -136,3 +136,21 @@ test("Throw a good error with a bad remote image request", async t => {
   let e = await t.throwsAsync(() => elev.toJSON());
   t.is(e.message, `Having trouble writing to "./test/_site/virtual/index.html" from "./test/virtual.html"`);
 });
+
+test("Transform image file with diacritics #253", async t => {
+  let elev = new Eleventy( "test", "test/_site", {
+    config: eleventyConfig => {
+      eleventyConfig.addTemplate("virtual.html", `<img src="./les sous titres automatisés de youtube.jpg" alt="My ugly mug">`);
+
+      eleventyConfig.addPlugin(eleventyImageTransformPlugin, {
+        formats: ["auto"],
+        dryRun: true, // don’t write image files!
+
+        defaultAttributes: {}
+      });
+    }
+  });
+
+  let results = await elev.toJSON();
+  t.is(normalizeEscapedPaths(results[0].content), `<img src="/virtual/KkPMmHd3hP-1280.jpeg" alt="My ugly mug" width="1280" height="853">`);
+});
