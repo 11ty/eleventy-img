@@ -803,8 +803,8 @@ function setupLogger(eleventyConfig, opts) {
   });
 }
 
-function queueImage(src, opts) {
-  let eleventyConfig = opts?.eleventyConfig;
+function queueImage(src, opts = {}) {
+  let eleventyConfig = opts.eleventyConfig;
   if(opts?.eleventyConfig && {}.propertyIsEnumerable.call(opts, "eleventyConfig")) {
     delete opts.eleventyConfig;
     Util.addConfig(eleventyConfig, opts);
