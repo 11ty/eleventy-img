@@ -15,7 +15,9 @@ function transformTag(context, node, opts) {
   node.attrs.src = Util.normalizeImageSource({
     input: opts.directories.input,
     inputPath,
-  }, originalSource);
+  }, originalSource, {
+    isViaHtml: true, // this reference came from HTML, so we can decode the file name
+  });
 
   let instanceOptions = {};
 

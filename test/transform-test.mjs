@@ -13,6 +13,7 @@ test("Using the transform plugin", async t => {
       });
     }
   });
+  elev.disableLogger();
 
   let results = await elev.toJSON();
   t.is(results[0].content, `<picture><source type="image/webp" srcset="/virtual/KkPMmHd3hP-1280.webp 1280w"><img src="/virtual/KkPMmHd3hP-1280.jpeg" alt="My ugly mug" width="1280" height="853"></picture>`);
@@ -45,6 +46,7 @@ test("Using the transform plugin (override options)", async t => {
       });
     }
   });
+  elev.disableLogger();
 
   let results = await elev.toJSON();
   t.is(results[0].content, `<img src="/virtual/KkPMmHd3hP-1280.jpeg" alt="My ugly mug" width="1280" height="853">`);
@@ -64,6 +66,7 @@ test("Using the transform plugin with transform on request during dev mode", asy
       });
     }
   });
+  elev.disableLogger();
 
   let results = await elev.toJSON();
   t.is(normalizeEscapedPaths(results[0].content), `<img src="/.11ty/image/?src=test%2Fbio-2017.jpg&width=1280&format=jpeg&via=transform" alt="My ugly mug" width="1280" height="853">`);
@@ -150,6 +153,7 @@ test("Transform image file with diacritics #253", async t => {
       });
     }
   });
+  elev.disableLogger();
 
   let results = await elev.toJSON();
   t.is(normalizeEscapedPaths(results[0].content), `<img src="/virtual/KkPMmHd3hP-1280.jpeg" alt="My ugly mug" width="1280" height="853">`);
@@ -169,8 +173,28 @@ test("Transform image file in folder with diacritics #253", async t => {
     }
   });
 
+  elev.disableLogger();
+
   let results = await elev.toJSON();
   t.is(normalizeEscapedPaths(results[0].content), `<img src="/virtual/KkPMmHd3hP-1280.jpeg" alt="My ugly mug" width="1280" height="853">`);
+});
+
+test("Transform image file in markdown with diacritics #253", async t => {
+  let elev = new Eleventy( "test", "test/_site", {
+    config: eleventyConfig => {
+      eleventyConfig.addTemplate("virtual.md", `![My ugly mug](./automatisés.jpg)`);
+
+      eleventyConfig.addPlugin(eleventyImageTransformPlugin, {
+        formats: ["auto"],
+        dryRun: true, // don’t write image files!
+        defaultAttributes: {},
+      });
+    }
+  });
+  elev.disableLogger();
+
+  let results = await elev.toJSON();
+  t.is(normalizeEscapedPaths(results[0].content).trim(), `<p><img src="/virtual/KkPMmHd3hP-1280.jpeg" alt="My ugly mug" width="1280" height="853"></p>`);
 });
 
 // Doesn’t work on Ubuntu

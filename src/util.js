@@ -33,9 +33,17 @@ class Util {
     }
   }
 
-  static normalizeImageSource({ input, inputPath }, src) {
+  static normalizeImageSource({ input, inputPath }, src, options = {}) {
+    let { isViaHtml } = Object.assign({
+      isViaHtml: false
+    }, options);
+
     if(Util.isFullUrl(src)) {
       return src;
+    }
+
+    if(isViaHtml) {
+      src = decodeURIComponent(src);
     }
 
     if(!path.isAbsolute(src)) {
