@@ -27,6 +27,7 @@ class Util {
       }
 
       return false;
+    // eslint-disable-next-line no-unused-vars
     } catch(e) {
       // invalid url OR local path
       return false;
