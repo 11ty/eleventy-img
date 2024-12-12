@@ -8,11 +8,11 @@ const getImageSize = require("image-size");
 const sharp = require("sharp");
 const brotliSize = require("brotli-size");
 const { RemoteAssetCache, queue } = require("@11ty/eleventy-fetch");
-const { TemplatePath } = require("@11ty/eleventy-utils");
 
 const svgHook = require("./src/format-hooks/svg.js");
 const MemoryCache = require("./src/memory-cache.js");
 const DiskCache = require("./src/disk-cache.js");
+const ExistsCache = require("./src/exists-cache.js");
 const DeferCounter = require("./src/defer-counter.js");
 const BuildLogger = require("./src/build-logger.js");
 const Util = require("./src/util.js");
@@ -129,6 +129,7 @@ class Image {
     }
 
     if(this.isRemoteUrl) {
+      // TODO this is *not* reusing eleventy-fetch option defaults
       this.cacheOptions = Object.assign({
         duration: this.options.cacheDuration, // deprecated
         dryRun: this.options.dryRun, // Issue #117: re-use eleventy-img dryRun option value for eleventy-fetch dryRun
@@ -365,7 +366,7 @@ class Image {
     // debug("Creating hash for %o", this.src);
     let hash = createHash("sha256");
 
-    if(fs.existsSync(this.src)) {
+    if(existsCache.exists(this.src)) {
       let fileContents = this.getFileContents();
 
       // If the file starts with whitespace or the '<' character, it might be SVG.
@@ -537,7 +538,9 @@ class Image {
   // src should be a file path to an image or a buffer
   async resize(input) {
     let sharpImage = sharp(input, Object.assign({
-      failOnError: false
+      // Deprecated by sharp, use `failOn` option instead
+      // https://github.com/lovell/sharp/blob/1533bf995acda779313fc178d2b9d46791349961/lib/index.d.ts#L915
+      failOnError: false,
     }, this.options.sharpOptions));
 
     // Must find the image format from the metadata
@@ -725,6 +728,9 @@ class ImagePath {
 /* Size Cache */
 let memCache = new MemoryCache();
 let diskCache = new DiskCache();
+let existsCache = new ExistsCache();
+diskCache.setExistsCache(existsCache);
+
 let deferCounter = new DeferCounter();
 let buildLogger = new BuildLogger();
 
@@ -735,29 +741,6 @@ let processingQueue = new PQueue({
 processingQueue.on("active", () => {
   debug( `Concurrency: ${processingQueue.concurrency}, Size: ${processingQueue.size}, Pending: ${processingQueue.pending}` );
 });
-
-function logProcessedMessage(eleventyConfig, src, opts) {
-  if(typeof eleventyConfig?.logger?.logWithOptions !== "function" || opts.transformOnRequest) {
-    return;
-  }
-
-  let logSrc;
-  if(Util.isRemoteUrl(src)) {
-    logSrc = src;
-  } else {
-    if(path.isAbsolute(src)) {
-      // convert back to relative url
-      logSrc = TemplatePath.addLeadingDotSlash(path.relative(path.resolve("."), src));
-    } else {
-      logSrc = TemplatePath.addLeadingDotSlash(src);
-    }
-  }
-
-  eleventyConfig.logger.logWithOptions({
-    message: `Processing ${logSrc}${opts.generatedVia ? ` (${opts.generatedVia})` : ""}`,
-    prefix: "[11ty/eleventy-img]"
-  });
-}
 
 function setupLogger(eleventyConfig, opts) {
   if(typeof eleventyConfig?.logger?.logWithOptions !== "function" || Util.isRequested(opts?.generatedVia)) {
@@ -831,43 +814,52 @@ function queueImage(src, opts = {}) {
     }
   }
 
-  logProcessedMessage(eleventyConfig, src, opts);
-
   debug("Processing %o (in-memory cache miss), options: %o", src, opts);
 
+  // TODO start here with errorOnFail
   let promise = processingQueue.add(async () => {
-    if(typeof src === "string" && resolvedOptions.statsOnly) {
-      if(Util.isRemoteUrl(src)) {
-        if(opts.remoteImageMetadata?.width && opts.remoteImageMetadata?.height) {
-          return img.getFullStats({
-            width: opts.remoteImageMetadata.width,
-            height: opts.remoteImageMetadata.height,
-            format: opts.remoteImageMetadata.format, // only required if you want to use the "auto" format
-            guess: true,
-          });
+    try {
+      if(typeof src === "string" && resolvedOptions.statsOnly) {
+        if(Util.isRemoteUrl(src)) {
+          if(opts.remoteImageMetadata?.width && opts.remoteImageMetadata?.height) {
+            return img.getFullStats({
+              width: opts.remoteImageMetadata.width,
+              height: opts.remoteImageMetadata.height,
+              format: opts.remoteImageMetadata.format, // only required if you want to use the "auto" format
+              guess: true,
+            });
+          }
+
+          // Fetch remote image to operate on it
+          // `remoteImageMetadata` is no longer required for statsOnly on remote images
+          src = await img.getInput();
         }
 
-        // Fetch remote image to operate on it
-        // `remoteImageMetadata` is no longer required for statsOnly on remote images
-        src = await img.getInput();
+        buildLogger.log(`Processing ${buildLogger.getFriendlyImageSource(src)}`, opts);
+
+        // Local images
+        try {
+          let { width, height, type } = getImageSize(src);
+
+          return img.getFullStats({
+            width,
+            height,
+            format: type // only required if you want to use the "auto" format
+          });
+        } catch(e) {
+          throw new Error(`Eleventy Image error (statsOnly): \`image-size\` on "${src}" failed. Original error: ${e.message}`);
+        }
       }
 
-      // Local images
-      try {
-        let { width, height, type } = getImageSize(src);
+      let input = await img.getInput();
+      return img.resize(input);
+    } catch(e) {
+      buildLogger.error(`Error: ${e.message} (via ${buildLogger.getFriendlyImageSource(src)})`, opts);
 
-        return img.getFullStats({
-          width,
-          height,
-          format: type // only required if you want to use the "auto" format
-        });
-      } catch(e) {
-        throw new Error(`Eleventy Image error (statsOnly): \`image-size\` on "${src}" failed. Original error: ${e.message}`);
+      if(opts.failOnError) {
+        throw e;
       }
     }
-
-    let input = await img.getInput();
-    return img.resize(input);
   });
 
   if(img.options.useCache) {

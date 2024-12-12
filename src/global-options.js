@@ -8,6 +8,7 @@ function getGlobalOptions(eleventyConfig, options, via) {
       image: require("../"),
     },
     outputDir: path.join(directories.output, options.urlPath || ""),
+    failOnError: true,
   }, options);
 
   globalOptions.directories = directories;

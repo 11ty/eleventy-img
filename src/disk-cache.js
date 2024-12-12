@@ -2,10 +2,16 @@ const fs = require("fs");
 // const debug = require("debug")("Eleventy:Image");
 
 class DiskCache {
+  #existsCache;
+
   constructor() {
     this.hitCounter = 0;
     this.missCounter = 0;
     this.inputs = new Map();
+  }
+
+  setExistsCache(existsCache) {
+    this.#existsCache = existsCache;
   }
 
   resetCount() {
@@ -22,9 +28,10 @@ class DiskCache {
     if(this.inputs.has(input)) {
       incrementCounts = false;
     }
+
     this.inputs.set(input, true);
 
-    if(fs.existsSync(path)) {
+    if(this.#existsCache?.exists(path) || fs.existsSync(path)) {
       if(incrementCounts) {
         this.hitCounter++;
       }

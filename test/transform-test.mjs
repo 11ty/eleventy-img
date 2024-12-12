@@ -213,3 +213,27 @@ test.skip("Transform image file in folder with *combining* diacritics #253", asy
   let results = await elev.toJSON();
   t.is(normalizeEscapedPaths(results[0].content), `<img src="/virtual/KkPMmHd3hP-1280.jpeg" alt="My ugly mug" width="1280" height="853">`);
 });
+
+test("Don’t throw an error when failOnError: false with a bad remote image request", async t => {
+  let elev = new Eleventy( "test", "test/_site", {
+    config: eleventyConfig => {
+      eleventyConfig.addTemplate("virtual.html", `<img src="https://images.opencollective.com/sdkljflksjdflksdjf_DOES_NOT_EXIST/NOT_EXIST/avatar.png" alt="My ugly mug">`);
+
+      eleventyConfig.addPlugin(eleventyImageTransformPlugin, {
+        formats: ["auto"],
+        // transformOnRequest: true,
+        // dryRun: true, // don’t write image files!
+
+        failOnError: false,
+
+        defaultAttributes: {
+          loading: "lazy",
+        }
+      });
+    }
+  });
+  // elev.disableLogger();
+
+  let results = await elev.toJSON();
+  t.is(normalizeEscapedPaths(results[0].content), `<img src="https://images.opencollective.com/sdkljflksjdflksdjf_DOES_NOT_EXIST/NOT_EXIST/avatar.png" alt="My ugly mug">`);
+});

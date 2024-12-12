@@ -82,19 +82,26 @@ function eleventyImageTransformPlugin(eleventyConfig, options = {}) {
   });
 
   function posthtmlPlugin(context) {
-    return (tree) => {
+    return async (tree) => {
       let promises = [];
       tree.match({ tag: 'img' }, (node) => {
         if(isIgnored(node) || node?.attrs?.src?.startsWith("data:")) {
           cleanTag(node);
         } else {
+          // TODO: eleventy:optional
           promises.push(transformTag(context, node, opts));
         }
 
         return node;
       });
 
-      return Promise.all(promises).then(() => tree);
+      if(opts.failOnError) {
+        await Promise.all(promises);
+      } else {
+        await Promise.allSettled(promises);
+      }
+
+      return tree;
     };
   }
 
