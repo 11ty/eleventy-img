@@ -1,6 +1,6 @@
 const path = require("path");
 const Util = require("./util.js");
-const { imageAttributesToPosthtmlNode, getOutputDirectory, cleanTag, isIgnored } = require("./image-attrs-to-posthtml-node.js");
+const { imageAttributesToPosthtmlNode, getOutputDirectory, cleanTag, isIgnored, isOptional } = require("./image-attrs-to-posthtml-node.js");
 const { getGlobalOptions } = require("./global-options.js");
 const { eleventyImageOnRequestDuringServePlugin } = require("./on-request-during-serve-plugin.js");
 
@@ -58,7 +58,13 @@ function transformTag(context, node, opts) {
 
     Object.assign(node, obj);
   }, (error) => {
-    return Promise.reject(error);
+    if(!isOptional(node) && opts.failOnError) {
+      return Promise.reject(error);
+    }
+
+    cleanTag(node);
+
+    return Promise.resolve();
   });
 }
 
@@ -88,18 +94,13 @@ function eleventyImageTransformPlugin(eleventyConfig, options = {}) {
         if(isIgnored(node) || node?.attrs?.src?.startsWith("data:")) {
           cleanTag(node);
         } else {
-          // TODO: eleventy:optional
           promises.push(transformTag(context, node, opts));
         }
 
         return node;
       });
 
-      if(opts.failOnError) {
-        await Promise.all(promises);
-      } else {
-        await Promise.allSettled(promises);
-      }
+      await Promise.all(promises);
 
       return tree;
     };

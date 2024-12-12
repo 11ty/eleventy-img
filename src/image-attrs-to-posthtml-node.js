@@ -8,6 +8,7 @@ const ATTR = {
   WIDTHS: `${ATTR_PREFIX}widths`,
   FORMATS: `${ATTR_PREFIX}formats`,
   OUTPUT: `${ATTR_PREFIX}output`,
+  OPTIONAL: `${ATTR_PREFIX}optional`,
 };
 
 function convertToPosthtmlNode(obj) {
@@ -82,6 +83,10 @@ function isIgnored(node) {
   return node?.attrs && node?.attrs?.[ATTR.IGNORE] !== undefined;
 }
 
+function isOptional(node) {
+  return node?.attrs && node?.attrs?.[ATTR.OPTIONAL] !== undefined;
+}
+
 function getOutputDirectory(node) {
   return node?.attrs?.[ATTR.OUTPUT];
 }
@@ -90,5 +95,6 @@ module.exports = {
   imageAttributesToPosthtmlNode,
   cleanTag,
   isIgnored,
+  isOptional,
   getOutputDirectory,
 };

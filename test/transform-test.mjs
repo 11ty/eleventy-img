@@ -232,7 +232,55 @@ test("Don’t throw an error when failOnError: false with a bad remote image req
       });
     }
   });
-  // elev.disableLogger();
+  elev.disableLogger();
+
+  let results = await elev.toJSON();
+  t.is(normalizeEscapedPaths(results[0].content), `<img src="https://images.opencollective.com/sdkljflksjdflksdjf_DOES_NOT_EXIST/NOT_EXIST/avatar.png" alt="My ugly mug">`);
+});
+
+test("Don’t throw an error when failOnError: true but `eleventy:optional` attribute with a bad remote image request", async t => {
+  let elev = new Eleventy( "test", "test/_site", {
+    config: eleventyConfig => {
+      eleventyConfig.addTemplate("virtual.html", `<img src="https://images.opencollective.com/sdkljflksjdflksdjf_DOES_NOT_EXIST/NOT_EXIST/avatar.png" alt="My ugly mug" eleventy:optional>`);
+
+      eleventyConfig.addPlugin(eleventyImageTransformPlugin, {
+        formats: ["auto"],
+        // transformOnRequest: true,
+        // dryRun: true, // don’t write image files!
+
+        failOnError: true,
+
+        defaultAttributes: {
+          loading: "lazy",
+        }
+      });
+    }
+  });
+  elev.disableLogger();
+
+  let results = await elev.toJSON();
+  t.is(normalizeEscapedPaths(results[0].content), `<img src="https://images.opencollective.com/sdkljflksjdflksdjf_DOES_NOT_EXIST/NOT_EXIST/avatar.png" alt="My ugly mug">`);
+});
+
+test("Don’t throw an error when failOnError: false and `eleventy:optional` attribute with a bad remote image request", async t => {
+  let elev = new Eleventy( "test", "test/_site", {
+    config: eleventyConfig => {
+      eleventyConfig.addTemplate("virtual.html", `<img src="https://images.opencollective.com/sdkljflksjdflksdjf_DOES_NOT_EXIST/NOT_EXIST/avatar.png" alt="My ugly mug" eleventy:optional>`);
+
+      eleventyConfig.addPlugin(eleventyImageTransformPlugin, {
+        formats: ["auto"],
+        // transformOnRequest: true,
+        // dryRun: true, // don’t write image files!
+
+        failOnError: false,
+
+        defaultAttributes: {
+          loading: "lazy",
+        }
+      });
+    }
+  });
+  elev.disableLogger();
 
   let results = await elev.toJSON();
   t.is(normalizeEscapedPaths(results[0].content), `<img src="https://images.opencollective.com/sdkljflksjdflksdjf_DOES_NOT_EXIST/NOT_EXIST/avatar.png" alt="My ugly mug">`);
