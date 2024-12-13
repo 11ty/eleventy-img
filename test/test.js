@@ -1,10 +1,12 @@
-const path = require("path");
+const path = require("node:path");
+const fs = require("node:fs");
+const { URL } = require("node:url");
+
 const test = require("ava");
-const fs = require("fs");
-const { URL } = require("url");
-const eleventyImage = require("../");
 const sharp = require("sharp");
 const pixelmatch = require('pixelmatch');
+
+const eleventyImage = require("../");
 
 // Remember that any outputPath tests must use path.join to work on Windows
 
