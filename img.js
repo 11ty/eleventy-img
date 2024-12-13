@@ -1,4 +1,5 @@
 const path = require("node:path");
+const os = require("node:os");
 const fs = require("node:fs");
 const fsp = fs.promises;
 const { createHash } = require("node:crypto");
@@ -23,7 +24,7 @@ const GLOBAL_OPTIONS = {
   widths: ["auto"],
   formats: ["webp", "jpeg"], // "png", "svg", "avif"
 
-  concurrency: 20,
+  concurrency: os.availableParallelism(),
 
   urlPath: "/img/",
   outputDir: "img/",
