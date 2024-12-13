@@ -306,10 +306,10 @@ test("Don’t throw an error when failOnError: false and `eleventy:optional` att
   t.is(normalizeEscapedPaths(results[0].content), `<img alt="My ugly mug">`);
 });
 
-test("Don’t throw an error when failOnError: false and `eleventy:replace` attribute with a bad remote image request", async t => {
+test("Don’t throw an error when failOnError: false and `eleventy:optional=placeholder` attribute with a bad remote image request", async t => {
   let elev = new Eleventy( "test", "test/_site", {
     config: eleventyConfig => {
-      eleventyConfig.addTemplate("virtual.html", `<img src="https://images.opencollective.com/sdkljflksjdflksdjf_DOES_NOT_EXIST/NOT_EXIST/avatar.png" alt="My ugly mug" eleventy:optional="replace">`);
+      eleventyConfig.addTemplate("virtual.html", `<img src="https://images.opencollective.com/sdkljflksjdflksdjf_DOES_NOT_EXIST/NOT_EXIST/avatar.png" alt="My ugly mug" eleventy:optional="placeholder">`);
 
       eleventyConfig.addPlugin(eleventyImageTransformPlugin, {
         formats: ["auto"],

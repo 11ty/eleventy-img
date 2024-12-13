@@ -61,7 +61,7 @@ function transformTag(context, node, opts) {
     if(isOptional(node) || !opts.failOnError) {
       if(isOptional(node, "keep")) {
         // leave as-is, likely 404 when a user visits the page
-      } else if(isOptional(node, "replace")) {
+      } else if(isOptional(node, "placeholder")) {
         // transparent png
         node.attrs.src = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNgYAAAAAMAASsJTYQAAAAASUVORK5CYII=";
       } else if(isOptional(node)) {
