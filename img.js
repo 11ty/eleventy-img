@@ -1,8 +1,8 @@
-const path = require("path");
-const fs = require("fs");
+const path = require("node:path");
+const fs = require("node:fs");
 const fsp = fs.promises;
+const { createHash } = require("node:crypto");
 
-const { createHash } = require("crypto");
 const {default: PQueue} = require("p-queue");
 const getImageSize = require("image-size");
 const sharp = require("sharp");

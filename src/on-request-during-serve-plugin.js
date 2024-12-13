@@ -1,4 +1,4 @@
-const fs = require("fs");
+const fs = require("node:fs");
 const { TemplatePath } = require("@11ty/eleventy-utils");
 
 const eleventyImage = require("../img.js");

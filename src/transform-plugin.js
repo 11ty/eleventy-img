@@ -1,4 +1,4 @@
-const path = require("path");
+const path = require("node:path");
 const Util = require("./util.js");
 const { imageAttributesToPosthtmlNode, getOutputDirectory, cleanTag, isIgnored, isOptional } = require("./image-attrs-to-posthtml-node.js");
 const { getGlobalOptions } = require("./global-options.js");

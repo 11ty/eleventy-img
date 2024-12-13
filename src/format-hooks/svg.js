@@ -1,4 +1,4 @@
-const fsp = require("fs").promises;
+const fsp = require("node:fs").promises;
 
 module.exports = async function createSvg(sharpInstance) {
   let input = sharpInstance.options.input;

@@ -1,4 +1,4 @@
-const path = require("path");
+const path = require("node:path");
 const Util = require("./util.js");
 
 function getGlobalOptions(eleventyConfig, options, via) {
