@@ -24,7 +24,8 @@ const GLOBAL_OPTIONS = {
   widths: ["auto"],
   formats: ["webp", "jpeg"], // "png", "svg", "avif"
 
-  concurrency: os.availableParallelism(),
+  // Minimum 8 (GitHub Actions test suite implications)
+  concurrency: Math.max(8, os.availableParallelism()),
 
   urlPath: "/img/",
   outputDir: "img/",
