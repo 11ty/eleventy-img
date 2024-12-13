@@ -34,7 +34,6 @@ test("Using the transform plugin, data URI #238", async t => {
   t.is(results[0].content, `<img src="data:image/" alt="My ugly mug">`);
 });
 
-
 test("Using the transform plugin (override options)", async t => {
   let elev = new Eleventy( "test", "test/_site", {
     config: eleventyConfig => {
@@ -324,4 +323,19 @@ test("Don’t throw an error when failOnError: false and `eleventy:optional=plac
 
   let results = await elev.toJSON();
   t.is(normalizeEscapedPaths(results[0].content), `<img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNgYAAAAAMAASsJTYQAAAAASUVORK5CYII=" alt="My ugly mug">`);
+});
+
+test("Using the transform plugin, <img src=video.mp4> #257", async t => {
+  let elev = new Eleventy( "test", "test/_site", {
+    config: eleventyConfig => {
+      eleventyConfig.addTemplate("virtual.html", `<img src="car.mp4" alt="My ugly mug" eleventy:optional="keep">`);
+
+      eleventyConfig.addPlugin(eleventyImageTransformPlugin, {
+        dryRun: true // don’t write image files!
+      });
+    }
+  });
+
+  let results = await elev.toJSON();
+  t.is(results[0].content, `<img src="car.mp4" alt="My ugly mug">`);
 });

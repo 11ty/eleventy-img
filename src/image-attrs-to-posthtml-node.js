@@ -63,6 +63,8 @@ async function imageAttributesToPosthtmlNode(attributes, instanceOptions, global
   Util.addConfig(globalPluginOptions.eleventyConfig, options);
 
   let metadata = await eleventyImage(attributes.src, options);
+  cleanAttrs(attributes);
+
   let imageAttributes = Object.assign({}, globalPluginOptions.defaultAttributes, attributes);
 
   // You bet we throw an error on missing alt in `imageAttributes` (alt="" works okay)
@@ -70,13 +72,17 @@ async function imageAttributesToPosthtmlNode(attributes, instanceOptions, global
   return convertToPosthtmlNode(obj);
 }
 
-function cleanTag(node) {
-  // Delete all prefixed attributes
-  for(let key in node?.attrs) {
+function cleanAttrs(attrs = {}) {
+  for(let key in attrs) {
     if(key.startsWith(ATTR_PREFIX)) {
-      delete node?.attrs?.[key];
+      delete attrs?.[key];
     }
   }
+}
+
+function cleanTag(node) {
+  // Delete all prefixed attributes
+  cleanAttrs(node?.attrs);
 }
 
 function isIgnored(node) {

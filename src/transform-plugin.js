@@ -4,6 +4,12 @@ const { imageAttributesToPosthtmlNode, getOutputDirectory, cleanTag, isIgnored, 
 const { getGlobalOptions } = require("./global-options.js");
 const { eleventyImageOnRequestDuringServePlugin } = require("./on-request-during-serve-plugin.js");
 
+const PLACEHOLDER_DATA_URI = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNgYAAAAAMAASsJTYQAAAAASUVORK5CYII=";
+
+const ATTRS = {
+  ORIGINAL_SOURCE: "eleventy:internal_original_src",
+};
+
 function transformTag(context, node, opts) {
   let originalSource = node.attrs?.src;
   if(!originalSource) {
@@ -18,6 +24,9 @@ function transformTag(context, node, opts) {
   }, originalSource, {
     isViaHtml: true, // this reference came from HTML, so we can decode the file name
   });
+  if(node.attrs.src !== originalSource) {
+    node.attrs[ATTRS.ORIGINAL_SOURCE] = originalSource;
+  }
 
   let instanceOptions = {};
 
@@ -60,10 +69,14 @@ function transformTag(context, node, opts) {
   }, (error) => {
     if(isOptional(node) || !opts.failOnError) {
       if(isOptional(node, "keep")) {
+        // replace with the original source value, no image transformation is taking place
+        if(node.attrs[ATTRS.ORIGINAL_SOURCE]) {
+          node.attrs.src = node.attrs[ATTRS.ORIGINAL_SOURCE];
+        }
         // leave as-is, likely 404 when a user visits the page
       } else if(isOptional(node, "placeholder")) {
         // transparent png
-        node.attrs.src = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNgYAAAAAMAASsJTYQAAAAASUVORK5CYII=";
+        node.attrs.src = PLACEHOLDER_DATA_URI;
       } else if(isOptional(node)) {
         delete node.attrs.src;
       }
