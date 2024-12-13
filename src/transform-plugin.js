@@ -65,11 +65,7 @@ function transformTag(context, node, opts) {
         // transparent png
         node.attrs.src = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNgYAAAAAMAASsJTYQAAAAASUVORK5CYII=";
       } else if(isOptional(node)) {
-        // delete node
-        delete node.tag;
-        delete node.attrs;
-
-        return Promise.resolve();
+        delete node.attrs.src;
       }
 
       // optional or don’t fail on error

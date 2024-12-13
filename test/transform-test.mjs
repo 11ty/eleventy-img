@@ -238,10 +238,10 @@ test("Don’t throw an error when failOnError: false with a bad remote image req
   t.is(normalizeEscapedPaths(results[0].content), `<img src="https://images.opencollective.com/sdkljflksjdflksdjf_DOES_NOT_EXIST/NOT_EXIST/avatar.png" alt="My ugly mug">`);
 });
 
-test("Don’t throw an error when failOnError: true but `eleventy:optional` attribute with a bad remote image request", async t => {
+test("Don’t throw an error when failOnError: true but `eleventy:optional=keep` attribute with a bad remote image request", async t => {
   let elev = new Eleventy( "test", "test/_site", {
     config: eleventyConfig => {
-      eleventyConfig.addTemplate("virtual.html", `<img src="https://images.opencollective.com/sdkljflksjdflksdjf_DOES_NOT_EXIST/NOT_EXIST/avatar.png" alt="My ugly mug" eleventy:optional>`);
+      eleventyConfig.addTemplate("virtual.html", `<img src="https://images.opencollective.com/sdkljflksjdflksdjf_DOES_NOT_EXIST/NOT_EXIST/avatar.png" alt="My ugly mug" eleventy:optional="keep">`);
 
       eleventyConfig.addPlugin(eleventyImageTransformPlugin, {
         formats: ["auto"],
@@ -262,10 +262,10 @@ test("Don’t throw an error when failOnError: true but `eleventy:optional` attr
   t.is(normalizeEscapedPaths(results[0].content), `<img src="https://images.opencollective.com/sdkljflksjdflksdjf_DOES_NOT_EXIST/NOT_EXIST/avatar.png" alt="My ugly mug">`);
 });
 
-test("Don’t throw an error when failOnError: false and `eleventy:optional` attribute with a bad remote image request", async t => {
+test("Don’t throw an error when failOnError: false and `eleventy:optional=keep` attribute with a bad remote image request", async t => {
   let elev = new Eleventy( "test", "test/_site", {
     config: eleventyConfig => {
-      eleventyConfig.addTemplate("virtual.html", `<img src="https://images.opencollective.com/sdkljflksjdflksdjf_DOES_NOT_EXIST/NOT_EXIST/avatar.png" alt="My ugly mug" eleventy:optional>`);
+      eleventyConfig.addTemplate("virtual.html", `<img src="https://images.opencollective.com/sdkljflksjdflksdjf_DOES_NOT_EXIST/NOT_EXIST/avatar.png" alt="My ugly mug" eleventy:optional="keep">`);
 
       eleventyConfig.addPlugin(eleventyImageTransformPlugin, {
         formats: ["auto"],
@@ -284,4 +284,44 @@ test("Don’t throw an error when failOnError: false and `eleventy:optional` att
 
   let results = await elev.toJSON();
   t.is(normalizeEscapedPaths(results[0].content), `<img src="https://images.opencollective.com/sdkljflksjdflksdjf_DOES_NOT_EXIST/NOT_EXIST/avatar.png" alt="My ugly mug">`);
+});
+
+test("Don’t throw an error when failOnError: false and `eleventy:optional` attribute with a bad remote image request", async t => {
+  let elev = new Eleventy( "test", "test/_site", {
+    config: eleventyConfig => {
+      eleventyConfig.addTemplate("virtual.html", `<img src="https://images.opencollective.com/sdkljflksjdflksdjf_DOES_NOT_EXIST/NOT_EXIST/avatar.png" alt="My ugly mug" eleventy:optional>`);
+
+      eleventyConfig.addPlugin(eleventyImageTransformPlugin, {
+        formats: ["auto"],
+
+        defaultAttributes: {
+          loading: "lazy",
+        }
+      });
+    }
+  });
+  elev.disableLogger();
+
+  let results = await elev.toJSON();
+  t.is(normalizeEscapedPaths(results[0].content), `<img alt="My ugly mug">`);
+});
+
+test("Don’t throw an error when failOnError: false and `eleventy:replace` attribute with a bad remote image request", async t => {
+  let elev = new Eleventy( "test", "test/_site", {
+    config: eleventyConfig => {
+      eleventyConfig.addTemplate("virtual.html", `<img src="https://images.opencollective.com/sdkljflksjdflksdjf_DOES_NOT_EXIST/NOT_EXIST/avatar.png" alt="My ugly mug" eleventy:optional="replace">`);
+
+      eleventyConfig.addPlugin(eleventyImageTransformPlugin, {
+        formats: ["auto"],
+
+        defaultAttributes: {
+          loading: "lazy",
+        }
+      });
+    }
+  });
+  elev.disableLogger();
+
+  let results = await elev.toJSON();
+  t.is(normalizeEscapedPaths(results[0].content), `<img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNgYAAAAAMAASsJTYQAAAAASUVORK5CYII=" alt="My ugly mug">`);
 });
