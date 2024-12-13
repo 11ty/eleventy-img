@@ -54,7 +54,7 @@
     "ava": "^6.2.0",
     "eslint": "^9.16.0",
     "globals": "^15.13.0",
-    "pixelmatch": "^6.0.0"
+    "pixelmatch": "^5.3.0"
   },
   "ava": {
     "failFast": false,
