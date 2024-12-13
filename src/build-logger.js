@@ -28,18 +28,19 @@ class BuildLogger {
   }
 
   getFriendlyImageSource(imageSource) {
-    let logSrc;
-    if(Util.isRemoteUrl(imageSource)) {
-      logSrc = imageSource;
-    } else {
-      if(path.isAbsolute(imageSource)) {
-        // convert back to relative url
-        logSrc = TemplatePath.addLeadingDotSlash(path.relative(path.resolve("."), imageSource));
-      } else {
-        logSrc = TemplatePath.addLeadingDotSlash(imageSource);
-      }
+    if(Buffer.isBuffer(imageSource)) {
+      return `<Buffer>`;
     }
-    return logSrc;
+
+    if(Util.isRemoteUrl(imageSource)) {
+      return imageSource;
+    }
+    if(path.isAbsolute(imageSource)) {
+      // convert back to relative url
+      return TemplatePath.addLeadingDotSlash(path.relative(path.resolve("."), imageSource));
+    }
+
+    return TemplatePath.addLeadingDotSlash(imageSource);
   }
 
   log(message, options = {}, logOptions = {}) {
