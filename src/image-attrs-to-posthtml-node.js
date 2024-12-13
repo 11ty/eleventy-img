@@ -83,8 +83,16 @@ function isIgnored(node) {
   return node?.attrs && node?.attrs?.[ATTR.IGNORE] !== undefined;
 }
 
-function isOptional(node) {
-  return node?.attrs && node?.attrs?.[ATTR.OPTIONAL] !== undefined;
+function isOptional(node, comparisonValue) {
+  let attrValue = node?.attrs && node?.attrs?.[ATTR.OPTIONAL];
+  if(attrValue !== undefined) {
+    // if comparisonValue is not specified, return true
+    if(comparisonValue === undefined) {
+      return true;
+    }
+    return attrValue === comparisonValue;
+  }
+  return false;
 }
 
 function getOutputDirectory(node) {

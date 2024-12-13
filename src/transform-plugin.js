@@ -58,13 +58,27 @@ function transformTag(context, node, opts) {
 
     Object.assign(node, obj);
   }, (error) => {
-    if(!isOptional(node) && opts.failOnError) {
-      return Promise.reject(error);
+    if(isOptional(node) || !opts.failOnError) {
+      if(isOptional(node, "keep")) {
+        // leave as-is, likely 404 when a user visits the page
+      } else if(isOptional(node, "replace")) {
+        // transparent png
+        node.attrs.src = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNgYAAAAAMAASsJTYQAAAAASUVORK5CYII=";
+      } else if(isOptional(node)) {
+        // delete node
+        delete node.tag;
+        delete node.attrs;
+
+        return Promise.resolve();
+      }
+
+      // optional or don’t fail on error
+      cleanTag(node);
+
+      return Promise.resolve();
     }
 
-    cleanTag(node);
-
-    return Promise.resolve();
+    return Promise.reject(error);
   });
 }
 
