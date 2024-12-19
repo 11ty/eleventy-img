@@ -61,8 +61,8 @@ const DEFAULTS = {
 
   fixOrientation: false, // always rotate images to ensure correct orientation
 
-  // Advanced
-  useCacheValidityInHash: true,
+  // Removed, no longer necessary in v6.0
+  // useCacheValidityInHash: true,
 
   // When the original width is smaller than the desired output width, this is the minimum size difference
   // between the next smallest image width that will generate one extra width in the output.

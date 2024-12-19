@@ -1,4 +1,3 @@
-const fs = require("node:fs");
 // const debug = require("debug")("Eleventy:Image");
 
 class DiskCache {
@@ -23,15 +22,19 @@ class DiskCache {
     return [this.hitCounter, this.missCounter];
   }
 
-  isCached(path, input, incrementCounts = true) {
-    // Disk cache runs once per output file, so we only want to increment counts once per input
-    if(this.inputs.has(input)) {
+  isCached(targetFile, sourceInput, incrementCounts = true) {
+    if(!this.#existsCache) {
+      throw new Error("Missing `#existsCache`");
+    }
+
+    // Disk cache runs once per output file, so we only increment counts once per input
+    if(this.inputs.has(sourceInput)) {
       incrementCounts = false;
     }
 
-    this.inputs.set(input, true);
+    this.inputs.set(sourceInput, true);
 
-    if(this.#existsCache?.exists(path) || fs.existsSync(path)) {
+    if(this.#existsCache?.exists(targetFile)) {
       if(incrementCounts) {
         this.hitCounter++;
       }
@@ -41,7 +44,6 @@ class DiskCache {
     }
 
     if(incrementCounts) {
-      this.inputs.set(input, true);
       this.missCounter++;
     }
 

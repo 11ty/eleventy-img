@@ -5,9 +5,11 @@ const { createHash } = require("node:crypto");
 const sharp = require("sharp");
 const getImageSize = require("image-size");
 const brotliSize = require("brotli-size");
-const debug = require("debug")("Eleventy:Image");
+const debugUtil = require("debug");
+const debug = debugUtil("Eleventy:Image");
+const assetsDebug = debugUtil("Eleventy:Assets");
 
-const { CreateFetch } = require("@11ty/eleventy-fetch");
+const { Fetch } = require("@11ty/eleventy-fetch");
 
 const Util = require("./util.js");
 const ImagePath = require("./image-path.js");
@@ -67,7 +69,7 @@ class Image {
       }, this.options.cacheOptions);
 
       // v6.0.0 this now inherits eleventy-fetch option defaults
-      this.assetCache = CreateFetch(src, this.cacheOptions);
+      this.assetCache = Fetch(src, this.cacheOptions);
     }
   }
 
@@ -322,20 +324,9 @@ class Image {
       // probably a remote URL
       hash.update(this.src);
 
-      // add whether or not the cached asset is still valid per the cache duration (work with empty duration or "*")
-      if(this.assetCache) {
-        if(this.assetCache.getDurationMs(this.cacheOptions.duration) === 0) {
-          // don’t use cache to inform hash if duration is set to 0.
-        } else if(this.options.useCacheValidityInHash && this.isRemoteUrl) {
-          let stamp = this.assetCache.getCachedTimestamp();
-          if(!stamp) {
-            // We need to propose the timestamp for cache validity across builds
-            // This needs to be known before fetching (or in sync contexts)
-            stamp = Date.now();
-            this.assetCache.setInitialCacheTimestamp(stamp);
-          }
-          hash.update(`Cache:${stamp}`);
-        }
+      // `useCacheValidityInHash` was removed in v6.0.0, but we’ll keep this as part of the hash to maintain consistent hashes across versions
+      if(this.isRemoteUrl && this.assetCache && this.cacheOptions) {
+        hash.update(`ValidCache:true`);
       }
     }
 
@@ -358,8 +349,6 @@ class Image {
     }
 
     hash.update(JSON.stringify(hashObject));
-
-    // TODO allow user to update other things into hash
 
     // Get hash in base64, and make it URL safe.
     // NOTE: When increasing minimum Node version to 14,
@@ -481,6 +470,23 @@ class Image {
     return this._transformRawFiles(results, outputFormats);
   }
 
+  isOutputCached(targetFile, sourceInput) {
+    if(!this.options.useCache) {
+      return false;
+    }
+
+    // last cache was a miss, so we must write to disk
+    if(this.assetCache && !this.assetCache.wasLastFetchCacheHit()) {
+      return false;
+    }
+
+    if(!diskCache.isCached(targetFile, sourceInput, !Util.isRequested(this.options.generatedVia))) {
+      return false;
+    }
+
+    return true;
+  }
+
   // src should be a file path to an image or a buffer
   async resize(input) {
     let sharpImage = sharp(input, Object.assign({
@@ -497,7 +503,7 @@ class Image {
     let fullStats = this.getFullStats(metadata);
     for(let outputFormat in fullStats) {
       for(let stat of fullStats[outputFormat]) {
-        if(this.options.useCache && diskCache.isCached(stat.outputPath, input, !Util.isRequested(this.options.generatedVia))) {
+        if(this.isOutputCached(stat.outputPath, input)) {
           // Cached images already exist in output
           let contents;
           if(this.options.dryRun) {
@@ -599,6 +605,7 @@ class Image {
           if(this.options.dryRun) {
             debug( "Generated %o", stat.url );
           } else {
+            assetsDebug("Wrote image file to disk: %o", stat.outputPath);
             debug( "Wrote %o", stat.outputPath );
           }
         }

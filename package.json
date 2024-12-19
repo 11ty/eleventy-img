@@ -37,7 +37,7 @@
   },
   "homepage": "https://github.com/11ty/eleventy-img#readme",
   "dependencies": {
-    "@11ty/eleventy-fetch": "^5.0.1",
+    "@11ty/eleventy-fetch": "^5.0.2-beta.1",
     "@11ty/eleventy-utils": "^1.0.3",
     "brotli-size": "^4.0.0",
     "debug": "^4.4.0",
@@ -53,7 +53,7 @@
     "@eslint/js": "^9.17.0",
     "ava": "^6.2.0",
     "eslint": "^9.17.0",
-    "globals": "^15.13.0",
+    "globals": "^15.14.0",
     "pixelmatch": "^5.3.0"
   },
   "ava": {
