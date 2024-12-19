@@ -115,7 +115,7 @@ class Image {
       opts.sourceUrl = this.src.toString();
       opts.__originalSize = this.src.length;
     } else {
-      // TODO @zachleat (multiread): another read
+      // Important: do not cache this
       opts.__originalSize = fs.statSync(this.src).size;
     }
 
@@ -142,7 +142,6 @@ class Image {
         this.#contents[src] = fs.readFileSync(src);
       }
     }
-
 
     return this.#contents[src];
   }
@@ -300,7 +299,6 @@ class Image {
         // fetch remote image Buffer
         this.inputPromise = this.assetCache.queue();
       } else {
-        // TODO @zachleat (multiread): read local file contents here and always return a buffer
         this.inputPromise = Promise.resolve(this.src);
       }
     }

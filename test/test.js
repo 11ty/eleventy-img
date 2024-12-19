@@ -1,5 +1,5 @@
 const path = require("node:path");
-const fs = require("node:fs");
+const fs = require("graceful-fs");
 const { URL } = require("node:url");
 
 const test = require("ava");
