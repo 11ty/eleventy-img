@@ -21,7 +21,7 @@ class MemoryCache {
       results
     };
 
-    debug("Unique images processed: %o", Object.keys(this.cache).length);
+    debug("Unique images processed: %o", this.size());
   }
 
   get(key, incrementCounts = false) {
@@ -40,6 +40,14 @@ class MemoryCache {
     }
 
     return false;
+  }
+
+  has(key) {
+    return key in this.cache;
+  }
+
+  size() {
+    return Object.keys(this.cache).length;
   }
 }
 

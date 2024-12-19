@@ -1,4 +1,5 @@
 const fs = require("node:fs");
+const Util = require("./util.js");
 
 // Checks both files and directories
 class ExistsCache {
@@ -18,6 +19,10 @@ class ExistsCache {
 
   // Relative paths (to root directory) expected (but not enforced due to perf costs)
   exists(path) {
+    if(Util.isFullUrl(path)) {
+      return false;
+    }
+
     if (!this.#exists.has(path)) {
       let exists = fs.existsSync(path);
       this.lookupCount++;
