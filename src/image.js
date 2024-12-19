@@ -7,7 +7,7 @@ const getImageSize = require("image-size");
 const brotliSize = require("brotli-size");
 const debugUtil = require("debug");
 const debug = debugUtil("Eleventy:Image");
-const assetsDebug = debugUtil("Eleventy:Assets");
+const debugAssets = debugUtil("Eleventy:Assets");
 
 const { Fetch } = require("@11ty/eleventy-fetch");
 
@@ -34,6 +34,7 @@ const FORMAT_ALIASES = {
 
 
 class Image {
+  #contents;
   #queue;
   #queuePromise;
   #buildLogger;
@@ -114,24 +115,25 @@ class Image {
     }
 
     let src = overrideLocalFilePath || this.src;
-    if(!this._contents) {
-      this._contents = {};
+    if(!this.#contents) {
+      this.#contents = {};
     }
 
-    if(!this._contents[src]) {
+    if(!this.#contents[src]) {
       // perf: check to make sure it’s not a string first
       if(typeof src !== "string" && Buffer.isBuffer(src)) {
-        this._contents[src] = src;
+        this.#contents[src] = src;
       } else {
         // TODO @zachleat make this aggressively async.
         // TODO @zachleat add a smarter cache here (not too aggressive! must handle input file changes)
         // debug("Reading from file system: %o", src);
-        this._contents[src] = fs.readFileSync(src);
+        debugAssets("[11ty/eleventy-img] Reading %o", src);
+        this.#contents[src] = fs.readFileSync(src);
       }
     }
 
 
-    return this._contents[src];
+    return this.#contents[src];
   }
 
   static getValidWidths(originalWidth, widths = [], allowUpscale = false, minimumThreshold = 1) {
@@ -605,7 +607,7 @@ class Image {
           if(this.options.dryRun) {
             debug( "Generated %o", stat.url );
           } else {
-            assetsDebug("Wrote image file to disk: %o", stat.outputPath);
+            debugAssets("[11ty/eleventy-img] Writing %o", stat.outputPath);
             debug( "Wrote %o", stat.outputPath );
           }
         }
