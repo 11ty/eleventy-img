@@ -296,3 +296,30 @@ test("Image markup (<picture> with attributes issue #197)", async t => {
     `<img alt="" src="/img/KkPMmHd3hP-200.jpeg" width="400" height="266" srcset="/img/KkPMmHd3hP-200.jpeg 200w, /img/KkPMmHd3hP-400.jpeg 400w" sizes="100vw">`,
     `</picture>`].join(""));
 });
+
+test("Issue #177", t => {
+  let src = "https://www.zachleat.com/img/avatar-2017.png?q=1";
+
+  const options = {
+    widths: [700, 1200, 2000],
+    formats: ['avif', 'jpeg'],
+    outputDir: './_site/img/',
+    urlPath: '/img/',
+    cacheOptions: {
+      duration: '1d',
+    },
+  };
+
+  let metadata = eleventyImage.statsByDimensionsSync(src, 160, 160, options);
+
+  const imageAttributes = {
+    alt: "",
+    sizes: '(max-width: 0px) 100vw',
+    loading: 'lazy',
+    decoding: 'async',
+    fetchPriority: 'high',
+    class: 'w-full h-full object-cover',
+  };
+
+  t.is(eleventyImage.generateHTML(metadata, imageAttributes), `<picture><source type="image/avif" srcset="/img/8u6v7oPGyC-160.avif 160w" sizes="(max-width: 0px) 100vw"><img alt="" loading="lazy" decoding="async" fetchPriority="high" class="w-full h-full object-cover" src="/img/8u6v7oPGyC-160.jpeg" width="160" height="160"></picture>`);
+});

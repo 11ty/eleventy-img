@@ -67,7 +67,7 @@ function setupLogger(eleventyConfig, opts) {
   });
 }
 
-function queueImage(src, opts = {}) {
+function createImage(src, opts = {}) {
   let eleventyConfig = opts.eleventyConfig;
 
   if(opts?.eleventyConfig && {}.propertyIsEnumerable.call(opts, "eleventyConfig")) {
@@ -86,6 +86,11 @@ function queueImage(src, opts = {}) {
     deferCounter.increment(src);
   }
 
+  return img;
+};
+
+function queueImage(src, opts = {}) {
+  let img = createImage(src, opts);
   return img.queue();
 }
 
@@ -106,6 +111,7 @@ module.exports.Util = Util;
 module.exports.Image = Image;
 module.exports.ImagePath = require("./src/image-path.js");
 
+// Backwards compat
 module.exports.statsSync = Image.statsSync;
 module.exports.statsByDimensionsSync = Image.statsByDimensionsSync;
 module.exports.getFormats = Image.getFormatsArray;

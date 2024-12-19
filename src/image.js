@@ -716,32 +716,41 @@ class Image {
   * `options.dryRun` is still asynchronous but also doesn’t generate
   * any files.
   */
-  static statsSync(src, opts) {
-    if(typeof src === "string" && Util.isRemoteUrl(src)) {
-      throw new Error("`statsSync` is not supported with remote sources. Use `statsByDimensionsSync` instead.");
+  statsSync() {
+    if(this.isRemoteUrl) {
+      throw new Error("`statsSync` is not supported with remote sources. Use `statsByDimensionsSync(src, width, height, options)` instead.");
     }
 
-    let dimensions = getImageSize(src);
+    let dimensions = getImageSize(this.src);
 
-    let img = Image.create(src, opts);
-
-    return img.getFullStats({
+    return this.getFullStats({
       width: dimensions.width,
       height: dimensions.height,
       format: dimensions.type,
     });
   }
 
-  static statsByDimensionsSync(src, width, height, opts) {
+  static statsSync(src, opts) {
+    if(typeof src === "string" && Util.isRemoteUrl(src)) {
+      throw new Error("`statsSync` is not supported with remote sources. Use `statsByDimensionsSync(src, width, height, options)` instead.");
+    }
+
+    let img = Image.create(src, opts);
+    return img.statsSync();
+  }
+
+  statsByDimensionsSync(width, height) {
     let dimensions = {
       width,
       height,
       guess: true
     };
+    return this.getFullStats(dimensions);
+  }
 
+  static statsByDimensionsSync(src, width, height, opts) {
     let img = Image.create(src, opts);
-
-    return img.getFullStats(dimensions);
+    return img.statsByDimensionsSync(width, height);
   }
 }
 
