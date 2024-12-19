@@ -1,5 +1,5 @@
 const path = require("node:path");
-const os = require("node:os");
+// const os = require("node:os");
 
 const Util = require("./util.js");
 const svgHook = require("./format-hooks/svg.js");
