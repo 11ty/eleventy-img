@@ -483,6 +483,19 @@ class Image {
     return this._transformRawFiles(results, outputFormats);
   }
 
+  getOutputSize(contents, filePath) {
+    if(this.options.svgCompressionSize === "br") {
+      return brotliSize.sync(contents);
+    }
+
+    if(filePath) {
+      return fs.statSync(filePath).size;
+    }
+
+    // when filePath does not exist, this contents is a string from SVG
+    return contents.length;
+  }
+
   isOutputCached(targetFile, sourceInput) {
     if(!this.options.useCache) {
       return false;
@@ -524,14 +537,11 @@ class Image {
             stat.buffer = contents;
           }
 
-          if(outputFormat === "svg" && this.options.svgCompressionSize === "br") {
-            if(!contents) {
-              contents = this.getFileContents(stat.outputPath);
-            }
-            stat.size = brotliSize.sync(contents);
-          } else {
-            stat.size = fs.statSync(stat.outputPath).size;
+          if(outputFormat === "svg" && this.options.svgCompressionSize === "br" && !contents) {
+            contents = this.getFileContents(stat.outputPath);
           }
+
+          stat.size = this.getOutputSize(contents, stat.outputPath);
 
           outputFilePromises.push(Promise.resolve(stat));
           continue;
@@ -560,15 +570,12 @@ class Image {
           this.directoryManager.create(this.options.outputDir);
         }
 
+        // Format hooks take priority over Sharp processing.
         // format hooks are only used for SVG out of the box
         if(this.options.formatHooks && this.options.formatHooks[outputFormat]) {
           let hookResult = await this.options.formatHooks[outputFormat].call(stat, sharpInstance);
           if(hookResult) {
-            if(this.options.svgCompressionSize === "br") {
-              stat.size = brotliSize.sync(hookResult);
-            } else {
-              stat.size = hookResult.length;
-            }
+            stat.size = this.getOutputSize(hookResult);
 
             if(this.options.dryRun) {
               stat.buffer = Buffer.from(hookResult);
