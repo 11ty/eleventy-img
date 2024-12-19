@@ -1,5 +1,5 @@
 const path = require("node:path");
-// const os = require("node:os");
+const os = require("node:os");
 
 const Util = require("./util.js");
 const svgHook = require("./format-hooks/svg.js");
@@ -9,7 +9,7 @@ const DEFAULTS = {
   formats: ["webp", "jpeg"], // "png", "svg", "avif"
 
   // Via https://github.com/11ty/eleventy-img/issues/258
-  concurrency: 16, //Math.min(Math.max(8, os.availableParallelism()), 16),
+  concurrency: Math.min(Math.max(8, os.availableParallelism()), 16),
 
   urlPath: "/img/",
   outputDir: "img/",

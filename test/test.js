@@ -527,14 +527,18 @@ test("Keep a cache, don’t reuse with same file names and different options", a
   t.is(stats2.jpeg.length, 1);
 });
 
+function copyFile(src, dest) {
+  fs.copyFileSync(path.normalize(src), path.normalize(dest));
+}
+
 test("Keep a cache, don’t reuse with if the image changes, check promise equality", async t => {
-  fs.copyFileSync("./test/modify-bio-original.jpg", "./test/generated-modify-bio.jpg");
+  copyFile("./test/modify-bio-original.jpg", "./test/generated-modify-bio.jpg");
 
   let promise1 = eleventyImage("./test/generated-modify-bio.jpg", {
     outputDir: "./test/img/",
   });
 
-  fs.copyFileSync("./test/modify-bio-grayscale.jpg", "./test/generated-modify-bio.jpg");
+  copyFile("./test/modify-bio-grayscale.jpg", "./test/generated-modify-bio.jpg");
 
   let promise2 = eleventyImage("./test/generated-modify-bio.jpg", {
     outputDir: "./test/img/",
@@ -544,13 +548,13 @@ test("Keep a cache, don’t reuse with if the image changes, check promise equal
 });
 
 test("Keep a cache, don’t reuse with if the image changes, check output", async t => {
-  fs.copyFileSync("./test/modify2-bio-original.jpg", "./test/generated-modify2-bio.jpg");
+  copyFile("./test/modify2-bio-original.jpg", "./test/generated-modify2-bio.jpg");
 
   let stats1 = await eleventyImage("./test/generated-modify2-bio.jpg", {
     outputDir: "./test/img/",
   });
 
-  fs.copyFileSync("./test/modify2-bio-grayscale.jpg", "./test/generated-modify2-bio.jpg");
+  copyFile("./test/modify2-bio-grayscale.jpg", "./test/generated-modify2-bio.jpg");
 
   let stats2 = await eleventyImage("./test/generated-modify2-bio.jpg", {
     outputDir: "./test/img/",
