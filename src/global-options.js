@@ -9,7 +9,7 @@ const DEFAULTS = {
   formats: ["webp", "jpeg"], // "png", "svg", "avif"
 
   // Via https://github.com/11ty/eleventy-img/issues/258
-  concurrency: Math.max(8, os.availableParallelism()),
+  concurrency: Math.max(Math.min(8, os.availableParallelism()), 16),
 
   urlPath: "/img/",
   outputDir: "img/",
