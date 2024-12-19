@@ -528,7 +528,7 @@ test("Keep a cache, don’t reuse with same file names and different options", a
 });
 
 function copyFile(src, dest) {
-  fs.copyFileSync(path.normalize(src), path.normalize(dest));
+  fs.copyFileSync(path.resolve(src), path.resolve(dest));
 }
 
 test("Keep a cache, don’t reuse with if the image changes, check promise equality", async t => {
