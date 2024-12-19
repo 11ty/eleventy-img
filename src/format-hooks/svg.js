@@ -1,4 +1,6 @@
-const fsp = require("node:fs").promises;
+const fs = require("node:fs");
+const debugUtil = require("debug");
+const debugAssets = debugUtil("Eleventy:Assets");
 
 module.exports = async function createSvg(sharpInstance) {
   let input = sharpInstance.options.input;
@@ -6,6 +8,7 @@ module.exports = async function createSvg(sharpInstance) {
   if(svgBuffer) { // remote URL already has buffer
     return svgBuffer;
   } else { // local file system
-    return fsp.readFile(input.file);
+    debugAssets("[11ty/eleventy-img] Reading %o", input.file);
+    return fs.readFileSync(input.file);
   }
 };

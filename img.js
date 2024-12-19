@@ -4,6 +4,7 @@ const DeferCounter = require("./src/defer-counter.js");
 const BuildLogger = require("./src/build-logger.js");
 const Util = require("./src/util.js");
 const Image = require("./src/image.js");
+const DirectoryManager = require("./src/directory-manager.js");
 
 const debug = require("debug")("Eleventy:Image");
 
@@ -13,6 +14,7 @@ const { memCache, diskCache } = require("./src/caches.js");
 
 let deferCounter = new DeferCounter();
 let buildLogger = new BuildLogger();
+let directoryManager = new DirectoryManager();
 
 /* Queue */
 let processingQueue = new PQueue({
@@ -79,6 +81,7 @@ function createImage(src, opts = {}) {
 
   img.setQueue(processingQueue);
   img.setBuildLogger(buildLogger);
+  img.setDirectoryManager(directoryManager);
 
   setupLogger(eleventyConfig, opts);
 

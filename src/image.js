@@ -6,9 +6,6 @@ const sharp = require("sharp");
 const getImageSize = require("image-size");
 const brotliSize = require("brotli-size");
 const debugUtil = require("debug");
-const debug = debugUtil("Eleventy:Image");
-const debugAssets = debugUtil("Eleventy:Assets");
-
 const { Fetch } = require("@11ty/eleventy-fetch");
 
 const Util = require("./util.js");
@@ -16,6 +13,9 @@ const ImagePath = require("./image-path.js");
 
 const GLOBAL_OPTIONS = require("./global-options.js").defaults;
 const { existsCache, memCache, diskCache } = require("./caches.js");
+
+const debug = debugUtil("Eleventy:Image");
+const debugAssets = debugUtil("Eleventy:Assets");
 
 const MIME_TYPES = {
   "jpeg": "image/jpeg",
@@ -39,6 +39,7 @@ class Image {
   #queuePromise;
   #buildLogger;
   #computedHash;
+  #directoryManager;
 
   constructor(src, options = {}) {
     if(!src) {
@@ -80,6 +81,18 @@ class Image {
 
   setBuildLogger(buildLogger) {
     this.#buildLogger = buildLogger;
+  }
+
+  setDirectoryManager(manager) {
+    this.#directoryManager = manager;
+  }
+
+  get directoryManager() {
+    if(!this.#directoryManager) {
+      throw new Error("Missing #directoryManager");
+    }
+
+    return this.#directoryManager;
   }
 
   get buildLogger() {
@@ -124,9 +137,7 @@ class Image {
       if(typeof src !== "string" && Buffer.isBuffer(src)) {
         this.#contents[src] = src;
       } else {
-        // TODO @zachleat make this aggressively async.
         // TODO @zachleat add a smarter cache here (not too aggressive! must handle input file changes)
-        // debug("Reading from file system: %o", src);
         debugAssets("[11ty/eleventy-img] Reading %o", src);
         this.#contents[src] = fs.readFileSync(src);
       }
@@ -546,9 +557,7 @@ class Image {
         }
 
         if(!this.options.dryRun) {
-          await fsp.mkdir(this.options.outputDir, {
-            recursive: true
-          });
+          this.directoryManager.create(this.options.outputDir);
         }
 
         // format hooks are only used for SVG out of the box
@@ -563,13 +572,14 @@ class Image {
 
             if(this.options.dryRun) {
               stat.buffer = Buffer.from(hookResult);
+
               outputFilePromises.push(Promise.resolve(stat));
             } else {
-              outputFilePromises.push(
-                fsp.mkdir(path.dirname(stat.outputPath), { recursive: true })
-                  .then(() => fsp.writeFile(stat.outputPath, hookResult))
-                  .then(() => stat)
-              );
+              this.directoryManager.createFromFile(stat.outputPath);
+
+              debugAssets("[11ty/eleventy-img] Writing %o", stat.outputPath);
+
+              outputFilePromises.push(fsp.writeFile(stat.outputPath, hookResult).then(() => stat));
             }
           }
         } else { // not a format hook
@@ -585,10 +595,13 @@ class Image {
           }
 
           if(!this.options.dryRun && stat.outputPath) {
+            debugAssets("[11ty/eleventy-img] Writing %o", stat.outputPath);
+
             // Should never write when dryRun is true
+            this.directoryManager.createFromFile(stat.outputPath);
+
             outputFilePromises.push(
-              fsp.mkdir(path.dirname(stat.outputPath), { recursive: true })
-                .then(() => sharpInstance.toFile(stat.outputPath))
+              sharpInstance.toFile(stat.outputPath)
                 .then(info => {
                   stat.size = info.size;
                   return stat;
@@ -607,7 +620,6 @@ class Image {
           if(this.options.dryRun) {
             debug( "Generated %o", stat.url );
           } else {
-            debugAssets("[11ty/eleventy-img] Writing %o", stat.outputPath);
             debug( "Wrote %o", stat.outputPath );
           }
         }
