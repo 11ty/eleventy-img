@@ -1,5 +1,6 @@
 const path = require("node:path");
 const fs = require("node:fs");
+const os = require("node:os");
 const { URL } = require("node:url");
 
 const test = require("ava");
@@ -534,7 +535,6 @@ test("Keep a cache, don’t reuse with if the image changes, check promise equal
     outputDir: "./test/img/",
   });
 
-  fs.unlinkSync("./test/generated-modify-bio.jpg");
   fs.copyFileSync("./test/modify-bio-grayscale.jpg", "./test/generated-modify-bio.jpg");
 
   let promise2 = eleventyImage("./test/generated-modify-bio.jpg", {
@@ -545,18 +545,22 @@ test("Keep a cache, don’t reuse with if the image changes, check promise equal
 });
 
 test("Keep a cache, don’t reuse with if the image changes, check output", async t => {
-  fs.copyFileSync("./test/modify2-bio-original.jpg", "./test/generated-modify2-bio.jpg");
+  let outputPathTemp = path.join(os.tmpdir(), "generated-modify2-bio.jpg");
 
-  let stats1 = await eleventyImage("./test/generated-modify2-bio.jpg", {
+  fs.copyFileSync("./test/modify2-bio-original.jpg", outputPathTemp);
+
+  let stats1 = await eleventyImage(outputPathTemp, {
     outputDir: "./test/img/",
   });
 
-  fs.unlinkSync("./test/generated-modify2-bio.jpg");
-  fs.copyFileSync("./test/modify2-bio-grayscale.jpg", "./test/generated-modify2-bio.jpg");
+  fs.unlinkSync(outputPathTemp);
+  fs.copyFileSync("./test/modify2-bio-grayscale.jpg", outputPathTemp);
 
-  let stats2 = await eleventyImage("./test/generated-modify2-bio.jpg", {
+  let stats2 = await eleventyImage(outputPathTemp, {
     outputDir: "./test/img/",
   });
+
+  fs.unlinkSync(outputPathTemp);
 
   t.notDeepEqual(stats1, stats2);
 
