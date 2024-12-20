@@ -1,7 +1,6 @@
 const path = require("node:path");
 const fs = require("node:fs");
 const { URL } = require("node:url");
-const copy = require("@11ty/recursive-copy");
 
 const test = require("ava");
 const sharp = require("sharp");
@@ -528,20 +527,15 @@ test("Keep a cache, don’t reuse with same file names and different options", a
   t.is(stats2.jpeg.length, 1);
 });
 
-async function copyFile(src, dest) {
-  return copy(src, dest, {
-    overwrite: true,
-  });
-}
-
 test("Keep a cache, don’t reuse with if the image changes, check promise equality", async t => {
-  await copyFile("./test/modify-bio-original.jpg", "./test/generated-modify-bio.jpg");
+  fs.copyFileSync("./test/modify-bio-original.jpg", "./test/generated-modify-bio.jpg");
 
   let promise1 = eleventyImage("./test/generated-modify-bio.jpg", {
     outputDir: "./test/img/",
   });
 
-  await copyFile("./test/modify-bio-grayscale.jpg", "./test/generated-modify-bio.jpg");
+  fs.unlinkSync("./test/generated-modify-bio.jpg");
+  fs.copyFileSync("./test/modify-bio-grayscale.jpg", "./test/generated-modify-bio.jpg");
 
   let promise2 = eleventyImage("./test/generated-modify-bio.jpg", {
     outputDir: "./test/img/",
@@ -551,13 +545,14 @@ test("Keep a cache, don’t reuse with if the image changes, check promise equal
 });
 
 test("Keep a cache, don’t reuse with if the image changes, check output", async t => {
-  await copyFile("./test/modify2-bio-original.jpg", "./test/generated-modify2-bio.jpg");
+  fs.copyFileSync("./test/modify2-bio-original.jpg", "./test/generated-modify2-bio.jpg");
 
   let stats1 = await eleventyImage("./test/generated-modify2-bio.jpg", {
     outputDir: "./test/img/",
   });
 
-  await copyFile("./test/modify2-bio-grayscale.jpg", "./test/generated-modify2-bio.jpg");
+  fs.unlinkSync("./test/generated-modify-bio.jpg");
+  fs.copyFileSync("./test/modify2-bio-grayscale.jpg", "./test/generated-modify2-bio.jpg");
 
   let stats2 = await eleventyImage("./test/generated-modify2-bio.jpg", {
     outputDir: "./test/img/",
