@@ -551,7 +551,7 @@ test("Keep a cache, don’t reuse with if the image changes, check output", asyn
     outputDir: "./test/img/",
   });
 
-  fs.unlinkSync("./test/generated-modify-bio.jpg");
+  fs.unlinkSync("./test/generated-modify2-bio.jpg");
   fs.copyFileSync("./test/modify2-bio-grayscale.jpg", "./test/generated-modify2-bio.jpg");
 
   let stats2 = await eleventyImage("./test/generated-modify2-bio.jpg", {
