@@ -49,6 +49,7 @@
   "devDependencies": {
     "@11ty/eleventy": "^3.0.0",
     "@11ty/eleventy-plugin-webc": "^0.11.2",
+    "@11ty/recursive-copy": "^3.0.1",
     "@eslint/eslintrc": "^3.2.0",
     "@eslint/js": "^9.17.0",
     "ava": "^6.2.0",
