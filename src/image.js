@@ -34,7 +34,8 @@ const FORMAT_ALIASES = {
 
 
 class Image {
-  #contents;
+  #input;
+  #contents = {};
   #queue;
   #queuePromise;
   #buildLogger;
@@ -128,21 +129,18 @@ class Image {
     }
 
     let src = overrideLocalFilePath || this.src;
-    if(!this.#contents) {
-      this.#contents = {};
-    }
 
     if(!this.#contents[src]) {
       // perf: check to make sure it’s not a string first
       if(typeof src !== "string" && Buffer.isBuffer(src)) {
         this.#contents[src] = src;
       } else {
-        // TODO @zachleat add a smarter cache here (not too aggressive! must handle input file changes)
         debugAssets("[11ty/eleventy-img] Reading %o", src);
         this.#contents[src] = fs.readFileSync(src);
       }
     }
 
+    // Always <Buffer>
     return this.#contents[src];
   }
 
@@ -291,19 +289,19 @@ class Image {
     return {};
   }
 
-  // Returns promise
-  getInput() {
+  async getInput() {
     // internal cache
-    if(!this.inputPromise) {
+    if(!this.#input) {
       if(this.isRemoteUrl) {
         // fetch remote image Buffer
-        this.inputPromise = this.assetCache.queue();
+        this.#input = this.assetCache.queue();
       } else {
-        this.inputPromise = Promise.resolve(this.src);
+        // not actually a promise, this is sync
+        this.#input = this.getFileContents();
       }
     }
 
-    return this.inputPromise;
+    return this.#input;
   }
 
   getHash() {
@@ -482,16 +480,22 @@ class Image {
   }
 
   getOutputSize(contents, filePath) {
-    if(this.options.svgCompressionSize === "br") {
-      return brotliSize.sync(contents);
+    if(contents) {
+      if(this.options.svgCompressionSize === "br") {
+        return brotliSize.sync(contents);
+      }
+
+      if("length" in contents) {
+        return contents.length;
+      }
     }
 
-    if(filePath) {
-      return fs.statSync(filePath).size;
+    // fallback to looking on local file system
+    if(!filePath) {
+      throw new Error("`filePath` expected.");
     }
 
-    // when filePath does not exist, this contents is a string from SVG
-    return contents.length;
+    return fs.statSync(filePath).size;
   }
 
   isOutputCached(targetFile, sourceInput) {
@@ -529,17 +533,17 @@ class Image {
       for(let stat of fullStats[outputFormat]) {
         if(this.isOutputCached(stat.outputPath, input)) {
           // Cached images already exist in output
-          let contents;
+          let outputFileContents;
+
+          if(this.options.dryRun || outputFormat === "svg" && this.options.svgCompressionSize === "br") {
+            outputFileContents = this.getFileContents(stat.outputPath);
+          }
+
           if(this.options.dryRun) {
-            contents = this.getFileContents(stat.outputPath);
-            stat.buffer = contents;
+            stat.buffer = outputFileContents;
           }
 
-          if(outputFormat === "svg" && this.options.svgCompressionSize === "br" && !contents) {
-            contents = this.getFileContents(stat.outputPath);
-          }
-
-          stat.size = this.getOutputSize(contents, stat.outputPath);
+          stat.size = this.getOutputSize(outputFileContents, stat.outputPath);
 
           outputFilePromises.push(Promise.resolve(stat));
           continue;
@@ -562,10 +566,6 @@ class Image {
           }
 
           sharpInstance.resize(resizeOptions);
-        }
-
-        if(!this.options.dryRun) {
-          this.directoryManager.create(this.options.outputDir);
         }
 
         // Format hooks take priority over Sharp processing.
@@ -600,10 +600,10 @@ class Image {
           }
 
           if(!this.options.dryRun && stat.outputPath) {
-            debugAssets("[11ty/eleventy-img] Writing %o", stat.outputPath);
-
             // Should never write when dryRun is true
             this.directoryManager.createFromFile(stat.outputPath);
+
+            debugAssets("[11ty/eleventy-img] Writing %o", stat.outputPath);
 
             outputFilePromises.push(
               sharpInstance.toFile(stat.outputPath)
