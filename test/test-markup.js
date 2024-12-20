@@ -190,14 +190,29 @@ test("svgShortCircuit and generateHTML: Issue #48", async t => {
     dryRun: true,
   });
   t.is(stats.svg.length, 1);
-  t.is(stats.webp.length, 0);
-  t.is(stats.png.length, 0);
+  t.is(stats.webp, undefined);
+  t.is(stats.png, undefined);
   t.is(stats.svg[0].url, "/img/wGeeKEWkof-900.svg");
 
   let html = eleventyImage.generateHTML(stats, {
     alt: "Tiger",
   });
   t.is(html, `<img alt="Tiger" src="/img/wGeeKEWkof-900.svg" width="900" height="900">`);
+});
+
+test("svgShortCircuit (on a raster source) #242 generateHTML function", async t => {
+  let stats = await eleventyImage("./test/bio-2017.jpg", {
+    widths: ["auto"],
+    formats: ["svg", "png"],
+    svgShortCircuit: true,
+    useCache: false,
+    dryRun: true,
+  });
+
+  let html = eleventyImage.generateHTML(stats, {
+    alt: "Zach’s ugly mug",
+  });
+  t.is(html, `<img alt="Zach’s ugly mug" src="/img/KkPMmHd3hP-1280.png" width="1280" height="853">`);
 });
 
 test("Filter out empty format arrays", async t => {

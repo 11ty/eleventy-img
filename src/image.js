@@ -242,13 +242,8 @@ class Image {
     return [];
   }
 
-  _transformRawFiles(files = [], formats = []) {
+  _transformRawFiles(files = []) {
     let byType = {};
-    for(let format of formats) {
-      if(format && format !== 'auto') {
-        byType[format] = [];
-      }
-    }
     for(let file of files) {
       if(!byType[file.format]) {
         byType[file.format] = [];
@@ -442,18 +437,27 @@ class Image {
     return orientation >= 5 && orientation <= 8;
   }
 
-  isAnimated(metadata, options) {
-    // input has multiple pages: https://sharp.pixelplumbing.com/api-input#metadata
+  isAnimated(metadata) {
     // sharp options have animated image support enabled
-    return metadata?.pages > 1 && options?.sharpOptions?.animated;
+    if(!this.options?.sharpOptions?.animated) {
+      return false;
+    }
+
+    // input has multiple pages: https://sharp.pixelplumbing.com/api-input#metadata
+    return metadata?.pages > 1;
+  }
+
+  getEntryFormat(metadata) {
+    return metadata.format || this.options.overrideInputFormat;
   }
 
   // metadata so far: width, height, format
   // src is used to calculate the output file names
   getFullStats(metadata) {
     let results = [];
-    let isImageAnimated = this.isAnimated(metadata, this.options);
-    let outputFormats = Image.getFormatsArray(this.options.formats, metadata.format || this.options.overrideInputFormat, this.options.svgShortCircuit, isImageAnimated);
+    let isImageAnimated = this.isAnimated(metadata);
+    let entryFormat = this.getEntryFormat(metadata);
+    let outputFormats = Image.getFormatsArray(this.options.formats, entryFormat, this.options.svgShortCircuit, isImageAnimated);
 
     if (this.needsRotation(metadata.orientation)) {
       [metadata.height, metadata.width] = [metadata.width, metadata.height];
@@ -474,7 +478,7 @@ class Image {
       }
 
       if(outputFormat === "svg") {
-        if((metadata.format || this.options.overrideInputFormat) === "svg") {
+        if(entryFormat === "svg") {
           let svgStats = this.getStat("svg", metadata.width, metadata.height);
 
           // SVG metadata.size is only available with Buffer input (remote urls)
@@ -505,7 +509,7 @@ class Image {
       }
     }
 
-    return this._transformRawFiles(results, outputFormats);
+    return this._transformRawFiles(results);
   }
 
   getOutputSize(contents, filePath) {
@@ -669,7 +673,7 @@ class Image {
       }
     }
 
-    return Promise.all(outputFilePromises).then(files => this._transformRawFiles(files, Object.keys(fullStats)));
+    return Promise.all(outputFilePromises).then(files => this._transformRawFiles(files));
   }
 
   async getStatsOnly() {

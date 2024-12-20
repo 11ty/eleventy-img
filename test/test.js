@@ -383,8 +383,7 @@ test("Ask for svg output from a raster image (skipped)", async t => {
     outputDir: "./test/img/"
   });
 
-  t.notDeepEqual(stats, {});
-  t.deepEqual(stats.svg, []);
+  t.deepEqual(stats, {});
 });
 
 test("Upscale an SVG, Issue #32", async t => {
@@ -422,10 +421,23 @@ test("svgShortCircuit", async t => {
     svgShortCircuit: true,
   });
 
+  t.deepEqual(Object.keys(stats), ["svg"]);
   t.is(stats.svg.length, 1);
   t.is(stats.svg[0].size, 1936);
-  t.is(stats.png.length, 0);
-  t.is(stats.webp.length, 0);
+});
+
+test("svgShortCircuit (on a raster source) #242", async t => {
+  let stats = await eleventyImage("./test/bio-2017.jpg", {
+    widths: ["auto"],
+    formats: ["svg", "png"],
+    svgShortCircuit: true,
+    useCache: false,
+    dryRun: true,
+  });
+
+  t.deepEqual(Object.keys(stats), ["png"]);
+  t.is(stats.png.length, 1);
+  t.is(stats.png[0].size, 2511518);
 });
 
 
