@@ -544,7 +544,7 @@ test("Keep a cache, don’t reuse with if the image changes, check promise equal
   t.not(promise1, promise2);
 });
 
-let method = os.platform() === "win32" && process.env.GITHUB_ACTIONS ? test.failing : test;
+let method = os.platform() === "win32" && process.env.GITHUB_ACTIONS ? test.skip : test;
 method("Keep a cache, don’t reuse with if the image changes, check output", async t => {
   let outputPathTemp = "./test/generated-modify2-bio.jpg";
 
