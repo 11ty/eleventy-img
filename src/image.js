@@ -32,6 +32,11 @@ const FORMAT_ALIASES = {
   "svg+xml": "svg",
 };
 
+const ANIMATED_TYPES = [
+  "webp",
+  "gif",
+];
+
 
 class Image {
   #input;
@@ -185,7 +190,7 @@ class Image {
     return valid.sort((a, b) => a - b);
   }
 
-  static getFormatsArray(formats, autoFormat, svgShortCircuit) {
+  static getFormatsArray(formats, autoFormat, svgShortCircuit, isAnimated) {
     if(formats && formats.length) {
       if(typeof formats === "string") {
         formats = formats.split(",");
@@ -214,6 +219,17 @@ class Image {
           }
           return 0;
         });
+      }
+
+      if(isAnimated) {
+        let validAnimatedFormats = formats.filter(f => ANIMATED_TYPES.includes(f));
+        // override formats if a valid animated format is found, otherwise leave as-is
+        if(validAnimatedFormats.length > 0) {
+          debug("Filtering non-animated formats from output: from %o to %o", formats, validAnimatedFormats);
+          formats = validAnimatedFormats;
+        } else {
+          debug("No animated output formats found for animated image, using static image instead.");
+        }
       }
 
       // Remove duplicates (e.g., if null happens to coincide with an explicit format
@@ -426,11 +442,18 @@ class Image {
     return orientation >= 5 && orientation <= 8;
   }
 
+  isAnimated(metadata, options) {
+    // input has multiple pages: https://sharp.pixelplumbing.com/api-input#metadata
+    // sharp options have animated image support enabled
+    return metadata?.pages > 1 && options?.sharpOptions?.animated;
+  }
+
   // metadata so far: width, height, format
   // src is used to calculate the output file names
   getFullStats(metadata) {
     let results = [];
-    let outputFormats = Image.getFormatsArray(this.options.formats, metadata.format || this.options.overrideInputFormat, this.options.svgShortCircuit);
+    let isImageAnimated = this.isAnimated(metadata, this.options);
+    let outputFormats = Image.getFormatsArray(this.options.formats, metadata.format || this.options.overrideInputFormat, this.options.svgShortCircuit, isImageAnimated);
 
     if (this.needsRotation(metadata.orientation)) {
       [metadata.height, metadata.width] = [metadata.width, metadata.height];

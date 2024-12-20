@@ -1065,9 +1065,46 @@ test("Animated gif", async t => {
     sharpOptions: {
       animated: true
     },
+    useCache: false,
     outputDir: "./test/img/",
   });
 
+  t.is(stats.gif.length, 1);
+  t.is(stats.gif[0].width, 400);
+  t.is(stats.gif[0].height, 400);
+  // it’s a big boi
+  t.true( stats.gif[0].size > 1000*999 );
+});
+
+test("Animated gif format filtering (no good ones)", async t => {
+  let stats = await eleventyImage("./test/earth-animated.gif", {
+    dryRun: true,
+    formats: ["jpeg"],
+    sharpOptions: {
+      animated: true
+    },
+    useCache: false,
+  });
+
+  t.deepEqual(Object.keys(stats), ["jpeg"]);
+  t.is(stats.jpeg.length, 1);
+  t.is(stats.jpeg[0].width, 400);
+  t.is(stats.jpeg[0].height, 400);
+  // it’s a big boi
+  t.true( stats.jpeg[0].size < 1000*999, `${stats.jpeg[0].size} size is too big, should be smaller than ${1000*999}.` );
+});
+
+test("Animated gif format filtering (one valid one)", async t => {
+  let stats = await eleventyImage("./test/earth-animated.gif", {
+    dryRun: true,
+    formats: ["jpeg", "gif"],
+    sharpOptions: {
+      animated: true
+    },
+    useCache: false,
+  });
+
+  t.deepEqual(Object.keys(stats), ["gif"]);
   t.is(stats.gif.length, 1);
   t.is(stats.gif[0].width, 400);
   t.is(stats.gif[0].height, 400);

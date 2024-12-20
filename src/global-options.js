@@ -54,7 +54,7 @@ const DEFAULTS = {
   statsOnly: false,
   remoteImageMetadata: {}, // For `statsOnly` remote images, this needs to be populated with { width, height, format? }
 
-  useCache: true, // in-memory cache
+  useCache: true, // in-memory and disk cache
   dryRun: false, // Also returns a buffer instance in the return object. Doesn’t write anything to the file system
 
   hashLength: 10, // Truncates the hash to this length
