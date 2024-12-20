@@ -61,9 +61,6 @@ const DEFAULTS = {
 
   fixOrientation: false, // always rotate images to ensure correct orientation
 
-  // Removed, no longer necessary in v6.0
-  // useCacheValidityInHash: true,
-
   // When the original width is smaller than the desired output width, this is the minimum size difference
   // between the next smallest image width that will generate one extra width in the output.
   // e.g. when using `widths: [400, 800]`, the source image would need to be at least (400 * 1.25 =) 500px wide
@@ -76,7 +73,11 @@ const DEFAULTS = {
   // writes to the file system and speeding up builds!
   transformOnRequest: false,
 
-  // v5 `extensions` was removed (option to override output format with new file extension), it wasn’t being used anywhere or documented
+  // operate on Sharp instance manually.
+  transform: undefined,
+
+  // v5.0.0 Removed `extensions`, option to override output format with new file extension. It wasn’t being used anywhere or documented.
+  // v6.0.0, removed `useCacheValidityInHash: true` see https://github.com/11ty/eleventy-img/issues/146#issuecomment-2555741376
 };
 
 function getGlobalOptions(eleventyConfig, options, via) {

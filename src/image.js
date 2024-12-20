@@ -120,7 +120,13 @@ class Image {
       opts.__originalSize = fs.statSync(this.src).size;
     }
 
-    return JSON.stringify(opts);
+    return JSON.stringify(opts, function(key, value) {
+      // allows `transform` functions to be truthy for in-memory key
+      if (typeof value === "function") {
+        return "<fn>";
+      }
+      return value;
+    });
   }
 
   getFileContents(overrideLocalFilePath) {
@@ -550,6 +556,15 @@ class Image {
         }
 
         let sharpInstance = sharpImage.clone();
+        let transform = this.options.transform;
+        if(transform) {
+          if(typeof transform !== "function") {
+            throw new Error("Expected `function` type in `transform` option. Received: " + transform);
+          }
+
+          await transform(sharpInstance);
+        }
+
         // Output images do not include orientation metadata (https://github.com/11ty/eleventy-img/issues/52)
         // Use sharp.rotate to bake orientation into the image (https://github.com/lovell/sharp/blob/v0.32.6/docs/api-operation.md#rotate):
         // > If no angle is provided, it is determined from the EXIF data. Mirroring is supported and may infer the use of a flip operation.
