@@ -1234,3 +1234,25 @@ test("#184: Ensure original size is included if any widths are larger", async t 
   t.is(stats.jpeg[0].width, 900);
   t.is(stats.jpeg[1].width, 1280);
 });
+
+// https://github.com/lovell/sharp/blob/main/test/fixtures/prophoto.png
+test("Keep ICC Profiles by default #244 test image from Sharp repo", async t => {
+  let inputMetadata = await sharp("./test/issue-244-sharp.png").metadata();
+
+  let stats = await eleventyImage("./test/issue-244-sharp.png", {
+    widths: ["auto"],
+    formats: ["auto"],
+    outputDir: "./test/img/",
+    dryRun: true
+  });
+
+  // output buffer has icc profile
+  let outputMetadata = await sharp(stats.png[0].buffer).metadata();
+
+  t.true(Buffer.isBuffer(inputMetadata.icc));
+  t.true(inputMetadata.hasProfile);
+
+  t.is(stats.png[0].outputPath, path.join("test/img/KmVobkU8Sj-1.png"));
+  t.true(Buffer.isBuffer(outputMetadata.icc));
+  t.true(outputMetadata.hasProfile);
+});

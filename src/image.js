@@ -550,7 +550,7 @@ class Image {
 
   // src should be a file path to an image or a buffer
   async resize(input) {
-    let sharpImage = sharp(input, Object.assign({
+    let sharpInputImage = sharp(input, Object.assign({
       // Deprecated by sharp, use `failOn` option instead
       // https://github.com/lovell/sharp/blob/1533bf995acda779313fc178d2b9d46791349961/lib/index.d.ts#L915
       failOnError: false,
@@ -558,7 +558,8 @@ class Image {
 
     // Must find the image format from the metadata
     // File extensions lie or may not be present in the src url!
-    let metadata = await sharpImage.metadata();
+    let metadata = await sharpInputImage.metadata();
+
     let outputFilePromises = [];
 
     let fullStats = this.getFullStats(metadata);
@@ -582,7 +583,7 @@ class Image {
           continue;
         }
 
-        let sharpInstance = sharpImage.clone();
+        let sharpInstance = sharpInputImage.clone();
         let transform = this.options.transform;
         if(transform) {
           if(typeof transform !== "function") {
@@ -591,6 +592,9 @@ class Image {
 
           await transform(sharpInstance);
         }
+
+        // https://github.com/11ty/eleventy-img/issues/244
+        sharpInstance.keepIccProfile();
 
         // Output images do not include orientation metadata (https://github.com/11ty/eleventy-img/issues/52)
         // Use sharp.rotate to bake orientation into the image (https://github.com/lovell/sharp/blob/v0.32.6/docs/api-operation.md#rotate):
