@@ -93,6 +93,10 @@ function createImage(src, opts = {}) {
 };
 
 function queueImage(src, opts = {}) {
+  if(src.constructor?.name === "UserConfig") {
+    throw new Error(`Eleventy Image’s default export is not an Eleventy Plugin and cannot be used with \`eleventyConfig.addPlugin()\`. Use the \`eleventyImageTransformPlugin\` named export instead, like this: \`import { eleventyImageTransformPlugin } from '@11ty/eleventy-img';\` or this: \`const { eleventyImageTransformPlugin } = require('@11ty/eleventy-img');\``);
+  }
+
   let img = createImage(src, opts);
   return img.queue();
 }
