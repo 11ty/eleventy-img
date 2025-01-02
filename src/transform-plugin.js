@@ -10,27 +10,50 @@ const ATTRS = {
   ORIGINAL_SOURCE: "eleventy:internal_original_src",
 };
 
-function transformTag(context, node, opts) {
-  let originalSource = node.attrs?.src;
+function getSourcePath(sourceNode/*, rootTargetNode*/) {
+  // Debatable TODO: use rootTargetNode (if `picture`) to retrieve a potentially higher quality source from <source srcset>
+  return sourceNode.attrs?.src;
+}
+
+function assignAttributes(rootTargetNode, newNode) {
+  // only copy attributes if old and new tag name are the same (picture => picture, img => img)
+  if(rootTargetNode.tag !== newNode.tag) {
+    delete rootTargetNode.attrs;
+  }
+
+  if(!rootTargetNode.attrs) {
+    rootTargetNode.attrs = {};
+  }
+
+  // Copy all new attributes to target
+  if(newNode.attrs) {
+    Object.assign(rootTargetNode.attrs, newNode.attrs);
+  }
+}
+
+function transformTag(context, sourceNode, rootTargetNode, opts) {
+  let originalSource = getSourcePath(sourceNode, rootTargetNode);
+
   if(!originalSource) {
-    return node;
+    return sourceNode;
   }
 
   let { inputPath, outputPath, url } = context.page;
 
-  node.attrs.src = Util.normalizeImageSource({
+  sourceNode.attrs.src = Util.normalizeImageSource({
     input: opts.directories.input,
     inputPath,
   }, originalSource, {
     isViaHtml: true, // this reference came from HTML, so we can decode the file name
   });
-  if(node.attrs.src !== originalSource) {
-    node.attrs[ATTRS.ORIGINAL_SOURCE] = originalSource;
+
+  if(sourceNode.attrs.src !== originalSource) {
+    sourceNode.attrs[ATTRS.ORIGINAL_SOURCE] = originalSource;
   }
 
   let instanceOptions = {};
 
-  let outputDirectory = getOutputDirectory(node);
+  let outputDirectory = getOutputDirectory(sourceNode);
   if(outputDirectory) {
     if(path.isAbsolute(outputDirectory)) {
       instanceOptions = {
@@ -60,29 +83,32 @@ function transformTag(context, node, opts) {
   }
 
   // returns promise
-  return imageAttributesToPosthtmlNode(node.attrs, instanceOptions, opts).then(obj => {
-    // TODO how to assign attributes to `<picture>` only
-    // Wipe out attrs just in case this is <picture>
-    node.attrs = {};
+  return imageAttributesToPosthtmlNode(sourceNode.attrs, instanceOptions, opts).then(newNode => {
+    // node.tag
+    // node.attrs
+    // node.content
 
-    Object.assign(node, obj);
+    assignAttributes(rootTargetNode, newNode);
+
+    rootTargetNode.tag = newNode.tag;
+    rootTargetNode.content = newNode.content;
   }, (error) => {
-    if(isOptional(node) || !opts.failOnError) {
-      if(isOptional(node, "keep")) {
+    if(isOptional(sourceNode) || !opts.failOnError) {
+      if(isOptional(sourceNode, "keep")) {
         // replace with the original source value, no image transformation is taking place
-        if(node.attrs[ATTRS.ORIGINAL_SOURCE]) {
-          node.attrs.src = node.attrs[ATTRS.ORIGINAL_SOURCE];
+        if(sourceNode.attrs[ATTRS.ORIGINAL_SOURCE]) {
+          sourceNode.attrs.src = sourceNode.attrs[ATTRS.ORIGINAL_SOURCE];
         }
         // leave as-is, likely 404 when a user visits the page
-      } else if(isOptional(node, "placeholder")) {
+      } else if(isOptional(sourceNode, "placeholder")) {
         // transparent png
-        node.attrs.src = PLACEHOLDER_DATA_URI;
-      } else if(isOptional(node)) {
-        delete node.attrs.src;
+        sourceNode.attrs.src = PLACEHOLDER_DATA_URI;
+      } else if(isOptional(sourceNode)) {
+        delete sourceNode.attrs.src;
       }
 
       // optional or don’t fail on error
-      cleanTag(node);
+      cleanTag(sourceNode);
 
       return Promise.resolve();
     }
@@ -113,14 +139,30 @@ function eleventyImageTransformPlugin(eleventyConfig, options = {}) {
   function posthtmlPlugin(context) {
     return async (tree) => {
       let promises = [];
-      tree.match({ tag: 'img' }, (node) => {
-        if(isIgnored(node) || node?.attrs?.src?.startsWith("data:")) {
-          cleanTag(node);
+      let match = tree.match;
+
+      tree.match({ tag: 'picture' }, pictureNode => {
+        match.call(pictureNode, { tag: 'img' }, imgNode => {
+          imgNode._insideOfPicture = true;
+
+          promises.push(transformTag(context, imgNode, pictureNode, opts));
+
+          return imgNode;
+        });
+
+        return pictureNode;
+      });
+
+      tree.match({ tag: 'img' }, (imgNode) => {
+        if(imgNode._insideOfPicture || isIgnored(imgNode) || imgNode?.attrs?.src?.startsWith("data:")) {
+          cleanTag(imgNode);
+
+          delete imgNode._insideOfPicture;
         } else {
-          promises.push(transformTag(context, node, opts));
+          promises.push(transformTag(context, imgNode, imgNode, opts));
         }
 
-        return node;
+        return imgNode;
       });
 
       await Promise.all(promises);

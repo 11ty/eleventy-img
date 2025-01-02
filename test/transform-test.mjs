@@ -89,7 +89,7 @@ test("Using the transform plugin with transform on request during dev mode (with
   });
 
   let results = await elev.toJSON();
-  t.is(normalizeEscapedPaths(results[0].content), `<img loading="lazy" src="/.11ty/image/?src=test%2Fbio-2017.jpg&width=1280&format=jpeg&via=transform" alt="My ugly mug" width="1280" height="853">`);
+  t.is(normalizeEscapedPaths(results[0].content), `<img src="/.11ty/image/?src=test%2Fbio-2017.jpg&width=1280&format=jpeg&via=transform" alt="My ugly mug" loading="lazy" width="1280" height="853">`);
 });
 
 
@@ -114,7 +114,7 @@ test("Using the transform plugin with transform on request during dev mode but d
   });
 
   let results = await elev.toJSON();
-  t.is(results[0].content, `<img loading="lazy" src="https://example.com/" alt="My ugly mug" width="1280" height="853">`);
+  t.is(results[0].content, `<img src="https://example.com/" alt="My ugly mug" loading="lazy" width="1280" height="853">`);
 });
 
 test("Throw a good error with a bad remote image request", async t => {
@@ -331,11 +331,95 @@ test("Using the transform plugin, <img src=video.mp4> #257", async t => {
       eleventyConfig.addTemplate("virtual.html", `<img src="car.mp4" alt="My ugly mug" eleventy:optional="keep">`);
 
       eleventyConfig.addPlugin(eleventyImageTransformPlugin, {
-        dryRun: true // don’t write image files!
+        dryRun: true, // don’t write image files!
       });
     }
   });
 
   let results = await elev.toJSON();
   t.is(results[0].content, `<img src="car.mp4" alt="My ugly mug">`);
+});
+
+test("Using the transform plugin, <picture> to <picture> #214", async t => {
+  let elev = new Eleventy( "test", "test/_site", {
+    config: eleventyConfig => {
+      eleventyConfig.addTemplate("virtual.html", `<picture class="outer"><source type="image/webp" srcset="./bio-2017.webp 1280w"><img src="./bio-2017.jpg" alt="My ugly mug" class="inner"></picture>`);
+
+      eleventyConfig.addPlugin(eleventyImageTransformPlugin, {
+        dryRun: true, // don’t write image files!
+      });
+    }
+  });
+  elev.disableLogger();
+
+  let results = await elev.toJSON();
+  t.is(results[0].content, `<picture class="outer"><source type="image/webp" srcset="/virtual/KkPMmHd3hP-1280.webp 1280w"><img src="/virtual/KkPMmHd3hP-1280.jpeg" alt="My ugly mug" class="inner" width="1280" height="853"></picture>`);
+});
+
+test("Using the transform plugin, <picture> to <img> #214", async t => {
+  let elev = new Eleventy( "test", "test/_site", {
+    config: eleventyConfig => {
+      // Uses only the <img src> right now, see the debatable TODO in transform-plugin.js->getSourcePath
+      eleventyConfig.addTemplate("virtual.html", `<picture class="outer"><source type="image/webp" srcset="./bio-2017.webp 1280w"><img src="./bio-2017.jpg" alt="My ugly mug" class="inner"></picture>`);
+
+      eleventyConfig.addPlugin(eleventyImageTransformPlugin, {
+        formats: ["auto"],
+        dryRun: true, // don’t write image files!
+      });
+    }
+  });
+  elev.disableLogger();
+
+  let results = await elev.toJSON();
+  t.is(results[0].content, `<img src="/virtual/KkPMmHd3hP-1280.jpeg" alt="My ugly mug" class="inner" width="1280" height="853">`);
+});
+
+test("Using the transform plugin, <img> to <picture> #214", async t => {
+  let elev = new Eleventy( "test", "test/_site", {
+    config: eleventyConfig => {
+      eleventyConfig.addTemplate("virtual.html", `<img src="./bio-2017.jpg" alt="My ugly mug" class="inner" eleventy:pictureattr:class="outer">`);
+
+      eleventyConfig.addPlugin(eleventyImageTransformPlugin, {
+        dryRun: true, // don’t write image files!
+      });
+    }
+  });
+  elev.disableLogger();
+
+  let results = await elev.toJSON();
+  t.is(results[0].content, `<picture class="outer"><source type="image/webp" srcset="/virtual/KkPMmHd3hP-1280.webp 1280w"><img src="/virtual/KkPMmHd3hP-1280.jpeg" alt="My ugly mug" class="inner" width="1280" height="853"></picture>`);
+});
+
+test("Using the transform plugin, <img> to <img>, keeps slot attribute #241", async t => {
+  let elev = new Eleventy( "test", "test/_site", {
+    config: eleventyConfig => {
+      eleventyConfig.addTemplate("virtual.html", `<img src="./bio-2017.jpg" alt="My ugly mug" slot="image-1">`);
+
+      eleventyConfig.addPlugin(eleventyImageTransformPlugin, {
+        formats: ["auto"],
+        dryRun: true, // don’t write image files!
+      });
+    }
+  });
+  elev.disableLogger();
+
+  let results = await elev.toJSON();
+  t.is(results[0].content, `<img src="/virtual/KkPMmHd3hP-1280.jpeg" alt="My ugly mug" slot="image-1" width="1280" height="853">`);
+});
+
+test("Using the transform plugin, <img> to <picture>, keeps slot attribute #241", async t => {
+  let elev = new Eleventy( "test", "test/_site", {
+    config: eleventyConfig => {
+      eleventyConfig.addTemplate("virtual.html", `<img src="./bio-2017.jpg" alt="My ugly mug" slot="image-1">`);
+
+      eleventyConfig.addPlugin(eleventyImageTransformPlugin, {
+        dryRun: true, // don’t write image files!
+      });
+    }
+  });
+  elev.disableLogger();
+
+  let results = await elev.toJSON();
+  // TODO how to add independent class to <picture>
+  t.is(results[0].content, `<picture><source type="image/webp" srcset="/virtual/KkPMmHd3hP-1280.webp 1280w"><img src="/virtual/KkPMmHd3hP-1280.jpeg" alt="My ugly mug" slot="image-1" width="1280" height="853"></picture>`);
 });

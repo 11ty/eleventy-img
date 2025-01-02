@@ -52,22 +52,24 @@ test("Image object (defaults)", async t => {
   t.deepEqual(generateObject(results, {
     alt: ""
   }), {
-    "picture": [
-      {
-        "source": {
-          type: "image/webp",
-          srcset: "/img/KkPMmHd3hP-1280.webp 1280w",
+    "picture": {
+      "@children": [
+        {
+          "source": {
+            type: "image/webp",
+            srcset: "/img/KkPMmHd3hP-1280.webp 1280w",
+          }
+        },
+        {
+          "img": {
+            alt: "",
+            src: "/img/KkPMmHd3hP-1280.jpeg",
+            width: 1280,
+            height: 853,
+          }
         }
-      },
-      {
-        "img": {
-          alt: "",
-          src: "/img/KkPMmHd3hP-1280.jpeg",
-          width: 1280,
-          height: 853,
-        }
-      }
-    ]
+      ]
+    }
   });
 });
 

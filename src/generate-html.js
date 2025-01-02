@@ -1,11 +1,8 @@
 const { escapeAttribute } = require("entities");
 
-const DEFAULT_ATTRIBUTES = {
-  // loading: "lazy",
-  // decoding: "async",
-};
-
 const LOWSRC_FORMAT_PREFERENCE = ["jpeg", "png", "gif", "svg", "webp", "avif"];
+
+const CHILDREN_OBJECT_KEY = "@children";
 
 function generateSrcset(metadataFormatEntry) {
   if(!Array.isArray(metadataFormatEntry)) {
@@ -19,19 +16,23 @@ function generateSrcset(metadataFormatEntry) {
   Returns:
   e.g. { img: { alt: "", src: "" }
   e.g. { img: { alt: "", src: "", srcset: "", sizes: "" } }
-  e.g. { picture: [
-    { source: { srcset: "", sizes: "" } },
-    { source: { srcset: "", sizes: "" } },
-    { img: { alt: "", src: "", srcset: "", sizes: "" } },
-  ]}
+  e.g. { picture: {
+    class: "",
+    @children: [
+      { source: { srcset: "", sizes: "" } },
+      { source: { srcset: "", sizes: "" } },
+      { img: { alt: "", src: "", srcset: "", sizes: "" } },
+    ]
+  }
  */
-function generateObject(metadata, userDefinedAttributes = {}) {
-  let attributes = Object.assign({}, DEFAULT_ATTRIBUTES, userDefinedAttributes);
+function generateObject(metadata, userDefinedImgAttributes = {}, userDefinedPictureAttributes = {}) {
+  let imgAttributes = Object.assign({}, userDefinedImgAttributes);
+  let pictureAttributes = Object.assign({}, userDefinedPictureAttributes);
 
   // The attributes.src gets overwritten later on. Save it here to make the error outputs less cryptic.
-  let originalSrc = attributes.src;
+  let originalSrc = imgAttributes.src;
 
-  if(attributes.alt === undefined) {
+  if(imgAttributes.alt === undefined) {
     // You bet we throw an error on missing alt (alt="" works okay)
     throw new Error(`Missing \`alt\` attribute on eleventy-img shortcode from: ${originalSrc}`);
   }
@@ -68,37 +69,37 @@ function generateObject(metadata, userDefinedAttributes = {}) {
     throw new Error(`Could not find the lowest <img> source for responsive markup for ${originalSrc}`);
   }
 
-  attributes.src = lowsrc[0].url;
-  attributes.width = lowsrc[lowsrc.length - 1].width;
-  attributes.height = lowsrc[lowsrc.length - 1].height;
+  imgAttributes.src = lowsrc[0].url;
+  imgAttributes.width = lowsrc[lowsrc.length - 1].width;
+  imgAttributes.height = lowsrc[lowsrc.length - 1].height;
 
-  let attributesWithoutSizes = Object.assign({}, attributes);
-  delete attributesWithoutSizes.sizes;
+  let imgAttributesWithoutSizes = Object.assign({}, imgAttributes);
+  delete imgAttributesWithoutSizes.sizes;
 
   // <img>: one format and one size
   if(entryCount === 1) {
     return {
-      img: attributesWithoutSizes
+      img: imgAttributesWithoutSizes
     };
   }
 
   // Per the HTML specification sizes is required srcset is using the `w` unit
   // https://html.spec.whatwg.org/dev/semantics.html#the-link-element:attr-link-imagesrcset-4
   // Using the default "100vw" is okay
-  let missingSizesErrorMessage = `Missing \`sizes\` attribute on eleventy-img shortcode from: ${originalSrc || attributes.src}`;
+  let missingSizesErrorMessage = `Missing \`sizes\` attribute on eleventy-img shortcode from: ${originalSrc || imgAttributes.src}. This is only required when using multiple output widths for an image.`;
 
   // <img srcset>: one format and multiple sizes
   if(formats.length === 1) { // implied entryCount > 1
-    if(entryCount > 1 && !attributes.sizes) {
+    if(entryCount > 1 && !imgAttributes.sizes) {
       throw new Error(missingSizesErrorMessage);
     }
 
-    let imgAttributes = Object.assign({}, attributesWithoutSizes);
-    imgAttributes.srcset = generateSrcset(lowsrc);
-    imgAttributes.sizes = attributes.sizes;
+    let imgAttributesCopy = Object.assign({}, imgAttributesWithoutSizes);
+    imgAttributesCopy.srcset = generateSrcset(lowsrc);
+    imgAttributesCopy.sizes = imgAttributes.sizes;
 
     return {
-      img: imgAttributes
+      img: imgAttributesCopy
     };
   }
 
@@ -106,7 +107,7 @@ function generateObject(metadata, userDefinedAttributes = {}) {
   values.filter(imageFormat => {
     return imageFormat.length > 0 && (lowsrcFormat !== imageFormat[0].format);
   }).forEach(imageFormat => {
-    if(imageFormat.length > 1 && !attributes.sizes) {
+    if(imageFormat.length > 1 && !imgAttributes.sizes) {
       throw new Error(missingSizesErrorMessage);
     }
 
@@ -115,8 +116,8 @@ function generateObject(metadata, userDefinedAttributes = {}) {
       srcset: generateSrcset(imageFormat),
     };
 
-    if(attributes.sizes) {
-      sourceAttrs.sizes = attributes.sizes;
+    if(imgAttributes.sizes) {
+      sourceAttrs.sizes = imgAttributes.sizes;
     }
 
     children.push({
@@ -130,37 +131,45 @@ function generateObject(metadata, userDefinedAttributes = {}) {
   If we have more than one size, we can use srcset and sizes.
   If the browser doesn't support those attributes, it should ignore them.
    */
-  let imgAttributes = Object.assign({}, attributesWithoutSizes);
+  let imgAttributesForPicture = Object.assign({}, imgAttributesWithoutSizes);
   if (lowsrc.length > 1) {
-    if (!attributes.sizes) {
+    if (!imgAttributes.sizes) {
       // Per the HTML specification sizes is required srcset is using the `w` unit
       // https://html.spec.whatwg.org/dev/semantics.html#the-link-element:attr-link-imagesrcset-4
       // Using the default "100vw" is okay
       throw new Error(missingSizesErrorMessage);
     }
 
-    imgAttributes.srcset = generateSrcset(lowsrc);
-    imgAttributes.sizes = attributes.sizes;
+    imgAttributesForPicture.srcset = generateSrcset(lowsrc);
+    imgAttributesForPicture.sizes = imgAttributes.sizes;
   }
 
   children.push({
-    "img": imgAttributes
+    "img": imgAttributesForPicture
   });
 
   return {
-    "picture": children
+    "picture": {
+      ...pictureAttributes,
+      [CHILDREN_OBJECT_KEY]: children,
+    }
   };
 }
 
 function mapObjectToHTML(tagName, attrs = {}) {
   let attrHtml = Object.entries(attrs).map(entry => {
     let [key, value] = entry;
+    if(key === CHILDREN_OBJECT_KEY) {
+      return false;
+    }
+
+    // Issue #82
     if(key === "alt") {
       return `${key}="${value ? escapeAttribute(value) : ""}"`;
     }
 
     return `${key}="${value}"`;
-  }).join(" ");
+  }).filter(keyPair => Boolean(keyPair)).join(" ");
 
   return `<${tagName}${attrHtml ? ` ${attrHtml}` : ""}>`;
 }
@@ -168,18 +177,25 @@ function mapObjectToHTML(tagName, attrs = {}) {
 function generateHTML(metadata, attributes = {}, options = {}) {
   let isInline = options.whitespaceMode !== "block";
   let markup = [];
+
   let obj = generateObject(metadata, attributes);
   for(let tag in obj) {
-    if(!Array.isArray(obj[tag])) {
-      markup.push(mapObjectToHTML(tag, obj[tag]));
-    } else {
-      // <picture>
-      markup.push(mapObjectToHTML(tag, options.pictureAttributes || {}));
+    let tagAttributes = obj[tag];
+    // We probably don’t need `options.pictureAttributes` any more but we’ll keep it around for backwards compatibility
+    // Picture attributes are provided for-free by the transform plugin.
+    if(tag === "picture" && options.pictureAttributes) {
+      tagAttributes = Object.assign({}, tagAttributes, options.pictureAttributes);
+    }
+    markup.push(mapObjectToHTML(tag, tagAttributes));
 
-      for(let child of obj[tag]) {
+    // <picture>
+
+    if(Array.isArray(obj[tag]?.[CHILDREN_OBJECT_KEY])) {
+      for(let child of obj[tag][CHILDREN_OBJECT_KEY]) {
         let childTagName = Object.keys(child)[0];
         markup.push((!isInline ? "  " : "") + mapObjectToHTML(childTagName, child[childTagName]));
       }
+
       markup.push(`</${tag}>`);
     }
   }
