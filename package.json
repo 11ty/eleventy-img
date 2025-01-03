@@ -12,6 +12,7 @@
   "scripts": {
     "pretest": "eslint img.js src/**.js test/**.js",
     "test": "ava --no-worker-threads",
+    "watch": "ava --no-worker-threads --watch",
     "sample": "cd sample && node sample.js"
   },
   "repository": {

@@ -420,7 +420,6 @@ test("Using the transform plugin, <img> to <picture>, keeps slot attribute #241"
   elev.disableLogger();
 
   let results = await elev.toJSON();
-  // TODO how to add independent class to <picture>
   t.is(results[0].content, `<picture><source type="image/webp" srcset="/virtual/KkPMmHd3hP-1280.webp 1280w"><img src="/virtual/KkPMmHd3hP-1280.jpeg" alt="My ugly mug" slot="image-1" width="1280" height="853"></picture>`);
 });
 
@@ -437,7 +436,6 @@ test("#234 Use existing `width` attribute for `widths` config", async t => {
   elev.disableLogger();
 
   let results = await elev.toJSON();
-  // TODO how to add independent class to <picture>
   t.is(results[0].content, `<picture><source type="image/webp" srcset="/virtual/KkPMmHd3hP-200.webp 200w"><img src="/virtual/KkPMmHd3hP-200.jpeg" alt="My ugly mug" width="200" height="133"></picture>`);
 });
 
@@ -454,7 +452,6 @@ test("#234 Use existing `width` attribute for `widths` config (huge width uses m
   elev.disableLogger();
 
   let results = await elev.toJSON();
-  // TODO how to add independent class to <picture>
   t.is(results[0].content, `<picture><source type="image/webp" srcset="/virtual/KkPMmHd3hP-1280.webp 1280w"><img src="/virtual/KkPMmHd3hP-1280.jpeg" alt="My ugly mug" width="1280" height="853"></picture>`);
 });
 
@@ -471,6 +468,25 @@ test("#234 Use existing `width` attribute for `widths` config (comma separated w
   elev.disableLogger();
 
   let results = await elev.toJSON();
-  // TODO how to add independent class to <picture>
   t.is(results[0].content, `<picture><source type="image/webp" srcset="/virtual/KkPMmHd3hP-1280.webp 1280w"><img src="/virtual/KkPMmHd3hP-1280.jpeg" alt="My ugly mug" width="1280" height="853"></picture>`);
+});
+
+test("#236 Use with permalink with file name", async t => {
+  let elev = new Eleventy( "test", "test/_site", {
+    config: eleventyConfig => {
+      eleventyConfig.addTemplate("virtual.md", `![alt text](./bio-2017.jpg)`, {
+        permalink: "blog/posts/blog-post.html"
+      });
+
+      eleventyConfig.addPlugin(eleventyImageTransformPlugin, {
+        formats: ["auto"],
+        dryRun: true, // don’t write image files!
+      });
+    }
+  });
+  elev.disableLogger();
+
+  let results = await elev.toJSON();
+
+  t.is(results[0].content.trim(), `<p><img src="/blog/posts/KkPMmHd3hP-1280.jpeg" alt="alt text" width="1280" height="853"></p>`);
 });

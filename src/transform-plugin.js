@@ -31,6 +31,57 @@ function assignAttributes(rootTargetNode, newNode) {
   }
 }
 
+function getOutputLocations(originalSource, outputDirectoryFromAttribute, pageContext, options) {
+  let projectOutputDirectory = options.directories.output;
+
+  if(outputDirectoryFromAttribute) {
+    if(path.isAbsolute(outputDirectoryFromAttribute)) {
+      return {
+        outputDir: path.join(projectOutputDirectory, outputDirectoryFromAttribute),
+        urlPath: outputDirectoryFromAttribute,
+      };
+    }
+    return {
+      outputDir: path.join(projectOutputDirectory, pageContext.url, outputDirectoryFromAttribute),
+      urlPath: path.join(pageContext.url, outputDirectoryFromAttribute),
+    };
+  }
+
+  if(options.urlPath) {
+    // do nothing, user has specified directories in the plugin options.
+    return {};
+  }
+
+  if(path.isAbsolute(originalSource)) {
+    // if the path is an absolute one (relative to the content directory) write to a global output directory to avoid duplicate writes for identical source images.
+    return {
+      outputDir: path.join(projectOutputDirectory, "/img/"),
+      urlPath: "/img/",
+    };
+  }
+
+  // If original source is a relative one, this colocates images to the template output.
+  let dir = path.dirname(pageContext.outputPath);
+
+  // filename is included in url: ./dir/post.html => /dir/post.html
+  if(pageContext.outputPath.endsWith(pageContext.url)) {
+    // remove file name
+    let split = pageContext.url.split("/");
+    split[split.length - 1] = "";
+
+    return {
+      outputDir: dir,
+      urlPath: split.join("/"),
+    };
+  }
+
+  // filename is not included in url: ./dir/post/index.html => /dir/post/
+  return {
+    outputDir: dir,
+    urlPath: pageContext.url,
+  };
+}
+
 function transformTag(context, sourceNode, rootTargetNode, opts) {
   let originalSource = getSourcePath(sourceNode, rootTargetNode);
 
@@ -38,7 +89,7 @@ function transformTag(context, sourceNode, rootTargetNode, opts) {
     return sourceNode;
   }
 
-  let { inputPath, outputPath, url } = context.page;
+  let { inputPath } = context.page;
 
   sourceNode.attrs.src = Util.normalizeImageSource({
     input: opts.directories.input,
@@ -51,36 +102,8 @@ function transformTag(context, sourceNode, rootTargetNode, opts) {
     sourceNode.attrs[ATTRS.ORIGINAL_SOURCE] = originalSource;
   }
 
-  let instanceOptions = {};
-
-  let outputDirectory = getOutputDirectory(sourceNode);
-  if(outputDirectory) {
-    if(path.isAbsolute(outputDirectory)) {
-      instanceOptions = {
-        outputDir: path.join(opts.directories.output, outputDirectory),
-        urlPath: outputDirectory,
-      };
-    } else {
-      instanceOptions = {
-        outputDir: path.join(opts.directories.output, url, outputDirectory),
-        urlPath: path.join(url, outputDirectory),
-      };
-    }
-  } else if(opts.urlPath) {
-    // do nothing, user has specified directories in the plugin options.
-  } else if(path.isAbsolute(originalSource)) {
-    // if the path is an absolute one (relative to the content directory) write to a global output directory to avoid duplicate writes for identical source images.
-    instanceOptions = {
-      outputDir: path.join(opts.directories.output, "/img/"),
-      urlPath: "/img/",
-    };
-  } else {
-    // If original source is a relative one, this colocates images to the template output.
-    instanceOptions = {
-      outputDir: path.dirname(outputPath),
-      urlPath: url,
-    };
-  }
+  let outputDirectoryFromAttribute = getOutputDirectory(sourceNode);
+  let instanceOptions = getOutputLocations(originalSource, outputDirectoryFromAttribute, context.page, opts);
 
   // returns promise
   return imageAttributesToPosthtmlNode(sourceNode.attrs, instanceOptions, opts).then(newNode => {
