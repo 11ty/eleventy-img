@@ -296,13 +296,16 @@ class Image {
 
   #finalizeResults(results = {}) {
     // used when results are passed to generate HTML, we maintain some internal metadata about the options used.
+    let imgAttributes = this.options.htmlOptions?.imgAttributes || {};
+    imgAttributes.src = this.src;
+
     Object.defineProperty(results, "eleventyImage", {
       enumerable: false,
       writable: false,
       value: {
         htmlOptions: {
           whitespaceMode: this.options.htmlOptions?.whitespaceMode,
-          imgAttributes: this.options.htmlOptions?.imgAttributes,
+          imgAttributes,
           pictureAttributes: this.options.htmlOptions?.pictureAttributes,
           fallback: this.options.htmlOptions?.fallback,
         },

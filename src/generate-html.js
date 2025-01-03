@@ -94,12 +94,17 @@ function generateObject(metadata, userDefinedImgAttributes = {}, userDefinedPict
   // Per the HTML specification sizes is required srcset is using the `w` unit
   // https://html.spec.whatwg.org/dev/semantics.html#the-link-element:attr-link-imagesrcset-4
   // Using the default "100vw" is okay
-  let missingSizesErrorMessage = `Missing \`sizes\` attribute on eleventy-img shortcode from: ${originalSrc || imgAttributes.src}. This is only required when using multiple output widths for an image.`;
+  let missingSizesErrorMessage = `Missing \`sizes\` attribute on eleventy-img shortcode from: ${originalSrc}. Workarounds: 1. Use a single output width for this image 2. Use \`loading="lazy"\` (which uses sizes="auto" though browser support currently varies)`;
 
   // <img srcset>: one format and multiple sizes
   if(formats.length === 1) { // implied entryCount > 1
     if(entryCount > 1 && !imgAttributes.sizes) {
-      throw new Error(missingSizesErrorMessage);
+      // Use `sizes="auto"` when using `loading="lazy"` instead of throwing an error.
+      if(imgAttributes.loading === "lazy") {
+        imgAttributes.sizes = "auto";
+      } else {
+        throw new Error(missingSizesErrorMessage);
+      }
     }
 
     let imgAttributesCopy = Object.assign({}, imgAttributesWithoutSizes);
@@ -116,7 +121,11 @@ function generateObject(metadata, userDefinedImgAttributes = {}, userDefinedPict
     return imageFormat.length > 0 && (lowsrcFormat !== imageFormat[0].format);
   }).forEach(imageFormat => {
     if(imageFormat.length > 1 && !imgAttributes.sizes) {
-      throw new Error(missingSizesErrorMessage);
+      if(imgAttributes.loading === "lazy") {
+        imgAttributes.sizes = "auto";
+      } else {
+        throw new Error(missingSizesErrorMessage);
+      }
     }
 
     let sourceAttrs = {

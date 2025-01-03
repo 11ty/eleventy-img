@@ -10,7 +10,7 @@ test("Image markup (defaults)", async t => {
 
   t.is(generateHTML(results, {
     alt: ""
-  }), `<picture><source type="image/webp" srcset="/img/KkPMmHd3hP-1280.webp 1280w"><img alt="" src="/img/KkPMmHd3hP-1280.jpeg" width="1280" height="853"></picture>`);
+  }), `<picture><source type="image/webp" srcset="/img/KkPMmHd3hP-1280.webp 1280w"><img src="/img/KkPMmHd3hP-1280.jpeg" alt="" width="1280" height="853"></picture>`);
 });
 
 test("Image file with diacritics #253", async t => {
@@ -20,7 +20,7 @@ test("Image file with diacritics #253", async t => {
 
   t.is(generateHTML(results, {
     alt: ""
-  }), `<picture><source type="image/webp" srcset="/img/KkPMmHd3hP-1280.webp 1280w"><img alt="" src="/img/KkPMmHd3hP-1280.jpeg" width="1280" height="853"></picture>`);
+  }), `<picture><source type="image/webp" srcset="/img/KkPMmHd3hP-1280.webp 1280w"><img src="/img/KkPMmHd3hP-1280.jpeg" alt="" width="1280" height="853"></picture>`);
 });
 
 test("Image service", async t => {
@@ -84,7 +84,7 @@ test("Image markup (two widths)", async t => {
     sizes: "100vw",
   }), [`<picture>`,
     `<source type="image/webp" srcset="/img/KkPMmHd3hP-200.webp 200w, /img/KkPMmHd3hP-400.webp 400w" sizes="100vw">`,
-    `<img alt="" src="/img/KkPMmHd3hP-200.jpeg" width="400" height="266" srcset="/img/KkPMmHd3hP-200.jpeg 200w, /img/KkPMmHd3hP-400.jpeg 400w" sizes="100vw">`,
+    `<img src="/img/KkPMmHd3hP-200.jpeg" alt="" width="400" height="266" srcset="/img/KkPMmHd3hP-200.jpeg 200w, /img/KkPMmHd3hP-400.jpeg 400w" sizes="100vw">`,
     `</picture>`].join(""));
 });
 
@@ -107,7 +107,7 @@ test("Image markup (two formats)", async t => {
 
   t.is(generateHTML(results, {
     alt: ""
-  }), `<picture><source type="image/avif" srcset="/img/KkPMmHd3hP-1280.avif 1280w"><img alt="" src="/img/KkPMmHd3hP-1280.webp" width="1280" height="853"></picture>`);
+  }), `<picture><source type="image/avif" srcset="/img/KkPMmHd3hP-1280.avif 1280w"><img src="/img/KkPMmHd3hP-1280.webp" alt="" width="1280" height="853"></picture>`);
 });
 
 test("Image markup (one format)", async t => {
@@ -119,7 +119,7 @@ test("Image markup (one format)", async t => {
   t.is(generateHTML(results, {
     alt: "",
     sizes: "100vw"
-  }), `<img alt="" src="/img/KkPMmHd3hP-1280.jpeg" width="1280" height="853">`);
+  }), `<img src="/img/KkPMmHd3hP-1280.jpeg" alt="" width="1280" height="853">`);
 });
 
 test("Image markup (auto format)", async t => {
@@ -131,7 +131,7 @@ test("Image markup (auto format)", async t => {
   t.is(generateHTML(results, {
     alt: "",
     sizes: "100vw"
-  }), `<img alt="" src="/img/KkPMmHd3hP-1280.jpeg" width="1280" height="853">`);
+  }), `<img src="/img/KkPMmHd3hP-1280.jpeg" alt="" width="1280" height="853">`);
 });
 
 test("Image markup (one format, two widths)", async t => {
@@ -144,7 +144,7 @@ test("Image markup (one format, two widths)", async t => {
   t.is(generateHTML(results, {
     alt: "",
     sizes: "100vw"
-  }), `<img alt="" src="/img/KkPMmHd3hP-100.jpeg" width="200" height="133" srcset="/img/KkPMmHd3hP-100.jpeg 100w, /img/KkPMmHd3hP-200.jpeg 200w" sizes="100vw">`);
+  }), `<img src="/img/KkPMmHd3hP-100.jpeg" alt="" width="200" height="133" srcset="/img/KkPMmHd3hP-100.jpeg 100w, /img/KkPMmHd3hP-200.jpeg 200w" sizes="100vw">`);
 });
 
 test("Image markup (throws on invalid object)", async t => {
@@ -159,7 +159,50 @@ test("Image markup (throws on missing alt)", async t => {
     dryRun: true
   });
 
-  t.throws(() => generateHTML(results, {}));
+  t.throws(() => generateHTML(results, {
+    src: "./test/bio-2017.jpg"
+  }), {
+    message: "Missing `alt` attribute on eleventy-img shortcode from: ./test/bio-2017.jpg"
+  });
+});
+
+test("Image markup (throws on missing alt return html)", async t => {
+  await t.throwsAsync(() => eleventyImage("./test/bio-2017.jpg", {
+    dryRun: true,
+    return: "html"
+  }), {
+    message: "Missing `alt` attribute on eleventy-img shortcode from: ./test/bio-2017.jpg"
+  });
+});
+
+test("Image markup (throws on missing sizes return html)", async t => {
+  await t.throwsAsync(() => eleventyImage("./test/bio-2017.jpg", {
+    dryRun: true,
+    widths: [100,200],
+    return: "html",
+    htmlOptions: {
+      imgAttributes: {
+        alt: "",
+      }
+    }
+  }), {
+    message: 'Missing `sizes` attribute on eleventy-img shortcode from: ./test/bio-2017.jpg. Workarounds: 1. Use a single output width for this image 2. Use `loading="lazy"` (which uses sizes="auto" though browser support currently varies)'
+  });
+});
+
+test("#207 Uses sizes=auto as fallback when loading=lazy to avoid error message", async t => {
+  let html = await eleventyImage("./test/bio-2017.jpg", {
+    dryRun: true,
+    widths: [100,200],
+    return: "html",
+    htmlOptions: {
+      imgAttributes: {
+        alt: "",
+        loading: "lazy"
+      }
+    }
+  });
+  t.is(html, '<picture><source type="image/webp" srcset="/img/KkPMmHd3hP-100.webp 100w, /img/KkPMmHd3hP-200.webp 200w" sizes="auto"><img alt="" loading="lazy" src="/img/KkPMmHd3hP-100.jpeg" width="200" height="133" srcset="/img/KkPMmHd3hP-100.jpeg 100w, /img/KkPMmHd3hP-200.jpeg 200w" sizes="auto"></picture>')
 });
 
 test("Image markup (defaults, inlined)", async t => {
@@ -173,7 +216,7 @@ test("Image markup (defaults, inlined)", async t => {
     whitespaceMode: "block"
   }), `<picture>
   <source type="image/webp" srcset="/img/KkPMmHd3hP-1280.webp 1280w">
-  <img alt="" src="/img/KkPMmHd3hP-1280.jpeg" width="1280" height="853">
+  <img src="/img/KkPMmHd3hP-1280.jpeg" alt="" width="1280" height="853">
 </picture>`);
 });
 
@@ -199,7 +242,7 @@ test("svgShortCircuit and generateHTML: Issue #48", async t => {
   let html = eleventyImage.generateHTML(stats, {
     alt: "Tiger",
   });
-  t.is(html, `<img alt="Tiger" src="/img/wGeeKEWkof-900.svg" width="900" height="900">`);
+  t.is(html, `<img src="/img/wGeeKEWkof-900.svg" alt="Tiger" width="900" height="900">`);
 });
 
 test("svgShortCircuit (on a raster source) #242 generateHTML function", async t => {
@@ -214,7 +257,7 @@ test("svgShortCircuit (on a raster source) #242 generateHTML function", async t 
   let html = eleventyImage.generateHTML(stats, {
     alt: "Zach’s ugly mug",
   });
-  t.is(html, `<img alt="Zach’s ugly mug" src="/img/KkPMmHd3hP-1280.png" width="1280" height="853">`);
+  t.is(html, `<img src="/img/KkPMmHd3hP-1280.png" alt="Zach’s ugly mug" width="1280" height="853">`);
 });
 
 test("Filter out empty format arrays", async t => {
@@ -259,7 +302,7 @@ test("Image markup (animated gif)", async t => {
 
   t.is(generateHTML(results, {
     alt: ""
-  }), `<img alt="" src="/img/YQVTYq1wRQ-400.gif" width="400" height="400">`);
+  }), `<img src="/img/YQVTYq1wRQ-400.gif" alt="" width="400" height="400">`);
 });
 
 test("Image markup (animated gif, two formats)", async t => {
@@ -270,7 +313,7 @@ test("Image markup (animated gif, two formats)", async t => {
 
   t.is(generateHTML(results, {
     alt: ""
-  }), `<picture><source type="image/webp" srcset="/img/YQVTYq1wRQ-400.webp 400w"><img alt="" src="/img/YQVTYq1wRQ-400.gif" width="400" height="400"></picture>`);
+  }), `<picture><source type="image/webp" srcset="/img/YQVTYq1wRQ-400.webp 400w"><img src="/img/YQVTYq1wRQ-400.gif" alt="" width="400" height="400"></picture>`);
 });
 
 test("Image markup (two formats, neither priority defined)", async t => {
@@ -291,7 +334,7 @@ test("Image markup (escaped `alt`)", async t => {
 
   t.is(generateHTML(results, {
     alt: "This is a \"test"
-  }), `<img alt="This is a &quot;test" src="/img/KkPMmHd3hP-1280.jpeg" width="1280" height="853">`);
+  }), `<img src="/img/KkPMmHd3hP-1280.jpeg" alt="This is a &quot;test" width="1280" height="853">`);
 });
 
 test("Image markup (<picture> with attributes issue #197)", async t => {
@@ -310,7 +353,7 @@ test("Image markup (<picture> with attributes issue #197)", async t => {
     }
   }), [`<picture class="pic">`,
     `<source type="image/webp" srcset="/img/KkPMmHd3hP-200.webp 200w, /img/KkPMmHd3hP-400.webp 400w" sizes="100vw">`,
-    `<img alt="" src="/img/KkPMmHd3hP-200.jpeg" width="400" height="266" srcset="/img/KkPMmHd3hP-200.jpeg 200w, /img/KkPMmHd3hP-400.jpeg 400w" sizes="100vw">`,
+    `<img src="/img/KkPMmHd3hP-200.jpeg" alt="" width="400" height="266" srcset="/img/KkPMmHd3hP-200.jpeg 200w, /img/KkPMmHd3hP-400.jpeg 400w" sizes="100vw">`,
     `</picture>`].join(""));
 });
 
@@ -354,7 +397,7 @@ test("Image markup with smallest fallback dimensions", async t => {
   t.is(generateHTML(results, {
     alt: "",
     sizes: "100vw"
-  }), `<img alt="" src="/img/KkPMmHd3hP-300.jpeg" width="300" height="199" srcset="/img/KkPMmHd3hP-300.jpeg 300w, /img/KkPMmHd3hP-1280.jpeg 1280w" sizes="100vw">`);
+  }), `<img src="/img/KkPMmHd3hP-300.jpeg" alt="" width="300" height="199" srcset="/img/KkPMmHd3hP-300.jpeg 300w, /img/KkPMmHd3hP-1280.jpeg 1280w" sizes="100vw">`);
 });
 
 test("return: html to <img>", async t => {
