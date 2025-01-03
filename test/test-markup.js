@@ -393,3 +393,20 @@ test("return: html to <picture>", async t => {
 
   t.is(html, `<picture class="outer"><source type="image/webp" srcset="/img/KkPMmHd3hP-1280.webp 1280w"><img alt="" class="inner" src="/img/KkPMmHd3hP-1280.jpeg" width="1280" height="853"></picture>`);
 });
+
+test("#239 full urls in urlPath", async t => {
+  let html = await eleventyImage("./test/bio-2017.jpg", {
+    dryRun: true,
+    formats: ["auto"],
+    return: "html",
+    urlPath: "http://example.com/img/",
+
+    htmlOptions: {
+      imgAttributes: {
+        alt: "",
+      },
+    },
+  });
+
+  t.is(html, `<img alt="" src="http://example.com/img/KkPMmHd3hP-1280.jpeg" width="1280" height="853">`);
+});

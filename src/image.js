@@ -431,7 +431,11 @@ class Image {
     } else {
       let hash = this.getHash();
       outputFilename = ImagePath.getFilename(hash, this.src, width, outputFormat, this.options);
-      url = ImagePath.convertFilePathToUrl(this.options.urlPath, outputFilename);
+      if(Util.isFullUrl(this.options.urlPath)) {
+        url = new URL(outputFilename, this.options.urlPath).toString();
+      } else {
+        url = ImagePath.convertFilePathToUrl(this.options.urlPath, outputFilename);
+      }
     }
 
     let stats = {
