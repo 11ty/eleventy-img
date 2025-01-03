@@ -55,6 +55,11 @@ function convertToPosthtmlNode(obj) {
   return node;
 }
 
+function isValidSimpleWidthAttribute(width) {
+  // `width` must be a single integer (not comma separated). Don’t use invalid HTML in width attribute. Use eleventy:widths if you want more complex support
+  return (""+width) == (""+parseInt(width, 10));
+}
+
 async function imageAttributesToPosthtmlNode(attributes, instanceOptions, globalPluginOptions) {
   if(!attributes.src) {
     throw new Error("Missing `src` attribute for `@11ty/eleventy-img`");
@@ -69,18 +74,15 @@ async function imageAttributesToPosthtmlNode(attributes, instanceOptions, global
   }
 
   // overrides global widths
-  if(attributes[ATTR.WIDTHS]) {
-    if(typeof attributes[ATTR.WIDTHS] === "string") {
-      instanceOptions.widths = attributes[ATTR.WIDTHS].split(",").map(entry => parseInt(entry, 10));
-      delete attributes[ATTR.WIDTHS];
-    }
+  if(attributes.width && isValidSimpleWidthAttribute(attributes.width)) {
+    // Support `width` but only single value
+    instanceOptions.widths = [ parseInt(attributes.width, 10) ];
+  } else if(attributes[ATTR.WIDTHS] && typeof attributes[ATTR.WIDTHS] === "string") {
+    instanceOptions.widths = attributes[ATTR.WIDTHS].split(",").map(entry => parseInt(entry, 10));
   }
 
-  if(attributes[ATTR.FORMATS]) {
-    if(typeof attributes[ATTR.FORMATS] === "string") {
-      instanceOptions.formats = attributes[ATTR.FORMATS].split(",");
-      delete attributes[ATTR.FORMATS];
-    }
+  if(attributes[ATTR.FORMATS] && typeof attributes[ATTR.FORMATS] === "string") {
+    instanceOptions.formats = attributes[ATTR.FORMATS].split(",");
   }
 
   let options = Object.assign({}, globalPluginOptions, instanceOptions);

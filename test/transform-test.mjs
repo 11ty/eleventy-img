@@ -423,3 +423,54 @@ test("Using the transform plugin, <img> to <picture>, keeps slot attribute #241"
   // TODO how to add independent class to <picture>
   t.is(results[0].content, `<picture><source type="image/webp" srcset="/virtual/KkPMmHd3hP-1280.webp 1280w"><img src="/virtual/KkPMmHd3hP-1280.jpeg" alt="My ugly mug" slot="image-1" width="1280" height="853"></picture>`);
 });
+
+test("#234 Use existing `width` attribute for `widths` config", async t => {
+  let elev = new Eleventy( "test", "test/_site", {
+    config: eleventyConfig => {
+      eleventyConfig.addTemplate("virtual.html", `<img src="./bio-2017.jpg" alt="My ugly mug" width="200">`);
+
+      eleventyConfig.addPlugin(eleventyImageTransformPlugin, {
+        dryRun: true, // don’t write image files!
+      });
+    }
+  });
+  elev.disableLogger();
+
+  let results = await elev.toJSON();
+  // TODO how to add independent class to <picture>
+  t.is(results[0].content, `<picture><source type="image/webp" srcset="/virtual/KkPMmHd3hP-200.webp 200w"><img src="/virtual/KkPMmHd3hP-200.jpeg" alt="My ugly mug" width="200" height="133"></picture>`);
+});
+
+test("#234 Use existing `width` attribute for `widths` config (huge width uses max intrinsic)", async t => {
+  let elev = new Eleventy( "test", "test/_site", {
+    config: eleventyConfig => {
+      eleventyConfig.addTemplate("virtual.html", `<img src="./bio-2017.jpg" alt="My ugly mug" width="2000">`);
+
+      eleventyConfig.addPlugin(eleventyImageTransformPlugin, {
+        dryRun: true, // don’t write image files!
+      });
+    }
+  });
+  elev.disableLogger();
+
+  let results = await elev.toJSON();
+  // TODO how to add independent class to <picture>
+  t.is(results[0].content, `<picture><source type="image/webp" srcset="/virtual/KkPMmHd3hP-1280.webp 1280w"><img src="/virtual/KkPMmHd3hP-1280.jpeg" alt="My ugly mug" width="1280" height="853"></picture>`);
+});
+
+test("#234 Use existing `width` attribute for `widths` config (comma separated widths are ignored as invalid. Discourage invalid `width` HTML attribute, use eleventy:widths instead)", async t => {
+  let elev = new Eleventy( "test", "test/_site", {
+    config: eleventyConfig => {
+      eleventyConfig.addTemplate("virtual.html", `<img src="./bio-2017.jpg" alt="My ugly mug" width="100,200">`);
+
+      eleventyConfig.addPlugin(eleventyImageTransformPlugin, {
+        dryRun: true, // don’t write image files!
+      });
+    }
+  });
+  elev.disableLogger();
+
+  let results = await elev.toJSON();
+  // TODO how to add independent class to <picture>
+  t.is(results[0].content, `<picture><source type="image/webp" srcset="/virtual/KkPMmHd3hP-1280.webp 1280w"><img src="/virtual/KkPMmHd3hP-1280.jpeg" alt="My ugly mug" width="1280" height="853"></picture>`);
+});
