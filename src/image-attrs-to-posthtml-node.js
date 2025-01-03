@@ -95,7 +95,7 @@ async function imageAttributesToPosthtmlNode(attributes, instanceOptions, global
   let imageAttributes = Object.assign({}, globalPluginOptions.defaultAttributes, attributes);
 
   // You bet we throw an error on missing alt in `imageAttributes` (alt="" works okay)
-  let obj = await eleventyImage.generateObject(metadata, imageAttributes, pictureAttributes);
+  let obj = await eleventyImage.generateObject(metadata, imageAttributes, pictureAttributes, options);
   return convertToPosthtmlNode(obj);
 }
 

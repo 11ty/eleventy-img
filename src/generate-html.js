@@ -25,7 +25,7 @@ function generateSrcset(metadataFormatEntry) {
     ]
   }
  */
-function generateObject(metadata, userDefinedImgAttributes = {}, userDefinedPictureAttributes = {}) {
+function generateObject(metadata, userDefinedImgAttributes = {}, userDefinedPictureAttributes = {}, options = {}) {
   let imgAttributes = Object.assign({}, userDefinedImgAttributes);
   let pictureAttributes = Object.assign({}, userDefinedPictureAttributes);
 
@@ -70,8 +70,16 @@ function generateObject(metadata, userDefinedImgAttributes = {}, userDefinedPict
   }
 
   imgAttributes.src = lowsrc[0].url;
-  imgAttributes.width = lowsrc[lowsrc.length - 1].width;
-  imgAttributes.height = lowsrc[lowsrc.length - 1].height;
+
+  if(options.fallback === "largest" || options.fallback === undefined) {
+    imgAttributes.width = lowsrc[lowsrc.length - 1].width;
+    imgAttributes.height = lowsrc[lowsrc.length - 1].height;
+  } else if(options.fallback === "smallest") {
+    imgAttributes.width = lowsrc[0].width;
+    imgAttributes.height = lowsrc[0].height;
+  } else {
+    throw new Error("Invalid `fallback` option specified. 'largest' and 'smallest' are supported. Received: " + options.fallback);
+  }
 
   let imgAttributesWithoutSizes = Object.assign({}, imgAttributes);
   delete imgAttributesWithoutSizes.sizes;
@@ -174,11 +182,12 @@ function mapObjectToHTML(tagName, attrs = {}) {
   return `<${tagName}${attrHtml ? ` ${attrHtml}` : ""}>`;
 }
 
-function generateHTML(metadata, attributes = {}, options = {}) {
+function generateHTML(metadata, attributes = {}, optionsOverride = {}) {
+  let options = Object.assign({}, metadata?.eleventyImage?.options, optionsOverride);
   let isInline = options.whitespaceMode !== "block";
   let markup = [];
 
-  let obj = generateObject(metadata, attributes, options.pictureAttributes);
+  let obj = generateObject(metadata, attributes, options.pictureAttributes, options);
   for(let tag in obj) {
     markup.push(mapObjectToHTML(tag, obj[tag]));
 

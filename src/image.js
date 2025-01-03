@@ -290,6 +290,8 @@ class Image {
       }
     }
 
+    this.addHiddenMetadata(byType);
+
     return byType;
   }
 
@@ -678,6 +680,21 @@ class Image {
     }
 
     return Promise.all(outputFilePromises).then(files => this._transformRawFiles(files));
+  }
+
+  addHiddenMetadata(results) {
+    // used when results are passed to generate HTML, we maintain some internal metadata about the options used.
+    Object.defineProperty(results, "eleventyImage", {
+      enumerable: false,
+      writable: false,
+      value: {
+        options: {
+          pictureAttributes: this.options.pictureAttributes,
+          whitespaceMode: this.options.whitespaceMode,
+          fallback: this.options.fallback,
+        },
+      }
+    });
   }
 
   async getStatsOnly() {

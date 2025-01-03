@@ -340,3 +340,17 @@ test("Issue #177", t => {
 
   t.is(eleventyImage.generateHTML(metadata, imageAttributes), `<picture><source type="image/avif" srcset="/img/8u6v7oPGyC-160.avif 160w" sizes="(max-width: 0px) 100vw"><img alt="" loading="lazy" decoding="async" fetchPriority="high" class="w-full h-full object-cover" src="/img/8u6v7oPGyC-160.jpeg" width="160" height="160"></picture>`);
 });
+
+test("Image markup with smallest fallback dimensions", async t => {
+  let results = await eleventyImage("./test/bio-2017.jpg", {
+    dryRun: true,
+    widths: [300, "auto"],
+    formats: ["auto"],
+    fallback: "smallest",
+  });
+
+  t.is(generateHTML(results, {
+    alt: "",
+    sizes: "100vw"
+  }), `<img alt="" src="/img/KkPMmHd3hP-300.jpeg" width="300" height="199" srcset="/img/KkPMmHd3hP-300.jpeg 300w, /img/KkPMmHd3hP-1280.jpeg 1280w" sizes="100vw">`);
+});

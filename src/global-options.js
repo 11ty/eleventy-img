@@ -76,6 +76,10 @@ const DEFAULTS = {
   // operate on Sharp instance manually.
   transform: undefined,
 
+  // the <img> will use the largest dimensions for width/height (when multiple output widths are specified)
+  // see https://github.com/11ty/eleventy-img/issues/63
+  fallback: "largest", // or "smallest"
+
   // v5.0.0 Removed `extensions`, option to override output format with new file extension. It wasn’t being used anywhere or documented.
   // v6.0.0, removed `useCacheValidityInHash: true` see https://github.com/11ty/eleventy-img/issues/146#issuecomment-2555741376
 };
