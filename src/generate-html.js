@@ -178,18 +178,11 @@ function generateHTML(metadata, attributes = {}, options = {}) {
   let isInline = options.whitespaceMode !== "block";
   let markup = [];
 
-  let obj = generateObject(metadata, attributes);
+  let obj = generateObject(metadata, attributes, options.pictureAttributes);
   for(let tag in obj) {
-    let tagAttributes = obj[tag];
-    // We probably don’t need `options.pictureAttributes` any more but we’ll keep it around for backwards compatibility
-    // Picture attributes are provided for-free by the transform plugin.
-    if(tag === "picture" && options.pictureAttributes) {
-      tagAttributes = Object.assign({}, tagAttributes, options.pictureAttributes);
-    }
-    markup.push(mapObjectToHTML(tag, tagAttributes));
+    markup.push(mapObjectToHTML(tag, obj[tag]));
 
     // <picture>
-
     if(Array.isArray(obj[tag]?.[CHILDREN_OBJECT_KEY])) {
       for(let child of obj[tag][CHILDREN_OBJECT_KEY]) {
         let childTagName = Object.keys(child)[0];
