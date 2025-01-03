@@ -346,11 +346,50 @@ test("Image markup with smallest fallback dimensions", async t => {
     dryRun: true,
     widths: [300, "auto"],
     formats: ["auto"],
-    fallback: "smallest",
+    htmlOptions: {
+      fallback: "smallest",
+    },
   });
 
   t.is(generateHTML(results, {
     alt: "",
     sizes: "100vw"
   }), `<img alt="" src="/img/KkPMmHd3hP-300.jpeg" width="300" height="199" srcset="/img/KkPMmHd3hP-300.jpeg 300w, /img/KkPMmHd3hP-1280.jpeg 1280w" sizes="100vw">`);
+});
+
+test("return: html to <img>", async t => {
+  let html = await eleventyImage("./test/bio-2017.jpg", {
+    dryRun: true,
+    formats: ["auto"],
+    return: "html",
+
+    // passed to generateHTML
+    htmlOptions: {
+      imgAttributes: {
+        alt: "",
+      },
+    },
+  });
+
+  t.is(html, `<img alt="" src="/img/KkPMmHd3hP-1280.jpeg" width="1280" height="853">`);
+});
+
+test("return: html to <picture>", async t => {
+  let html = await eleventyImage("./test/bio-2017.jpg", {
+    dryRun: true,
+    return: "html",
+
+    // passed to generateHTML
+    htmlOptions: {
+      imgAttributes: {
+        alt: "",
+        class: "inner",
+      },
+      pictureAttributes: {
+        class: "outer"
+      }
+    },
+  });
+
+  t.is(html, `<picture class="outer"><source type="image/webp" srcset="/img/KkPMmHd3hP-1280.webp 1280w"><img alt="" class="inner" src="/img/KkPMmHd3hP-1280.jpeg" width="1280" height="853"></picture>`);
 });

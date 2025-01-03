@@ -25,7 +25,7 @@ function generateSrcset(metadataFormatEntry) {
     ]
   }
  */
-function generateObject(metadata, userDefinedImgAttributes = {}, userDefinedPictureAttributes = {}, options = {}) {
+function generateObject(metadata, userDefinedImgAttributes = {}, userDefinedPictureAttributes = {}, htmlOptions = {}) {
   let imgAttributes = Object.assign({}, userDefinedImgAttributes);
   let pictureAttributes = Object.assign({}, userDefinedPictureAttributes);
 
@@ -71,14 +71,14 @@ function generateObject(metadata, userDefinedImgAttributes = {}, userDefinedPict
 
   imgAttributes.src = lowsrc[0].url;
 
-  if(options.fallback === "largest" || options.fallback === undefined) {
+  if(htmlOptions.fallback === "largest" || htmlOptions.fallback === undefined) {
     imgAttributes.width = lowsrc[lowsrc.length - 1].width;
     imgAttributes.height = lowsrc[lowsrc.length - 1].height;
-  } else if(options.fallback === "smallest") {
+  } else if(htmlOptions.fallback === "smallest") {
     imgAttributes.width = lowsrc[0].width;
     imgAttributes.height = lowsrc[0].height;
   } else {
-    throw new Error("Invalid `fallback` option specified. 'largest' and 'smallest' are supported. Received: " + options.fallback);
+    throw new Error("Invalid `fallback` option specified. 'largest' and 'smallest' are supported. Received: " + htmlOptions.fallback);
   }
 
   let imgAttributesWithoutSizes = Object.assign({}, imgAttributes);
@@ -182,12 +182,14 @@ function mapObjectToHTML(tagName, attrs = {}) {
   return `<${tagName}${attrHtml ? ` ${attrHtml}` : ""}>`;
 }
 
-function generateHTML(metadata, attributes = {}, optionsOverride = {}) {
-  let options = Object.assign({}, metadata?.eleventyImage?.options, optionsOverride);
-  let isInline = options.whitespaceMode !== "block";
+function generateHTML(metadata, attributesOverride = {}, htmlOptionsOverride = {}) {
+  let attributes = Object.assign({}, metadata?.eleventyImage?.htmlOptions?.imgAttributes, attributesOverride);
+  let htmlOptions = Object.assign({}, metadata?.eleventyImage?.htmlOptions, htmlOptionsOverride);
+
+  let isInline = htmlOptions.whitespaceMode !== "block";
   let markup = [];
 
-  let obj = generateObject(metadata, attributes, options.pictureAttributes, options);
+  let obj = generateObject(metadata, attributes, htmlOptions.pictureAttributes, htmlOptions);
   for(let tag in obj) {
     markup.push(mapObjectToHTML(tag, obj[tag]));
 

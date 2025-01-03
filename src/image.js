@@ -10,6 +10,7 @@ const { Fetch } = require("@11ty/eleventy-fetch");
 
 const Util = require("./util.js");
 const ImagePath = require("./image-path.js");
+const generateHTML = require("./generate-html.js");
 
 const GLOBAL_OPTIONS = require("./global-options.js").defaults;
 const { existsCache, memCache, diskCache } = require("./caches.js");
@@ -242,7 +243,7 @@ class Image {
     return [];
   }
 
-  _transformRawFiles(files = []) {
+  #transformRawFiles(files = []) {
     let byType = {};
     for(let file of files) {
       if(!byType[file.format]) {
@@ -290,9 +291,29 @@ class Image {
       }
     }
 
-    this.addHiddenMetadata(byType);
-
     return byType;
+  }
+
+  #finalizeResults(results = {}) {
+    // used when results are passed to generate HTML, we maintain some internal metadata about the options used.
+    Object.defineProperty(results, "eleventyImage", {
+      enumerable: false,
+      writable: false,
+      value: {
+        htmlOptions: {
+          whitespaceMode: this.options.htmlOptions?.whitespaceMode,
+          imgAttributes: this.options.htmlOptions?.imgAttributes,
+          pictureAttributes: this.options.htmlOptions?.pictureAttributes,
+          fallback: this.options.htmlOptions?.fallback,
+        },
+      }
+    });
+
+    if(this.options.return === "html") {
+      return generateHTML(results);
+    }
+
+    return results;
   }
 
   getSharpOptionsForFormat(format) {
@@ -511,7 +532,7 @@ class Image {
       }
     }
 
-    return this._transformRawFiles(results);
+    return this.#transformRawFiles(results);
   }
 
   getOutputSize(contents, filePath) {
@@ -565,6 +586,7 @@ class Image {
     let outputFilePromises = [];
 
     let fullStats = this.getFullStats(metadata);
+
     for(let outputFormat in fullStats) {
       for(let stat of fullStats[outputFormat]) {
         if(this.isOutputCached(stat.outputPath, input)) {
@@ -679,22 +701,7 @@ class Image {
       }
     }
 
-    return Promise.all(outputFilePromises).then(files => this._transformRawFiles(files));
-  }
-
-  addHiddenMetadata(results) {
-    // used when results are passed to generate HTML, we maintain some internal metadata about the options used.
-    Object.defineProperty(results, "eleventyImage", {
-      enumerable: false,
-      writable: false,
-      value: {
-        options: {
-          pictureAttributes: this.options.pictureAttributes,
-          whitespaceMode: this.options.whitespaceMode,
-          fallback: this.options.fallback,
-        },
-      }
-    });
+    return Promise.all(outputFilePromises).then(files => this.#finalizeResults(this.#transformRawFiles(files)));
   }
 
   async getStatsOnly() {
