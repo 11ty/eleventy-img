@@ -11,7 +11,7 @@ test("Using <eleventy-image>", async t => {
   elev.disableLogger();
 
   let results = await elev.toJSON();
-  t.is(results[0].content, `<img loading="lazy" src="/img/KkPMmHd3hP-1280.jpeg" alt="My ugly mug" width="1280" height="853">`);
+  t.is(results[0].content, `<img src="/img/KkPMmHd3hP-1280.jpeg" loading="lazy" alt="My ugly mug" width="1280" height="853">`);
 });
 
 test("With formats", async t => {
@@ -21,7 +21,7 @@ test("With formats", async t => {
   elev.disableLogger();
 
   let results = await elev.toJSON();
-  t.is(results[0].content, `<picture><source type="image/webp" srcset="/img/KkPMmHd3hP-1280.webp 1280w"><img loading="lazy" src="/img/KkPMmHd3hP-1280.png" alt="My ugly mug" width="1280" height="853"></picture>`);
+  t.is(results[0].content, `<picture><source type="image/webp" srcset="/img/KkPMmHd3hP-1280.webp 1280w"><img src="/img/KkPMmHd3hP-1280.png" loading="lazy" alt="My ugly mug" width="1280" height="853"></picture>`);
 });
 
 test("With widths", async t => {
@@ -31,7 +31,7 @@ test("With widths", async t => {
   elev.disableLogger();
 
   let results = await elev.toJSON();
-  t.is(results[0].content, `<img loading="lazy" src="/img/KkPMmHd3hP-100.jpeg" alt="My ugly mug" width="1280" height="853" srcset="/img/KkPMmHd3hP-100.jpeg 100w, /img/KkPMmHd3hP-200.jpeg 200w, /img/KkPMmHd3hP-1280.jpeg 1280w" sizes="100vw">`);
+  t.is(results[0].content, `<img src="/img/KkPMmHd3hP-100.jpeg" loading="lazy" alt="My ugly mug" width="1280" height="853" srcset="/img/KkPMmHd3hP-100.jpeg 100w, /img/KkPMmHd3hP-200.jpeg 200w, /img/KkPMmHd3hP-1280.jpeg 1280w" sizes="100vw">`);
 });
 
 test("With url-path", async t => {
@@ -41,7 +41,7 @@ test("With url-path", async t => {
   elev.disableLogger();
 
   let results = await elev.toJSON();
-  t.is(results[0].content, `<img loading="lazy" src="/some-dir/KkPMmHd3hP-1280.jpeg" alt="photo of my tabby cat" width="1280" height="853">`);
+  t.is(results[0].content, `<img src="/some-dir/KkPMmHd3hP-1280.jpeg" loading="lazy" alt="photo of my tabby cat" width="1280" height="853">`);
 });
 
 test("With transform on request during dev mode", async t => {

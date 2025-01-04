@@ -202,7 +202,8 @@ test("#207 Uses sizes=auto as fallback when loading=lazy to avoid error message"
       }
     }
   });
-  t.is(html, '<picture><source type="image/webp" srcset="/img/KkPMmHd3hP-100.webp 100w, /img/KkPMmHd3hP-200.webp 200w" sizes="auto"><img alt="" loading="lazy" src="/img/KkPMmHd3hP-100.jpeg" width="200" height="133" srcset="/img/KkPMmHd3hP-100.jpeg 100w, /img/KkPMmHd3hP-200.jpeg 200w" sizes="auto"></picture>')
+
+  t.is(html, '<picture><source type="image/webp" srcset="/img/KkPMmHd3hP-100.webp 100w, /img/KkPMmHd3hP-200.webp 200w" sizes="auto"><img alt="" loading="lazy" src="/img/KkPMmHd3hP-100.jpeg" width="200" height="133" srcset="/img/KkPMmHd3hP-100.jpeg 100w, /img/KkPMmHd3hP-200.jpeg 200w" sizes="auto"></picture>');
 });
 
 test("Image markup (defaults, inlined)", async t => {
