@@ -502,11 +502,6 @@ class Image {
     return metadata?.pages > 1;
   }
 
-  hasAlpha(metadata) {
-    console.log( {metadata} );
-    return true;
-  }
-
   getEntryFormat(metadata) {
     return metadata.format || this.options.overrideInputFormat;
   }
