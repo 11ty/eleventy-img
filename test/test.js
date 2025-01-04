@@ -1256,3 +1256,24 @@ test("Keep ICC Profiles by default #244 test image from Sharp repo", async t => 
   t.true(Buffer.isBuffer(outputMetadata.icc));
   t.true(outputMetadata.hasProfile);
 });
+
+test("#105 Transparent format output filtering", async t => {
+  let stats = await eleventyImage("./test/david-mascot.png", {
+    dryRun: true,
+    formats: ["png", "avif", "jpeg"],
+    useCache: false,
+  });
+
+  t.deepEqual(Object.keys(stats), ["png", "avif"]);
+});
+
+test("#105 Transparent format output filtering (no minimum transparency formats found)", async t => {
+  let stats = await eleventyImage("./test/david-mascot.png", {
+    dryRun: true,
+    useCache: false,
+  });
+
+  // even though webp is transparency-friendly, we still use the full originally formats because webp is not a sufficiently minimum format for transparency
+  // must include one of: svg, png, or gif
+  t.deepEqual(Object.keys(stats), ["webp", "jpeg"]);
+});

@@ -8,6 +8,8 @@ const DEFAULTS = {
   widths: ["auto"],
   formats: ["webp", "jpeg"], // "png", "svg", "avif"
 
+  formatFiltering: ["transparent", "animated"],
+
   // Via https://github.com/11ty/eleventy-img/issues/258
   concurrency: Math.min(Math.max(8, os.availableParallelism()), 16),
 

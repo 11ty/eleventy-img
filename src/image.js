@@ -38,6 +38,19 @@ const ANIMATED_TYPES = [
   "gif",
 ];
 
+const TRANSPARENCY_TYPES = [
+  "avif",
+  "png",
+  "webp",
+  "gif",
+  "svg",
+];
+
+const MINIMUM_TRANSPARENCY_TYPES = [
+  "png",
+  "gif",
+  "svg",
+];
 
 class Image {
   #input;
@@ -191,7 +204,7 @@ class Image {
     return valid.sort((a, b) => a - b);
   }
 
-  static getFormatsArray(formats, autoFormat, svgShortCircuit, isAnimated) {
+  static getFormatsArray(formats, autoFormat, svgShortCircuit, isAnimated, hasTransparency) {
     if(formats && formats.length) {
       if(typeof formats === "string") {
         formats = formats.split(",");
@@ -230,6 +243,18 @@ class Image {
           formats = validAnimatedFormats;
         } else {
           debug("No animated output formats found for animated image, using static image instead.");
+        }
+      }
+
+      if(hasTransparency) {
+        let minimumValidTransparencyFormats = formats.filter(f => MINIMUM_TRANSPARENCY_TYPES.includes(f));
+        // override formats if a valid animated format is found, otherwise leave as-is
+        if(minimumValidTransparencyFormats.length > 0) {
+          let validTransparencyFormats = formats.filter(f => TRANSPARENCY_TYPES.includes(f));
+          debug("Filtering non-transparency-friendly formats from output: from %o to %o", formats, validTransparencyFormats);
+          formats = validTransparencyFormats;
+        } else {
+          debug("At least one transparency-friendly output format of %o must be included if the source image has an alpha channel, skipping formatFiltering and using original formats.", MINIMUM_TRANSPARENCY_TYPES);
         }
       }
 
@@ -477,6 +502,11 @@ class Image {
     return metadata?.pages > 1;
   }
 
+  hasAlpha(metadata) {
+    console.log( {metadata} );
+    return true;
+  }
+
   getEntryFormat(metadata) {
     return metadata.format || this.options.overrideInputFormat;
   }
@@ -485,9 +515,10 @@ class Image {
   // src is used to calculate the output file names
   getFullStats(metadata) {
     let results = [];
-    let isImageAnimated = this.isAnimated(metadata);
+    let isImageAnimated = this.isAnimated(metadata) && Array.isArray(this.options.formatFiltering) && this.options.formatFiltering.includes("animated");
+    let hasAlpha = metadata.hasAlpha && Array.isArray(this.options.formatFiltering) && this.options.formatFiltering.includes("transparent");
     let entryFormat = this.getEntryFormat(metadata);
-    let outputFormats = Image.getFormatsArray(this.options.formats, entryFormat, this.options.svgShortCircuit, isImageAnimated);
+    let outputFormats = Image.getFormatsArray(this.options.formats, entryFormat, this.options.svgShortCircuit, isImageAnimated, hasAlpha);
 
     if (this.needsRotation(metadata.orientation)) {
       [metadata.height, metadata.width] = [metadata.width, metadata.height];
