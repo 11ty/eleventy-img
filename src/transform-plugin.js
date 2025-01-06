@@ -168,7 +168,9 @@ function eleventyImageTransformPlugin(eleventyConfig, options = {}) {
         match.call(pictureNode, { tag: 'img' }, imgNode => {
           imgNode._insideOfPicture = true;
 
-          promises.push(transformTag(context, imgNode, pictureNode, opts));
+          if(!isIgnored(imgNode) && !imgNode?.attrs?.src?.startsWith("data:")) {
+            promises.push(transformTag(context, imgNode, pictureNode, opts));
+          }
 
           return imgNode;
         });
@@ -177,10 +179,10 @@ function eleventyImageTransformPlugin(eleventyConfig, options = {}) {
       });
 
       tree.match({ tag: 'img' }, (imgNode) => {
-        if(imgNode._insideOfPicture || isIgnored(imgNode) || imgNode?.attrs?.src?.startsWith("data:")) {
-          cleanTag(imgNode);
-
+        if(imgNode._insideOfPicture) {
           delete imgNode._insideOfPicture;
+        } else if(isIgnored(imgNode) || imgNode?.attrs?.src?.startsWith("data:")) {
+          cleanTag(imgNode);
         } else {
           promises.push(transformTag(context, imgNode, imgNode, opts));
         }
