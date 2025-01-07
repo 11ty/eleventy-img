@@ -25,9 +25,10 @@ function generateSrcset(metadataFormatEntry) {
     ]
   }
  */
-function generateObject(metadata, userDefinedImgAttributes = {}, userDefinedPictureAttributes = {}, htmlOptions = {}) {
-  let imgAttributes = Object.assign({}, userDefinedImgAttributes);
-  let pictureAttributes = Object.assign({}, userDefinedPictureAttributes);
+function generateObject(metadata, userDefinedImgAttributes = {}, userDefinedPictureAttributes = {}, options = {}) {
+  let htmlOptions = options?.htmlOptions || {};
+  let imgAttributes = Object.assign({}, options?.defaultAttributes, htmlOptions?.imgAttributes, userDefinedImgAttributes);
+  let pictureAttributes = Object.assign({}, htmlOptions?.pictureAttributes, userDefinedPictureAttributes);
 
   // The attributes.src gets overwritten later on. Save it here to make the error outputs less cryptic.
   let originalSrc = imgAttributes.src;
@@ -191,14 +192,14 @@ function mapObjectToHTML(tagName, attrs = {}) {
   return `<${tagName}${attrHtml ? ` ${attrHtml}` : ""}>`;
 }
 
-function generateHTML(metadata, attributesOverride = {}, htmlOptionsOverride = {}) {
-  let attributes = Object.assign({}, metadata?.eleventyImage?.htmlOptions?.imgAttributes, attributesOverride);
+function generateHTML(metadata, attributes = {}, htmlOptionsOverride = {}) {
   let htmlOptions = Object.assign({}, metadata?.eleventyImage?.htmlOptions, htmlOptionsOverride);
 
   let isInline = htmlOptions.whitespaceMode !== "block";
   let markup = [];
 
-  let obj = generateObject(metadata, attributes, htmlOptions.pictureAttributes, htmlOptions);
+  // htmlOptions.imgAttributes and htmlOptions.pictureAttributes are merged in generateObject
+  let obj = generateObject(metadata, attributes, {}, { htmlOptions });
   for(let tag in obj) {
     markup.push(mapObjectToHTML(tag, obj[tag]));
 

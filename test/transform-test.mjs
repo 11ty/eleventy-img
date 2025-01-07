@@ -490,3 +490,30 @@ test("#236 Use with permalink with file name", async t => {
 
   t.is(results[0].content.trim(), `<p><img src="/blog/posts/KkPMmHd3hP-1280.jpeg" alt="alt text" width="1280" height="853"></p>`);
 });
+
+test("Using imgAttributes/pictureAttributes alongside defaultAttributes (removing this from docs) in transform method", async t => {
+  let elev = new Eleventy( "test", "test/_site", {
+    config: eleventyConfig => {
+      eleventyConfig.addTemplate("virtual.html", `<img src="./bio-2017.jpg" alt="My ugly mug">`);
+
+      eleventyConfig.addPlugin(eleventyImageTransformPlugin, {
+        // formats: ["auto"],
+        dryRun: true, // don’t write image files!
+        htmlOptions: {
+          imgAttributes: {
+            class: "inner",
+          },
+          pictureAttributes: {
+            class: "outer",
+          }
+        },
+        defaultAttributes: {
+          class: "lol",
+        }
+      });
+    }
+  });
+
+  let results = await elev.toJSON();
+  t.is(results[0].content, `<picture class="outer"><source type="image/webp" srcset="/virtual/KkPMmHd3hP-1280.webp 1280w"><img class="inner" src="/virtual/KkPMmHd3hP-1280.jpeg" alt="My ugly mug" width="1280" height="853"></picture>`);
+});

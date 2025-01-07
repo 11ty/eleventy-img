@@ -14,7 +14,7 @@ const ATTR = {
   PICTURE: `${ATTR_PREFIX}pictureattr:`,
 };
 
-function getPictureAttributes(attrs = {}) {
+function getPictureAttributesFromImgNode(attrs = {}) {
   let pictureAttrs = {};
   for(let key in attrs) {
     // <img eleventy:pictureattr:NAME="VALUE"> hoists to `<picture NAME="VALUE">
@@ -89,15 +89,12 @@ async function imageAttributesToPosthtmlNode(attributes, instanceOptions, global
   Util.addConfig(globalPluginOptions.eleventyConfig, options);
 
   let metadata = await eleventyImage(attributes.src, options);
-
-  let pictureAttributes = getPictureAttributes(attributes);
+  let pictureAttributes = getPictureAttributesFromImgNode(attributes);
 
   cleanAttrs(attributes);
 
-  let imageAttributes = Object.assign({}, globalPluginOptions.defaultAttributes, attributes);
-
   // You bet we throw an error on missing alt in `imageAttributes` (alt="" works okay)
-  let obj = await eleventyImage.generateObject(metadata, imageAttributes, pictureAttributes, options);
+  let obj = await eleventyImage.generateObject(metadata, attributes, pictureAttributes, options);
   return convertToPosthtmlNode(obj);
 }
 
