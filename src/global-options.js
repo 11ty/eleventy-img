@@ -79,7 +79,7 @@ const DEFAULTS = {
   transform: undefined,
 
   // return HTML from generateHTML directly
-  return: "object", // or "html"
+  returnType: "object", // or "html"
 
   // Defaults used when generateHTML is called from a result set
   htmlOptions: {

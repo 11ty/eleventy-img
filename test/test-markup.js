@@ -169,7 +169,7 @@ test("Image markup (throws on missing alt)", async t => {
 test("Image markup (throws on missing alt return html)", async t => {
   await t.throwsAsync(() => eleventyImage("./test/bio-2017.jpg", {
     dryRun: true,
-    return: "html"
+    returnType: "html"
   }), {
     message: "Missing `alt` attribute on eleventy-img shortcode from: ./test/bio-2017.jpg"
   });
@@ -179,7 +179,7 @@ test("Image markup (throws on missing sizes return html)", async t => {
   await t.throwsAsync(() => eleventyImage("./test/bio-2017.jpg", {
     dryRun: true,
     widths: [100,200],
-    return: "html",
+    returnType: "html",
     htmlOptions: {
       imgAttributes: {
         alt: "",
@@ -194,7 +194,7 @@ test("#207 Uses sizes=auto as fallback when loading=lazy to avoid error message"
   let html = await eleventyImage("./test/bio-2017.jpg", {
     dryRun: true,
     widths: [100,200],
-    return: "html",
+    returnType: "html",
     htmlOptions: {
       imgAttributes: {
         alt: "",
@@ -401,11 +401,11 @@ test("Image markup with smallest fallback dimensions", async t => {
   }), `<img src="/img/KkPMmHd3hP-300.jpeg" alt="" width="300" height="199" srcset="/img/KkPMmHd3hP-300.jpeg 300w, /img/KkPMmHd3hP-1280.jpeg 1280w" sizes="100vw">`);
 });
 
-test("return: html to <img>", async t => {
+test("returnType: html to <img>", async t => {
   let html = await eleventyImage("./test/bio-2017.jpg", {
     dryRun: true,
     formats: ["auto"],
-    return: "html",
+    returnType: "html",
 
     // passed to generateHTML
     htmlOptions: {
@@ -418,10 +418,10 @@ test("return: html to <img>", async t => {
   t.is(html, `<img alt="" src="/img/KkPMmHd3hP-1280.jpeg" width="1280" height="853">`);
 });
 
-test("return: html to <picture>", async t => {
+test("returnType: html to <picture>", async t => {
   let html = await eleventyImage("./test/bio-2017.jpg", {
     dryRun: true,
-    return: "html",
+    returnType: "html",
 
     // passed to generateHTML
     htmlOptions: {
@@ -442,7 +442,7 @@ test("#239 full urls in urlPath", async t => {
   let html = await eleventyImage("./test/bio-2017.jpg", {
     dryRun: true,
     formats: ["auto"],
-    return: "html",
+    returnType: "html",
     urlPath: "http://example.com/img/",
 
     htmlOptions: {

@@ -337,7 +337,8 @@ class Image {
       }
     });
 
-    if(this.options.return === "html") {
+    // renamed `return` to `returnType` to match Fetch API in v6.0.0-beta.3
+    if(this.options.returnType === "html" || this.options.return === "html") {
       return generateHTML(results);
     }
 
