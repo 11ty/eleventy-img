@@ -38,12 +38,12 @@
   },
   "homepage": "https://github.com/11ty/eleventy-img#readme",
   "dependencies": {
-    "@11ty/eleventy-fetch": "^5.0.2-beta.2",
-    "@11ty/eleventy-utils": "^1.0.3",
+    "@11ty/eleventy-fetch": "^5.0.2",
+    "@11ty/eleventy-utils": "^2.0.0",
     "brotli-size": "^4.0.0",
     "debug": "^4.4.0",
-    "entities": "^5.0.0",
-    "image-size": "^1.1.1",
+    "entities": "^6.0.0",
+    "image-size": "^1.2.0",
     "p-queue": "^6.6.2",
     "sharp": "^0.33.5"
   },
