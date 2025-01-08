@@ -142,7 +142,7 @@ class Image {
     return JSON.stringify(opts, function(key, value) {
       // allows `transform` functions to be truthy for in-memory key
       if (typeof value === "function") {
-        return "<fn>";
+        return "<fn>" + (value.name || "");
       }
       return value;
     });
@@ -467,7 +467,7 @@ class Image {
       }
     }
 
-    let stats = {
+    let statEntry = {
       format: outputFormat,
       width: width,
       height: height,
@@ -479,11 +479,11 @@ class Image {
     };
 
     if(outputFilename) {
-      stats.filename = outputFilename; // optional
-      stats.outputPath = path.join(this.options.outputDir, outputFilename); // optional
+      statEntry.filename = outputFilename; // optional
+      statEntry.outputPath = path.join(this.options.outputDir, outputFilename); // optional
     }
 
-    return stats;
+    return statEntry;
   }
 
   // https://jdhao.github.io/2019/07/31/image_rotation_exif_info/
@@ -531,7 +531,7 @@ class Image {
 
     for(let outputFormat of outputFormats) {
       if(!outputFormat || outputFormat === "auto") {
-        throw new Error("When using statsSync or statsByDimensionsSync, `formats: [null | auto]` to use the native image format is not supported.");
+        throw new Error("When using statsSync or statsByDimensionsSync, `formats: [null | 'auto']` to use the native image format is not supported.");
       }
 
       if(outputFormat === "svg") {
@@ -557,9 +557,7 @@ class Image {
       } else { // not outputting SVG (might still be SVG input though!)
         let widths = Image.getValidWidths(metadata.width, this.options.widths, metadata.format === "svg" && this.options.svgAllowUpscale, this.options.minimumThreshold);
         for(let width of widths) {
-          // Warning: if this is a guess via statsByDimensionsSync and that guess is wrong
-          // The aspect ratio will be wrong and any height/widths returned will be wrong!
-          let height = Math.floor(width * metadata.height / metadata.width);
+          let height = Image.getAspectRatioHeight(metadata, width);
 
           results.push(this.getStat(outputFormat, width, height));
         }
@@ -567,6 +565,39 @@ class Image {
     }
 
     return this.#transformRawFiles(results);
+  }
+
+  static getDimensionsFromSharp(sharpInstance, stat) {
+    let dims = {};
+    if(sharpInstance.options.width > -1) {
+      dims.width = sharpInstance.options.width;
+      dims.resized = true;
+    }
+    if(sharpInstance.options.height > -1) {
+      dims.height = sharpInstance.options.height;
+      dims.resized = true;
+    }
+
+    if(dims.width || dims.height) {
+      if(!dims.width) {
+        dims.width = Image.getAspectRatioWidth(stat, dims.height);
+      }
+      if(!dims.height) {
+        dims.height = Image.getAspectRatioHeight(stat, dims.width);
+      }
+    }
+
+    return dims;
+  }
+
+  static getAspectRatioWidth(originalDimensions, newHeight) {
+    return Math.floor(newHeight * originalDimensions.width / originalDimensions.height);
+  }
+
+  static getAspectRatioHeight(originalDimensions, newWidth) {
+    // Warning: if this is a guess via statsByDimensionsSync and that guess is wrong
+    // The aspect ratio will be wrong and any height/widths returned will be wrong!
+    return Math.floor(newWidth * originalDimensions.height / originalDimensions.width);
   }
 
   getOutputSize(contents, filePath) {
@@ -643,12 +674,23 @@ class Image {
 
         let sharpInstance = sharpInputImage.clone();
         let transform = this.options.transform;
+        let isTransformResize = false;
+
         if(transform) {
           if(typeof transform !== "function") {
             throw new Error("Expected `function` type in `transform` option. Received: " + transform);
           }
 
           await transform(sharpInstance);
+
+          // Resized in a transform (maybe for a crop)
+          let dims = Image.getDimensionsFromSharp(sharpInstance, stat);
+          if(dims.resized) {
+            isTransformResize = true;
+
+            // Overwrite current `stat` object with new sizes and file names
+            stat = this.getStat(stat.format, dims.width, dims.height);
+          }
         }
 
         // https://github.com/11ty/eleventy-img/issues/244
@@ -661,15 +703,19 @@ class Image {
         if(this.options.fixOrientation || this.needsRotation(metadata.orientation)) {
           sharpInstance.rotate();
         }
-        if(stat.width < metadata.width || (this.options.svgAllowUpscale && metadata.format === "svg")) {
-          let resizeOptions = {
-            width: stat.width
-          };
-          if(metadata.format !== "svg" || !this.options.svgAllowUpscale) {
-            resizeOptions.withoutEnlargement = true;
-          }
 
-          sharpInstance.resize(resizeOptions);
+        if(!isTransformResize) {
+          if(stat.width < metadata.width || (this.options.svgAllowUpscale && metadata.format === "svg")) {
+            let resizeOptions = {
+              width: stat.width
+            };
+
+            if(metadata.format !== "svg" || !this.options.svgAllowUpscale) {
+              resizeOptions.withoutEnlargement = true;
+            }
+
+            sharpInstance.resize(resizeOptions);
+          }
         }
 
         // Format hooks take priority over Sharp processing.
