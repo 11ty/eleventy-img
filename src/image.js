@@ -242,7 +242,7 @@ class Image {
           debug("Filtering non-animated formats from output: from %o to %o", formats, validAnimatedFormats);
           formats = validAnimatedFormats;
         } else {
-          debug("No animated output formats found for animated image, using static image instead.");
+          debug("No animated output formats found for animated image, using original formats (may be a static image): %o", formats);
         }
       }
 
@@ -254,7 +254,7 @@ class Image {
           debug("Filtering non-transparency-friendly formats from output: from %o to %o", formats, validTransparencyFormats);
           formats = validTransparencyFormats;
         } else {
-          debug("At least one transparency-friendly output format of %o must be included if the source image has an alpha channel, skipping formatFiltering and using original formats.", MINIMUM_TRANSPARENCY_TYPES);
+          debug("At least one transparency-friendly output format of %o must be included if the source image has an alpha channel, skipping formatFiltering and using original formats: %o", MINIMUM_TRANSPARENCY_TYPES, formats);
         }
       }
 
@@ -499,8 +499,19 @@ class Image {
       return false;
     }
 
-    // input has multiple pages: https://sharp.pixelplumbing.com/api-input#metadata
-    return metadata?.pages > 1;
+    let isAnimationFriendlyFormat = ANIMATED_TYPES.includes(metadata.format);
+    if(!isAnimationFriendlyFormat) {
+      return false;
+    }
+
+    if(metadata?.pages) {
+      // input has multiple pages: https://sharp.pixelplumbing.com/api-input#metadata
+      // this is *unknown* when not called from `resize` (limited metadata available)
+      return metadata?.pages > 1;
+    }
+
+    // Best guess
+    return isAnimationFriendlyFormat;
   }
 
   getEntryFormat(metadata) {
