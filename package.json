@@ -43,7 +43,7 @@
     "brotli-size": "^4.0.0",
     "debug": "^4.4.0",
     "entities": "^6.0.0",
-    "image-size": "^1.2.0",
+    "image-size": "^1.2.1",
     "p-queue": "^6.6.2",
     "sharp": "^0.33.5"
   },
