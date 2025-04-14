@@ -415,7 +415,8 @@ class Image {
       "sharpWebpOptions",
       "sharpPngOptions",
       "sharpJpegOptions",
-      "sharpAvifOptions"
+      "sharpAvifOptions",
+      "cacheKey"
     ].sort();
 
     let hashObject = {};
@@ -692,7 +693,7 @@ class Image {
             throw new Error("Expected `function` type in `transform` option. Received: " + transform);
           }
 
-          await transform(sharpInstance);
+          await transform(sharpInstance, { ...stat });
 
           // Resized in a transform (maybe for a crop)
           let dims = Image.getDimensionsFromSharp(sharpInstance, stat);
