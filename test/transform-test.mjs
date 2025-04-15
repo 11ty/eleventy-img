@@ -99,7 +99,7 @@ test("Using the transform plugin with transform on request during dev mode but d
       eleventyConfig.addTemplate("virtual.html", `<img src="./bio-2017.jpg" alt="My ugly mug">`);
 
       eleventyConfig.addPlugin(eleventyImageTransformPlugin, {
-        urlFormat: function(src) {
+        urlFormat: function() {
           return 'https://example.com/';
         },
         formats: ["auto"],
