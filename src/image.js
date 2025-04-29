@@ -1,7 +1,7 @@
 const fs = require("node:fs");
 const fsp = fs.promises;
 const path = require("node:path");
-const { createHash } = require("node:crypto");
+const { createHash } = require("@11ty/eleventy-utils");
 const sharp = require("sharp");
 const getImageSize = require("image-size");
 const brotliSize = require("brotli-size");
@@ -373,13 +373,13 @@ class Image {
     return this.#input;
   }
 
-  getHash() {
+  async getHash() {
     if (this.#computedHash) {
       return this.#computedHash;
     }
 
     // debug("Creating hash for %o", this.src);
-    let hash = createHash("sha256");
+    let hashContents = [];
 
     if(existsCache.exists(this.src)) {
       let fileContents = this.getFileContents();
@@ -397,14 +397,14 @@ class Image {
         }
       }
 
-      hash.update(fileContents);
+      hashContents.push(fileContents);
     } else {
       // probably a remote URL
-      hash.update(this.src);
+      hashContents.push(this.src);
 
       // `useCacheValidityInHash` was removed in v6.0.0, but we’ll keep this as part of the hash to maintain consistent hashes across versions
       if(this.isRemoteUrl && this.assetCache && this.cacheOptions) {
-        hash.update(`ValidCache:true`);
+        hashContents.push(`ValidCache:true`);
       }
     }
 
@@ -426,29 +426,23 @@ class Image {
       }
     }
 
-    hash.update(JSON.stringify(hashObject));
+    hashContents.push(JSON.stringify(hashObject));
 
-    // Get hash in base64, and make it URL safe.
-    // NOTE: When increasing minimum Node version to 14,
-    // replace with hash.digest('base64url')
-    // ANOTHER NOTE: some risk here as I found that not all Nodes have this (e.g. Stackblitz’s Node 16 does not)
-    let base64hash = hash.digest('base64').replace(/=/g, "").replace(/\+/g, "-").replace(/\//g, "_");
-
-    const resultHash = base64hash.substring(0, this.options.hashLength);
-
-    this.#computedHash = resultHash;
-
-    return resultHash;
+    return createHash(...hashContents).then(base64hash => {
+      let truncated = base64hash.substring(0, this.options.hashLength);
+      this.#computedHash = truncated;
+      return truncated;
+    });
   }
 
-  getStat(outputFormat, width, height) {
+  async getStat(outputFormat, width, height) {
     let url;
     let outputFilename;
 
     if(this.options.urlFormat && typeof this.options.urlFormat === "function") {
       let hash;
       if(!this.options.statsOnly) {
-        hash = this.getHash();
+        hash = await this.getHash();
       }
 
       url = this.options.urlFormat({
@@ -458,7 +452,7 @@ class Image {
         format: outputFormat,
       }, this.options);
     } else {
-      let hash = this.getHash();
+      let hash = await this.getHash();
       outputFilename = ImagePath.getFilename(hash, this.src, width, outputFormat, this.options);
       if(Util.isFullUrl(this.options.urlPath)) {
         url = new URL(outputFilename, this.options.urlPath).toString();
@@ -520,8 +514,8 @@ class Image {
 
   // metadata so far: width, height, format
   // src is used to calculate the output file names
-  getFullStats(metadata) {
-    let results = [];
+  async getFullStats(metadata) {
+    let promises = [];
     let isImageAnimated = this.isAnimated(metadata) && Array.isArray(this.options.formatFiltering) && this.options.formatFiltering.includes("animated");
     let hasAlpha = metadata.hasAlpha && Array.isArray(this.options.formatFiltering) && this.options.formatFiltering.includes("transparent");
     let entryFormat = this.getEntryFormat(metadata);
@@ -542,19 +536,20 @@ class Image {
 
     for(let outputFormat of outputFormats) {
       if(!outputFormat || outputFormat === "auto") {
-        throw new Error("When using statsSync or statsByDimensionsSync, `formats: [null | 'auto']` to use the native image format is not supported.");
+        throw new Error("When using `stats` or `statsByDimensions` it is not supported to use `formats: ['auto']` to use the native image format.");
       }
 
       if(outputFormat === "svg") {
         if(entryFormat === "svg") {
-          let svgStats = this.getStat("svg", metadata.width, metadata.height);
+          promises.push(this.getStat("svg", metadata.width, metadata.height).then(svgStats => {
+            // SVG metadata.size is only available with Buffer input (remote urls)
+            if(metadata.size) {
+              // Note this is unfair for comparison with raster formats because its uncompressed (no GZIP, etc)
+              svgStats.size = metadata.size;
+            }
 
-          // SVG metadata.size is only available with Buffer input (remote urls)
-          if(metadata.size) {
-            // Note this is unfair for comparison with raster formats because its uncompressed (no GZIP, etc)
-            svgStats.size = metadata.size;
-          }
-          results.push(svgStats);
+            return svgStats;
+          }));
 
           if(this.options.svgShortCircuit === true) {
             break;
@@ -569,12 +564,12 @@ class Image {
         let widths = Image.getValidWidths(metadata.width, this.options.widths, metadata.format === "svg" && this.options.svgAllowUpscale, this.options.minimumThreshold);
         for(let width of widths) {
           let height = Image.getAspectRatioHeight(metadata, width);
-
-          results.push(this.getStat(outputFormat, width, height));
+          promises.push(this.getStat(outputFormat, width, height));
         }
       }
     }
 
+    let results = await Promise.all(promises);
     return this.#transformRawFiles(results);
   }
 
@@ -657,11 +652,11 @@ class Image {
 
     // Must find the image format from the metadata
     // File extensions lie or may not be present in the src url!
-    let metadata = await sharpInputImage.metadata();
+    let sharpMetadata = await sharpInputImage.metadata();
 
     let outputFilePromises = [];
 
-    let fullStats = this.getFullStats(metadata);
+    let fullStats = await this.getFullStats(sharpMetadata);
 
     for(let outputFormat in fullStats) {
       for(let stat of fullStats[outputFormat]) {
@@ -700,7 +695,7 @@ class Image {
             isTransformResize = true;
 
             // Overwrite current `stat` object with new sizes and file names
-            stat = this.getStat(stat.format, dims.width, dims.height);
+            stat = await this.getStat(stat.format, dims.width, dims.height);
           }
         }
 
@@ -711,17 +706,17 @@ class Image {
         // Use sharp.rotate to bake orientation into the image (https://github.com/lovell/sharp/blob/v0.32.6/docs/api-operation.md#rotate):
         // > If no angle is provided, it is determined from the EXIF data. Mirroring is supported and may infer the use of a flip operation.
         // > The use of rotate without an angle will remove the EXIF Orientation tag, if any.
-        if(this.options.fixOrientation || this.needsRotation(metadata.orientation)) {
+        if(this.options.fixOrientation || this.needsRotation(sharpMetadata.orientation)) {
           sharpInstance.rotate();
         }
 
         if(!isTransformResize) {
-          if(stat.width < metadata.width || (this.options.svgAllowUpscale && metadata.format === "svg")) {
+          if(stat.width < sharpMetadata.width || (this.options.svgAllowUpscale && sharpMetadata.format === "svg")) {
             let resizeOptions = {
               width: stat.width
             };
 
-            if(metadata.format !== "svg" || !this.options.svgAllowUpscale) {
+            if(sharpMetadata.format !== "svg" || !this.options.svgAllowUpscale) {
               resizeOptions.withoutEnlargement = true;
             }
 
@@ -751,7 +746,7 @@ class Image {
         } else { // not a format hook
           let sharpFormatOptions = this.getSharpOptionsForFormat(outputFormat);
           let hasFormatOptions = Object.keys(sharpFormatOptions).length > 0;
-          if(hasFormatOptions || outputFormat && metadata.format !== outputFormat) {
+          if(hasFormatOptions || outputFormat && sharpMetadata.format !== outputFormat) {
             // https://github.com/lovell/sharp/issues/3680
             // Fix heic regression in sharp 0.33
             if(outputFormat === "heic" && !sharpFormatOptions.compression) {
@@ -803,6 +798,7 @@ class Image {
     let input;
     if(Util.isRemoteUrl(this.src)) {
       if(this.rawOptions.remoteImageMetadata?.width && this.rawOptions.remoteImageMetadata?.height) {
+        // Promise
         return this.getFullStats({
           width: this.rawOptions.remoteImageMetadata.width,
           height: this.rawOptions.remoteImageMetadata.height,
@@ -820,6 +816,7 @@ class Image {
     try {
       let { width, height, type } = getImageSize(input || this.src);
 
+      // Promise
       return this.getFullStats({
         width,
         height,
@@ -885,18 +882,34 @@ class Image {
     return img;
   }
 
-  /* `statsSync` doesn’t generate any files, but will tell you where
-  * the asynchronously generated files will end up! This is useful
-  * in synchronous-only template environments where you need the
-  * image URLs synchronously but can’t rely on the files being in
-  * the correct location yet.
-  *
-  * `options.dryRun` is still asynchronous but also doesn’t generate
-  * any files.
-  */
+  static statsSync() {
+    throw new Error("`statsSync` and `statsByDimensionsSync` were deprecated in Eleventy Image v4 and removed in v7: https://github.com/11ty/eleventy-img/issues/211 You can swap to use async methods/functions `stats` or `statsByDimensions`. Or you can use the Image HTML Transform method to work with template syntaxes that are not asynchronous-friendly: https://www.11ty.dev/docs/plugins/image/#html-transform");
+  }
+
   statsSync() {
+    Image.statsSync();
+  }
+
+  static statsByDimensionsSync() {
+    Image.statsSync();
+  }
+
+  statsByDimensionsSync() {
+    Image.statsSync();
+  }
+
+  static async stats(src, opts) {
+    if(typeof src === "string" && Util.isRemoteUrl(src)) {
+      throw new Error("`stats` is not supported with remote sources. Use `statsByDimensions(src, width, height, options)` instead.");
+    }
+
+    let img = Image.create(src, opts);
+    return img.stats();
+  }
+
+  async stats() {
     if(this.isRemoteUrl) {
-      throw new Error("`statsSync` is not supported with remote sources. Use `statsByDimensionsSync(src, width, height, options)` instead.");
+      throw new Error("`stats` is not supported with remote sources. Use `statsByDimensions(src, width, height, options)` instead.");
     }
 
     let dimensions = getImageSize(this.src);
@@ -908,27 +921,19 @@ class Image {
     });
   }
 
-  static statsSync(src, opts) {
-    if(typeof src === "string" && Util.isRemoteUrl(src)) {
-      throw new Error("`statsSync` is not supported with remote sources. Use `statsByDimensionsSync(src, width, height, options)` instead.");
-    }
-
-    let img = Image.create(src, opts);
-    return img.statsSync();
-  }
-
-  statsByDimensionsSync(width, height) {
+  statsByDimensions(width, height) {
     let dimensions = {
       width,
       height,
       guess: true
     };
+
     return this.getFullStats(dimensions);
   }
 
-  static statsByDimensionsSync(src, width, height, opts) {
+  static statsByDimensions(src, width, height, opts) {
     let img = Image.create(src, opts);
-    return img.statsByDimensionsSync(width, height);
+    return img.statsByDimensions(width, height);
   }
 }
 

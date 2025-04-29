@@ -37,7 +37,7 @@ test("Image service", async t => {
     remoteAssetContent: 'remote asset content'
   };
 
-  let results = eleventyImage.statsByDimensionsSync(screenshotUrl, 1440, 900, options);
+  let results = await eleventyImage.statsByDimensions(screenshotUrl, 1440, 900, options);
 
   t.is(generateHTML(results, {
     alt: "",
@@ -358,7 +358,7 @@ test("Image markup (<picture> with attributes issue #197)", async t => {
     `</picture>`].join(""));
 });
 
-test("Issue #177", t => {
+test("Issue #177", async t => {
   let src = "https://www.zachleat.com/img/avatar-2017.png?q=1";
 
   const options = {
@@ -371,7 +371,7 @@ test("Issue #177", t => {
     },
   };
 
-  let metadata = eleventyImage.statsByDimensionsSync(src, 160, 160, options);
+  let metadata = await eleventyImage.statsByDimensions(src, 160, 160, options);
 
   const imageAttributes = {
     alt: "",

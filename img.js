@@ -119,12 +119,10 @@ module.exports.Image = Image;
 module.exports.ImagePath = require("./src/image-path.js");
 
 // Backwards compat
-module.exports.statsSync = Image.statsSync;
-module.exports.statsByDimensionsSync = Image.statsByDimensionsSync;
 module.exports.getFormats = Image.getFormatsArray;
 module.exports.getWidths = Image.getValidWidths;
 
-module.exports.getHash = function getHash(src, options) {
+module.exports.getHash = async function getHash(src, options) {
   let img = new Image(src, options);
   return img.getHash();
 };
@@ -144,3 +142,11 @@ module.exports.eleventyImageTransformPlugin = eleventyImageTransformPlugin;
 
 const { eleventyImageOnRequestDuringServePlugin } = require("./src/on-request-during-serve-plugin.js");
 module.exports.eleventyImageOnRequestDuringServePlugin = eleventyImageOnRequestDuringServePlugin;
+
+module.exports.stats = Image.stats;
+module.exports.statsByDimensions = Image.statsByDimensions;
+
+// Removed (throw errors on use)
+// https://github.com/11ty/eleventy-img/issues/211
+module.exports.statsSync = Image.statsSync;
+module.exports.statsByDimensionsSync = Image.statsByDimensionsSync;

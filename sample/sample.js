@@ -24,11 +24,11 @@ const eleventyImage = require("../");
   console.log( "https://www.11ty.dev/img/possum-balloon-original-sm.png" );
   console.dir( possum );
 
-  // let possumStats = eleventyImage.statsSync("https://www.11ty.dev/img/possum-balloon-original-sm.png", {
+  // let possumStats = await eleventyImage.stats("https://www.11ty.dev/img/possum-balloon-original-sm.png", {
   //   formats: ["avif", "jpeg"],
   //   widths: [400, 1280],
   // });
-  // console.log( "https://www.11ty.dev/img/possum-balloon-original-sm.png (statsSync)" );
+  // console.log( "https://www.11ty.dev/img/possum-balloon-original-sm.png (stats)" );
   // console.dir( possumStats );
 
 
@@ -48,11 +48,11 @@ const eleventyImage = require("../");
   console.log( "./test/bio-2017.jpg" );
   console.dir( bioImage );
 
-  let bioImageStats = eleventyImage.statsSync("../test/bio-2017.jpg", {
+  let bioImageStats = await eleventyImage.stats("../test/bio-2017.jpg", {
     formats: ["avif", "jpeg"],
     widths: [400, 1280],
   });
-  console.log( "./test/bio-2017.jpg (statsSync)" );
+  console.log( "./test/bio-2017.jpg (stats)" );
   console.dir( bioImageStats );
 
   let bioImageDryRun = await eleventyImage("../test/bio-2017.jpg", {

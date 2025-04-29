@@ -21,7 +21,7 @@ const DEFAULTS = {
   svgShortCircuit: false,
   svgAllowUpscale: true,
   svgCompressionSize: "", // "br" to report SVG `size` property in metadata as Brotli compressed
-  // overrideInputFormat: false, // internal, used to force svg output in statsSync et al
+  // overrideInputFormat: false, // internal, used to force svg output in stats() et al
   sharpOptions: {}, // options passed to the Sharp constructor
   sharpWebpOptions: {}, // options passed to the Sharp webp output method
   sharpPngOptions: {}, // options passed to the Sharp png output method
@@ -45,16 +45,19 @@ const DEFAULTS = {
   filenameFormat: null,
 
   // urlFormat allows you to return a full URL to an image including the domain.
-  // Useful when you’re using your own hosted image service (probably via .statsSync or .statsByDimensionsSync)
+  // Useful when you’re using your own hosted image service
   // Note: when you use this, metadata will not include .filename or .outputPath
   urlFormat: null,
 
   // If true, skips all image processing, just return stats. Doesn’t read files, doesn’t write files.
   // Important to note that `dryRun: true` performs image processing and includes a buffer—this does not.
   // Useful when used with `urlFormat` above.
-  // Better than .statsSync* functions, because this will use the in-memory cache and de-dupe requests. Those will not.
+
+  // `statsOnly: true` skips content hashing
   statsOnly: false,
-  remoteImageMetadata: {}, // For `statsOnly` remote images, this needs to be populated with { width, height, format? }
+
+  // `remoteImageMetadata: { width, height, format? }` can be used to skip reading input image/hashing (faster perf) for stats
+  remoteImageMetadata: {},
 
   useCache: true, // in-memory and disk cache
   dryRun: false, // Also returns a buffer instance in the return object. Doesn’t write anything to the file system
