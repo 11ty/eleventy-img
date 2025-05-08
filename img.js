@@ -6,6 +6,10 @@ const Util = require("./src/util.js");
 const Image = require("./src/image.js");
 const DirectoryManager = require("./src/directory-manager.js");
 
+// For exports
+const getImageSize = require("image-size");
+const ImagePath = require("./src/image-path.js");
+
 const debug = require("debug")("Eleventy:Image");
 
 const GLOBAL_OPTIONS = require("./src/global-options.js").defaults;
@@ -116,8 +120,8 @@ Object.defineProperty(module.exports, "concurrency", {
 
 module.exports.Util = Util;
 module.exports.Image = Image;
-module.exports.ImagePath = require("./src/image-path.js");
-module.exports.ImageSize = require("image-size");
+module.exports.ImagePath = ImagePath;
+module.exports.ImageSize = getImageSize;
 
 // Backwards compat
 module.exports.statsSync = Image.statsSync;
