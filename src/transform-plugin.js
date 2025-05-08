@@ -10,7 +10,7 @@ const ATTRS = {
   ORIGINAL_SOURCE: "eleventy:internal_original_src",
 };
 
-function getSourcePath(sourceNode/*, rootTargetNode*/) {
+function getSrcAttributeValue(sourceNode/*, rootTargetNode*/) {
   // Debatable TODO: use rootTargetNode (if `picture`) to retrieve a potentially higher quality source from <source srcset>
   return sourceNode.attrs?.src;
 }
@@ -83,7 +83,7 @@ function getOutputLocations(originalSource, outputDirectoryFromAttribute, pageCo
 }
 
 function transformTag(context, sourceNode, rootTargetNode, opts) {
-  let originalSource = getSourcePath(sourceNode, rootTargetNode);
+  let originalSource = getSrcAttributeValue(sourceNode, rootTargetNode);
 
   if(!originalSource) {
     return sourceNode;

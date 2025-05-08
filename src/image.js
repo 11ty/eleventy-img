@@ -1,13 +1,14 @@
 const fs = require("node:fs");
 const fsp = fs.promises;
 const path = require("node:path");
-const { createHash } = require("@11ty/eleventy-utils");
-const sharp = require("sharp");
 const getImageSize = require("image-size");
-const brotliSize = require("brotli-size");
 const debugUtil = require("debug");
+
+const { createHash } = require("@11ty/eleventy-utils");
 const { Fetch } = require("@11ty/eleventy-fetch");
 
+const sharp = require("./adapters/sharp.js");
+const brotliSize = require("./adapters/brotli-size.js");
 const Util = require("./util.js");
 const ImagePath = require("./image-path.js");
 const generateHTML = require("./generate-html.js");
@@ -609,7 +610,7 @@ class Image {
   getOutputSize(contents, filePath) {
     if(contents) {
       if(this.options.svgCompressionSize === "br") {
-        return brotliSize.sync(contents);
+        return brotliSize(contents);
       }
 
       if("length" in contents) {
