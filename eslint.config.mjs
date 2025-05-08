@@ -1,27 +1,29 @@
+import { defineConfig } from "eslint/config";
+import pluginJs from "@eslint/js";
+import pluginStylistic from "@stylistic/eslint-plugin-js";
 import globals from "globals";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
-import js from "@eslint/js";
-import { FlatCompat } from "@eslint/eslintrc";
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const compat = new FlatCompat({
-  baseDirectory: __dirname,
-  recommendedConfig: js.configs.recommended,
-  allConfig: js.configs.all
-});
+const GLOB_JS = '**/*.?([cm])js';
 
-export default [...compat.extends("eslint:recommended"), {
-  languageOptions: {
-    globals: {
-      ...globals.node,
+export default defineConfig([
+  {
+    files: [GLOB_JS],
+    plugins: {
+      js: pluginJs,
+      "@stylistic/js": pluginStylistic
+    },
+    extends: [
+      "js/recommended",
+    ],
+    languageOptions: {
+      ecmaVersion: 2022,
+      sourceType: "module",
+      globals: { ...globals.node },
+    },
+    rules: {
+      "@stylistic/js/indent": ["error", 2],
+      "@stylistic/js/linebreak-style": ["error", "unix"],
+      "@stylistic/js/semi": ["error", "always"],
     },
   },
-
-  rules: {
-    indent: ["error", 2],
-    "linebreak-style": ["error", "unix"],
-    semi: ["error", "always"],
-  },
-}];
+]);
