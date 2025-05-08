@@ -117,6 +117,7 @@ Object.defineProperty(module.exports, "concurrency", {
 module.exports.Util = Util;
 module.exports.Image = Image;
 module.exports.ImagePath = require("./src/image-path.js");
+module.exports.ImageSize = require("image-size");
 
 // Backwards compat
 module.exports.getFormats = Image.getFormatsArray;
