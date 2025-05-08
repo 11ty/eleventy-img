@@ -1,13 +1,14 @@
 const fs = require("node:fs");
 const fsp = fs.promises;
 const path = require("node:path");
-const { createHash } = require("node:crypto");
-const sharp = require("sharp");
 const getImageSize = require("image-size");
-const brotliSize = require("brotli-size");
 const debugUtil = require("debug");
+
+const { createHashSync } = require("@11ty/eleventy-utils");
 const { Fetch } = require("@11ty/eleventy-fetch");
 
+const sharp = require("./adapters/sharp.js");
+const brotliSize = require("./adapters/brotli-size.js");
 const Util = require("./util.js");
 const ImagePath = require("./image-path.js");
 const generateHTML = require("./generate-html.js");
@@ -379,7 +380,7 @@ class Image {
     }
 
     // debug("Creating hash for %o", this.src);
-    let hash = createHash("sha256");
+    let hashContents = [];
 
     if(existsCache.exists(this.src)) {
       let fileContents = this.getFileContents();
@@ -397,14 +398,14 @@ class Image {
         }
       }
 
-      hash.update(fileContents);
+      hashContents.push(fileContents);
     } else {
       // probably a remote URL
-      hash.update(this.src);
+      hashContents.push(this.src);
 
       // `useCacheValidityInHash` was removed in v6.0.0, but we’ll keep this as part of the hash to maintain consistent hashes across versions
       if(this.isRemoteUrl && this.assetCache && this.cacheOptions) {
-        hash.update(`ValidCache:true`);
+        hashContents.push(`ValidCache:true`);
       }
     }
 
@@ -426,19 +427,12 @@ class Image {
       }
     }
 
-    hash.update(JSON.stringify(hashObject));
+    hashContents.push(JSON.stringify(hashObject));
 
-    // Get hash in base64, and make it URL safe.
-    // NOTE: When increasing minimum Node version to 14,
-    // replace with hash.digest('base64url')
-    // ANOTHER NOTE: some risk here as I found that not all Nodes have this (e.g. Stackblitz’s Node 16 does not)
-    let base64hash = hash.digest('base64').replace(/=/g, "").replace(/\+/g, "-").replace(/\//g, "_");
-
-    const resultHash = base64hash.substring(0, this.options.hashLength);
-
-    this.#computedHash = resultHash;
-
-    return resultHash;
+    let base64hash = createHashSync(...hashContents);
+    let truncated = base64hash.substring(0, this.options.hashLength);
+    this.#computedHash = truncated;
+    return truncated;
   }
 
   getStat(outputFormat, width, height) {
@@ -614,7 +608,7 @@ class Image {
   getOutputSize(contents, filePath) {
     if(contents) {
       if(this.options.svgCompressionSize === "br") {
-        return brotliSize.sync(contents);
+        return brotliSize(contents);
       }
 
       if("length" in contents) {
@@ -657,11 +651,11 @@ class Image {
 
     // Must find the image format from the metadata
     // File extensions lie or may not be present in the src url!
-    let metadata = await sharpInputImage.metadata();
+    let sharpMetadata = await sharpInputImage.metadata();
 
     let outputFilePromises = [];
 
-    let fullStats = this.getFullStats(metadata);
+    let fullStats = this.getFullStats(sharpMetadata);
 
     for(let outputFormat in fullStats) {
       for(let stat of fullStats[outputFormat]) {
@@ -711,17 +705,17 @@ class Image {
         // Use sharp.rotate to bake orientation into the image (https://github.com/lovell/sharp/blob/v0.32.6/docs/api-operation.md#rotate):
         // > If no angle is provided, it is determined from the EXIF data. Mirroring is supported and may infer the use of a flip operation.
         // > The use of rotate without an angle will remove the EXIF Orientation tag, if any.
-        if(this.options.fixOrientation || this.needsRotation(metadata.orientation)) {
+        if(this.options.fixOrientation || this.needsRotation(sharpMetadata.orientation)) {
           sharpInstance.rotate();
         }
 
         if(!isTransformResize) {
-          if(stat.width < metadata.width || (this.options.svgAllowUpscale && metadata.format === "svg")) {
+          if(stat.width < sharpMetadata.width || (this.options.svgAllowUpscale && sharpMetadata.format === "svg")) {
             let resizeOptions = {
               width: stat.width
             };
 
-            if(metadata.format !== "svg" || !this.options.svgAllowUpscale) {
+            if(sharpMetadata.format !== "svg" || !this.options.svgAllowUpscale) {
               resizeOptions.withoutEnlargement = true;
             }
 
@@ -751,7 +745,7 @@ class Image {
         } else { // not a format hook
           let sharpFormatOptions = this.getSharpOptionsForFormat(outputFormat);
           let hasFormatOptions = Object.keys(sharpFormatOptions).length > 0;
-          if(hasFormatOptions || outputFormat && metadata.format !== outputFormat) {
+          if(hasFormatOptions || outputFormat && sharpMetadata.format !== outputFormat) {
             // https://github.com/lovell/sharp/issues/3680
             // Fix heic regression in sharp 0.33
             if(outputFormat === "heic" && !sharpFormatOptions.compression) {
