@@ -813,15 +813,7 @@ class Image {
     // Local images
     try {
       // Related to https://github.com/11ty/eleventy-img/issues/295
-      let { width, height, type } = await new Promise((resolve, reject) => {
-        getImageSize(input || this.src, function (err, dimensions) {
-          if(err) {
-            reject(err);
-          } else {
-            resolve(dimensions);
-          }
-        });
-      });
+      let { width, height, type } = getImageSize(input || this.src);
 
       return this.getFullStats({
         width,
