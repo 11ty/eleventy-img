@@ -1,20 +1,15 @@
-const {default: PQueue} = require("p-queue");
+import PQueue from "p-queue";
+import debugUtil from "debug";
 
-const DeferCounter = require("./src/defer-counter.js");
-const BuildLogger = require("./src/build-logger.js");
-const Util = require("./src/util.js");
-const Image = require("./src/image.js");
-const DirectoryManager = require("./src/directory-manager.js");
+import DeferCounter from "./src/defer-counter.js";
+import BuildLogger from "./src/build-logger.js";
+import Util from "./src/util.js";
+import Image from "./src/image.js";
+import DirectoryManager from "./src/directory-manager.js";
+import { DEFAULTS as GLOBAL_OPTIONS } from "./src/global-options.js";
+import { memCache, diskCache } from "./src/caches.js";
 
-// For exports
-const getImageSize = require("image-size");
-const ImagePath = require("./src/image-path.js");
-
-const debug = require("debug")("Eleventy:Image");
-
-const GLOBAL_OPTIONS = require("./src/global-options.js").defaults;
-
-const { memCache, diskCache } = require("./src/caches.js");
+const debug = debugUtil("Eleventy:Image");
 
 let deferCounter = new DeferCounter();
 let buildLogger = new BuildLogger();
@@ -29,7 +24,7 @@ processingQueue.on("active", () => {
 });
 
 // TODO move this into build-logger.js
-function setupLogger(eleventyConfig, opts) {
+export function setupLogger(eleventyConfig, opts) {
   if(typeof eleventyConfig?.logger?.logWithOptions !== "function" || Util.isRequested(opts?.generatedVia)) {
     return;
   }
@@ -96,7 +91,7 @@ function createImage(src, opts = {}) {
   return img;
 };
 
-function queueImage(src, opts = {}) {
+export default function queueImage(src, opts = {}) {
   if(src.constructor?.name === "UserConfig") {
     throw new Error(`Eleventy Image’s default export is not an Eleventy Plugin and cannot be used with \`eleventyConfig.addPlugin()\`. Use the \`eleventyImageTransformPlugin\` named export instead, like this: \`import { eleventyImageTransformPlugin } from '@11ty/eleventy-img';\` or this: \`const { eleventyImageTransformPlugin } = require('@11ty/eleventy-img');\``);
   }
@@ -105,11 +100,7 @@ function queueImage(src, opts = {}) {
   return img.queue();
 }
 
-// Exports
-
-module.exports = queueImage;
-
-Object.defineProperty(module.exports, "concurrency", {
+Object.defineProperty(queueImage, "concurrency", {
   get: function() {
     return processingQueue.concurrency;
   },
@@ -118,34 +109,45 @@ Object.defineProperty(module.exports, "concurrency", {
   },
 });
 
-module.exports.Util = Util;
-module.exports.Image = Image;
-module.exports.ImagePath = ImagePath;
-module.exports.ImageSize = getImageSize;
+// Support default export and named exports for backwards compat
+import { default as ImagePath } from "./src/image-path.js";
+import { default as ImageSize } from "image-size";
+import { generateHTML, generateObject } from "./src/generate-html.js";
 
-// Backwards compat
-module.exports.statsSync = Image.statsSync;
-module.exports.statsByDimensionsSync = Image.statsByDimensionsSync;
-module.exports.getFormats = Image.getFormatsArray;
-module.exports.getWidths = Image.getValidWidths;
-
-module.exports.getHash = function getHash(src, options) {
-  let img = new Image(src, options);
-  return img.getHash();
+export {
+  Util,
+  Image,
+  ImagePath,
+  ImageSize,
+  generateHTML,
+  generateObject
 };
 
-module.exports.setupLogger = setupLogger;
+Object.assign(queueImage, {
+  Util,
+  Image,
+  ImagePath,
+  ImageSize,
+  generateHTML,
+  generateObject,
 
-const generateHTML = require("./src/generate-html.js");
-module.exports.generateHTML = generateHTML;
-module.exports.generateObject = generateHTML.generateObject;
+  // Support default export only for backwards compat
+  // TODO move folks to use Image.* instead
+  statsSync: Image.statsSync,
+  statsByDimensionsSync: Image.statsByDimensionsSync,
+  getFormats: Image.getFormatsArray,
+  getWidths: Image.getValidWidths,
+  getHash: function(src, options) {
+    let img = new Image(src, options);
+    return img.getHash();
+  },
+});
 
-const { eleventyWebcOptionsPlugin } = require("./src/webc-options-plugin.js");
-module.exports.eleventyImagePlugin = eleventyWebcOptionsPlugin;
-module.exports.eleventyImageWebcOptionsPlugin = eleventyWebcOptionsPlugin;
+// Eleventy Plugins (named exports only)
+export {
+  eleventyWebcOptionsPlugin as eleventyImagePlugin,
+  eleventyWebcOptionsPlugin as eleventyImageWebcOptionsPlugin,
+} from "./src/webc-options-plugin.js";
 
-const { eleventyImageTransformPlugin } = require("./src/transform-plugin.js");
-module.exports.eleventyImageTransformPlugin = eleventyImageTransformPlugin;
-
-const { eleventyImageOnRequestDuringServePlugin } = require("./src/on-request-during-serve-plugin.js");
-module.exports.eleventyImageOnRequestDuringServePlugin = eleventyImageOnRequestDuringServePlugin;
+export { eleventyImageTransformPlugin } from "./src/transform-plugin.js";
+export { eleventyImageOnRequestDuringServePlugin } from "./src/on-request-during-serve-plugin.js";

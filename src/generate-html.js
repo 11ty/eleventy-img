@@ -1,4 +1,4 @@
-const { escapeAttribute } = require("entities");
+import { escapeAttribute } from "entities";
 
 const LOWSRC_FORMAT_PREFERENCE = ["jpeg", "png", "gif", "svg", "webp", "avif"];
 
@@ -25,7 +25,7 @@ function generateSrcset(metadataFormatEntry) {
     ]
   }
  */
-function generateObject(metadata, userDefinedImgAttributes = {}, userDefinedPictureAttributes = {}, options = {}) {
+export function generateObject(metadata, userDefinedImgAttributes = {}, userDefinedPictureAttributes = {}, options = {}) {
   let htmlOptions = options?.htmlOptions || {};
   let imgAttributes = Object.assign({}, options?.defaultAttributes, htmlOptions?.imgAttributes, userDefinedImgAttributes);
   let pictureAttributes = Object.assign({}, htmlOptions?.pictureAttributes, userDefinedPictureAttributes);
@@ -192,7 +192,7 @@ function mapObjectToHTML(tagName, attrs = {}) {
   return `<${tagName}${attrHtml ? ` ${attrHtml}` : ""}>`;
 }
 
-function generateHTML(metadata, attributes = {}, htmlOptionsOverride = {}) {
+export function generateHTML(metadata, attributes = {}, htmlOptionsOverride = {}) {
   let htmlOptions = Object.assign({}, metadata?.eleventyImage?.htmlOptions, htmlOptionsOverride);
 
   let isInline = htmlOptions.whitespaceMode !== "block";
@@ -215,6 +215,3 @@ function generateHTML(metadata, attributes = {}, htmlOptionsOverride = {}) {
   }
   return markup.join(!isInline ? "\n" : "");
 }
-
-module.exports = generateHTML;
-module.exports.generateObject = generateObject;

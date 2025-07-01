@@ -1,7 +1,7 @@
-const test = require("ava");
-const exifr = require("exifr");
+import test from "ava";
+import exifr from "exifr";
 
-const eleventyImage = require("../img.js");
+import eleventyImage from "../img.js";
 
 test("Transform Empty", async t => {
   let stats = await eleventyImage("./test/exif-sample-large.jpg", {

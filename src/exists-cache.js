@@ -1,8 +1,8 @@
-const fs = require("node:fs");
-const Util = require("./util.js");
+import fs from "node:fs";
+import Util from "./util.js";
 
 // Checks both files and directories
-class ExistsCache {
+export default class ExistsCache {
   #exists = new Map();
 
   constructor() {
@@ -36,5 +36,3 @@ class ExistsCache {
     return this.#exists.get(path);
   }
 }
-
-module.exports = ExistsCache;

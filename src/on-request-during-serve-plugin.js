@@ -1,13 +1,13 @@
-const fs = require("node:fs");
-const { TemplatePath } = require("@11ty/eleventy-utils");
+import fs from "node:fs";
+import debugUtil from "debug";
+import { TemplatePath } from "@11ty/eleventy-utils";
 
-const eleventyImage = require("../img.js");
-const setupLogger = eleventyImage.setupLogger;
-const Util = require("./util.js");
+import eleventyImage, { setupLogger } from "../img.js";
+import Util from "./util.js";
 
-const debug = require("debug")("Eleventy:Image");
+const debug = debugUtil("Eleventy:Image");
 
-function eleventyImageOnRequestDuringServePlugin(eleventyConfig, options = {}) {
+export function eleventyImageOnRequestDuringServePlugin(eleventyConfig, options = {}) {
   try {
     // Throw an error if the application is not using Eleventy 3.0.0-alpha.7 or newer (including prereleases).
     eleventyConfig.versionCheck(">=3.0.0-alpha.7");
@@ -99,7 +99,3 @@ function eleventyImageOnRequestDuringServePlugin(eleventyConfig, options = {}) {
     }
   });
 }
-
-module.exports = {
-  eleventyImageOnRequestDuringServePlugin,
-};

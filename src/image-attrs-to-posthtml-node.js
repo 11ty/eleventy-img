@@ -1,5 +1,6 @@
-const eleventyImage = require("../img.js");
-const Util = require("./util.js");
+import eleventyImage from "../img.js";
+import Util from "./util.js";
+import { generateObject } from "./generate-html.js";
 
 const ATTR_PREFIX = "eleventy:";
 
@@ -60,7 +61,7 @@ function isValidSimpleWidthAttribute(width) {
   return (""+width) == (""+parseInt(width, 10));
 }
 
-async function imageAttributesToPosthtmlNode(attributes, instanceOptions, globalPluginOptions) {
+export async function imageAttributesToPosthtmlNode(attributes, instanceOptions, globalPluginOptions) {
   if(!attributes.src) {
     throw new Error("Missing `src` attribute for `@11ty/eleventy-img`");
   }
@@ -94,7 +95,7 @@ async function imageAttributesToPosthtmlNode(attributes, instanceOptions, global
   cleanAttrs(attributes);
 
   // You bet we throw an error on missing alt in `imageAttributes` (alt="" works okay)
-  let obj = await eleventyImage.generateObject(metadata, attributes, pictureAttributes, options);
+  let obj = await generateObject(metadata, attributes, pictureAttributes, options);
   return convertToPosthtmlNode(obj);
 }
 
@@ -106,16 +107,16 @@ function cleanAttrs(attrs = {}) {
   }
 }
 
-function cleanTag(node) {
+export function cleanTag(node) {
   // Delete all prefixed attributes
   cleanAttrs(node?.attrs);
 }
 
-function isIgnored(node) {
+export function isIgnored(node) {
   return node?.attrs && node?.attrs?.[ATTR.IGNORE] !== undefined;
 }
 
-function isOptional(node, comparisonValue) {
+export function isOptional(node, comparisonValue) {
   let attrValue = node?.attrs && node?.attrs?.[ATTR.OPTIONAL];
   if(attrValue !== undefined) {
     // if comparisonValue is not specified, return true
@@ -127,14 +128,7 @@ function isOptional(node, comparisonValue) {
   return false;
 }
 
-function getOutputDirectory(node) {
+export function getOutputDirectory(node) {
   return node?.attrs?.[ATTR.OUTPUT];
 }
 
-module.exports = {
-  imageAttributesToPosthtmlNode,
-  cleanTag,
-  isIgnored,
-  isOptional,
-  getOutputDirectory,
-};

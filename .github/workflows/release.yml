@@ -20,4 +20,4 @@ jobs:
         run: npm publish --provenance --access=public --tag=${{ env.NPM_PUBLISH_TAG }}
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-          NPM_PUBLISH_TAG: ${{ contains(github.event.release.tag_name, '-beta.') && 'beta' || 'latest' }}
+          NPM_PUBLISH_TAG: ${{ contains(github.event.release.tag_name, '-alpha.') && 'alpha' || contains(github.event.release.tag_name, '-beta.') && 'beta' || 'latest' }}
