@@ -1,7 +1,7 @@
-const eleventyWebcPlugin = require("@11ty/eleventy-plugin-webc");
-const { eleventyImagePlugin } = require("../../");
+import eleventyWebcPlugin from "@11ty/eleventy-plugin-webc";
+import { eleventyImagePlugin } from "../../img.js";
 
-module.exports = function(eleventyConfig) {
+export default function(eleventyConfig) {
   // WebC
   eleventyConfig.addPlugin(eleventyWebcPlugin, {
     components: [

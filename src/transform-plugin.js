@@ -1,8 +1,8 @@
-const path = require("node:path");
-const Util = require("./util.js");
-const { imageAttributesToPosthtmlNode, getOutputDirectory, cleanTag, isIgnored, isOptional } = require("./image-attrs-to-posthtml-node.js");
-const { getGlobalOptions } = require("./global-options.js");
-const { eleventyImageOnRequestDuringServePlugin } = require("./on-request-during-serve-plugin.js");
+import path from "node:path";
+import Util from "./util.js";
+import { imageAttributesToPosthtmlNode, getOutputDirectory, cleanTag, isIgnored, isOptional } from "./image-attrs-to-posthtml-node.js";
+import { getGlobalOptions } from "./global-options.js";
+import { eleventyImageOnRequestDuringServePlugin } from "./on-request-during-serve-plugin.js";
 
 const PLACEHOLDER_DATA_URI = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNgYAAAAAMAASsJTYQAAAAASUVORK5CYII=";
 
@@ -140,7 +140,7 @@ function transformTag(context, sourceNode, rootTargetNode, opts) {
   });
 }
 
-function eleventyImageTransformPlugin(eleventyConfig, options = {}) {
+export function eleventyImageTransformPlugin(eleventyConfig, options = {}) {
   options = Object.assign({
     extensions: "html",
     transformOnRequest: process.env.ELEVENTY_RUN_MODE === "serve",
@@ -204,7 +204,3 @@ function eleventyImageTransformPlugin(eleventyConfig, options = {}) {
     priority: -1, // we want this to go before <base> or inputpath to url
   });
 }
-
-module.exports = {
-  eleventyImageTransformPlugin,
-};

@@ -1,7 +1,6 @@
-const test = require("ava");
-const eleventyImage = require("../");
-const generateHTML = require("../src/generate-html.js");
-const generateObject = generateHTML.generateObject;
+import test from "ava";
+import eleventyImage from "../img.js";
+import { generateHTML, generateObject } from "../src/generate-html.js";
 
 test("Image markup (defaults)", async t => {
   let results = await eleventyImage("./test/bio-2017.jpg", {

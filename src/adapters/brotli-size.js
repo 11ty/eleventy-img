@@ -1,5 +1,5 @@
-const brotliSize = require("brotli-size");
+import brotliSize from "brotli-size";
 
-module.exports = function(contents) {
+export default function(contents) {
   return brotliSize.sync(contents);
 };

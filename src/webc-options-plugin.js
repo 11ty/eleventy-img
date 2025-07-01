@@ -1,7 +1,7 @@
-const { getGlobalOptions } = require("./global-options.js");
-const { eleventyImageOnRequestDuringServePlugin } = require("./on-request-during-serve-plugin.js");
+import { getGlobalOptions } from "./global-options.js";
+import { eleventyImageOnRequestDuringServePlugin } from "./on-request-during-serve-plugin.js";
 
-function eleventyWebcOptionsPlugin(eleventyConfig, options = {}) {
+export function eleventyWebcOptionsPlugin(eleventyConfig, options = {}) {
   options = Object.assign({
     transformOnRequest: process.env.ELEVENTY_RUN_MODE === "serve",
   }, options);
@@ -17,7 +17,3 @@ function eleventyWebcOptionsPlugin(eleventyConfig, options = {}) {
     eleventyConfig.addPlugin(eleventyImageOnRequestDuringServePlugin);
   }
 }
-
-module.exports = {
-  eleventyWebcOptionsPlugin,
-};

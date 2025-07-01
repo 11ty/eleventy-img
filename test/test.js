@@ -1,13 +1,13 @@
-const path = require("node:path");
-const fs = require("node:fs");
-const os = require("node:os");
-const { URL } = require("node:url");
+import path from "node:path";
+import fs from "node:fs";
+import os from "node:os";
+import { URL } from "node:url";
 
-const test = require("ava");
-const sharp = require("sharp");
-const pixelmatch = require('pixelmatch');
+import test from "ava";
+import sharp from "sharp";
+import pixelmatch from 'pixelmatch';
 
-const eleventyImage = require("../");
+import eleventyImage, { Image, Util } from "../img.js";
 
 // Remember that any outputPath tests must use path.join to work on Windows
 
@@ -675,7 +675,7 @@ test("SVG files and dryRun: Issue #72", async t => {
 });
 
 test("Sorted object keys", async t => {
-  t.deepEqual(eleventyImage.Util.getSortedObject({
+  t.deepEqual(Util.getSortedObject({
     c: 3,
     b: 2,
     a: 1
@@ -685,7 +685,7 @@ test("Sorted object keys", async t => {
     c: 3
   });
 
-  t.deepEqual(eleventyImage.Util.getSortedObject({
+  t.deepEqual(Util.getSortedObject({
     b: 2,
     a: 1,
     1: 3,
@@ -893,25 +893,25 @@ test("statsOnly using remote image, no urlFormat", async t => {
 });
 
 test("src is recognized as local when using absolute path on Windows", t => {
-  let image = new eleventyImage.Image("C:\\image.jpg");
+  let image = new Image("C:\\image.jpg");
 
   t.is(image.isRemoteUrl, false);
 });
 
 test("src is recognized as local when using absolute path on POSIX", t => {
-  let image = new eleventyImage.Image("/home/user/image.jpg");
+  let image = new Image("/home/user/image.jpg");
 
   t.is(image.isRemoteUrl, false);
 });
 
 test("src is recognized as remote when using https scheme", t => {
-  let image = new eleventyImage.Image("https://example.com/image.jpg");
+  let image = new Image("https://example.com/image.jpg");
 
   t.is(image.isRemoteUrl, true);
 });
 
 test("src is recognized as remote when using http scheme", t => {
-  let image = new eleventyImage.Image("http://example.com/image.jpg");
+  let image = new Image("http://example.com/image.jpg");
 
   t.is(image.isRemoteUrl, true);
 });

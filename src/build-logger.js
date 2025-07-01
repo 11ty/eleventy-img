@@ -1,9 +1,9 @@
-const path = require("node:path");
-const { TemplatePath } = require("@11ty/eleventy-utils");
+import path from "node:path";
+import { TemplatePath } from "@11ty/eleventy-utils";
 
-const Util = require("./util.js");
+import Util from "./util.js";
 
-class BuildLogger {
+export default class BuildLogger {
   #eleventyConfig;
 
   constructor() {
@@ -62,5 +62,3 @@ class BuildLogger {
     this.log(message, options, logOptions);
   }
 }
-
-module.exports = BuildLogger;

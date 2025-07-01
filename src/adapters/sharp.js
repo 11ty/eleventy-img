@@ -1,3 +1,2 @@
-const sharp = require("sharp");
+export { default } from "sharp";
 
-module.exports = sharp;

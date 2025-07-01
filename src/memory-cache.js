@@ -1,6 +1,8 @@
-const debug = require("debug")("Eleventy:Image");
+import debugUtil from "debug";
 
-class MemoryCache {
+const debug = debugUtil("Eleventy:Image");
+
+export default class MemoryCache {
   constructor() {
     this.cache = {};
     this.hitCounter = 0;
@@ -50,5 +52,3 @@ class MemoryCache {
     return Object.keys(this.cache).length;
   }
 }
-
-module.exports = MemoryCache;

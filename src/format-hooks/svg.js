@@ -1,8 +1,9 @@
-const fs = require("node:fs");
-const debugUtil = require("debug");
+import fs from "node:fs";
+import debugUtil from "debug";
+
 const debugAssets = debugUtil("Eleventy:Assets");
 
-module.exports = async function createSvg(sharpInstance) {
+export default async function createSvg(sharpInstance) {
   let input = sharpInstance.options.input;
   let svgBuffer = input.buffer;
   if(svgBuffer) { // remote URL already has buffer

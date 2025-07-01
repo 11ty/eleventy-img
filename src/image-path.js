@@ -1,6 +1,6 @@
-const path = require("node:path");
+import path from "node:path";
 
-class ImagePath {
+export default class ImagePath {
   static filenameFormat(id, src, width, format) { // and options
     if (width) {
       return `${id}-${width}.${format}`;
@@ -27,4 +27,3 @@ class ImagePath {
   }
 }
 
-module.exports = ImagePath;

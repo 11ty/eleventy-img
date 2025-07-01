@@ -1,6 +1,6 @@
 // const debug = require("debug")("Eleventy:Image");
 
-class DiskCache {
+export default class DiskCache {
   #existsCache;
 
   constructor() {
@@ -50,5 +50,3 @@ class DiskCache {
     return false;
   }
 }
-
-module.exports = DiskCache;

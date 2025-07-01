@@ -1,9 +1,10 @@
-const fs = require("node:fs");
-const path = require("node:path");
-const debugUtil = require("debug");
+import fs from "node:fs";
+import path from "node:path";
+import debugUtil from "debug";
+
 const debugAssets = debugUtil("Eleventy:Assets");
 
-class DirectoryManager {
+export default class DirectoryManager {
   #dirs = new Set();
 
   isCreated(dir) {
@@ -25,5 +26,3 @@ class DirectoryManager {
     this.create(dir);
   }
 }
-
-module.exports = DirectoryManager;

@@ -1,4 +1,4 @@
-class DeferCounter {
+export default class DeferCounter {
   constructor() {
     this.resetCount();
   }
@@ -23,5 +23,3 @@ class DeferCounter {
     this.deferCount++;
   }
 }
-
-module.exports = DeferCounter;

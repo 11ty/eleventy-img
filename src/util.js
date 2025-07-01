@@ -1,6 +1,6 @@
-const path = require("node:path");
+import path from "node:path";
 
-class Util {
+export default class Util {
   static KEYS = {
     requested: "requested"
   };
@@ -15,6 +15,11 @@ class Util {
       obj[key] = unordered[key];
     }
     return obj;
+  }
+
+  // Temporary alias for changes made in https://github.com/11ty/eleventy-img/pull/138
+  static isFullUrl(url) {
+    return this.isRemoteUrl(url);
   }
 
   static isRemoteUrl(url) {
@@ -71,8 +76,3 @@ class Util {
     });
   }
 }
-
-// Temporary alias for changes made in https://github.com/11ty/eleventy-img/pull/138
-Util.isFullUrl = Util.isRemoteUrl;
-
-module.exports = Util;

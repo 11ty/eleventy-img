@@ -1,10 +1,11 @@
-const path = require("node:path");
-const os = require("node:os");
+import path from "node:path";
+import os from "node:os";
 
-const Util = require("./util.js");
-const svgHook = require("./format-hooks/svg.js");
+import eleventyImage from "../img.js";
+import Util from "./util.js";
+import svgHook from "./format-hooks/svg.js";
 
-const DEFAULTS = {
+export const DEFAULTS = {
   widths: ["auto"],
   formats: ["webp", "jpeg"], // "png", "svg", "avif"
 
@@ -97,11 +98,11 @@ const DEFAULTS = {
   // v6.0.0, removed `useCacheValidityInHash: true` see https://github.com/11ty/eleventy-img/issues/146#issuecomment-2555741376
 };
 
-function getGlobalOptions(eleventyConfig, options, via) {
+export function getGlobalOptions(eleventyConfig, options, via) {
   let directories = eleventyConfig.directories;
   let globalOptions = Object.assign({
     packages: {
-      image: require("../"),
+      image: eleventyImage,
     },
     outputDir: path.join(directories.output, options.urlPath || ""),
     failOnError: true,
@@ -114,8 +115,3 @@ function getGlobalOptions(eleventyConfig, options, via) {
 
   return globalOptions;
 }
-
-module.exports = {
-  getGlobalOptions,
-  defaults: DEFAULTS,
-};

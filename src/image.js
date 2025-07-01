@@ -1,20 +1,19 @@
-const fs = require("node:fs");
-const fsp = fs.promises;
-const path = require("node:path");
-const getImageSize = require("image-size");
-const debugUtil = require("debug");
+import fs, { promises as fsp } from "node:fs";
+import path from "node:path";
+import getImageSize from "image-size";
+import debugUtil from "debug";
 
-const { createHashSync } = require("@11ty/eleventy-utils");
-const { Fetch } = require("@11ty/eleventy-fetch");
+import { createHashSync } from "@11ty/eleventy-utils";
+import { Fetch } from "@11ty/eleventy-fetch";
 
-const sharp = require("./adapters/sharp.js");
-const brotliSize = require("./adapters/brotli-size.js");
-const Util = require("./util.js");
-const ImagePath = require("./image-path.js");
-const generateHTML = require("./generate-html.js");
+import sharp from "./adapters/sharp.js";
+import brotliSize from "./adapters/brotli-size.js";
+import Util from "./util.js";
+import ImagePath from "./image-path.js";
+import { generateHTML } from "./generate-html.js";
 
-const GLOBAL_OPTIONS = require("./global-options.js").defaults;
-const { existsCache, memCache, diskCache } = require("./caches.js");
+import { DEFAULTS as GLOBAL_OPTIONS } from "./global-options.js";
+import { existsCache, memCache, diskCache } from "./caches.js";
 
 const debug = debugUtil("Eleventy:Image");
 const debugAssets = debugUtil("Eleventy:Assets");
@@ -53,7 +52,7 @@ const MINIMUM_TRANSPARENCY_TYPES = [
   "svg",
 ];
 
-class Image {
+export default class Image {
   #input;
   #contents = {};
   #queue;
@@ -927,4 +926,3 @@ class Image {
   }
 }
 
-module.exports = Image;
