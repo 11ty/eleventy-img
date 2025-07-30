@@ -168,7 +168,9 @@ export function eleventyImageTransformPlugin(eleventyConfig, options = {}) {
         match.call(pictureNode, { tag: 'img' }, imgNode => {
           imgNode._insideOfPicture = true;
 
-          if(!isIgnored(imgNode) && !imgNode?.attrs?.src?.startsWith("data:")) {
+          if(isIgnored(imgNode) || imgNode?.attrs?.src?.startsWith("data:")) {
+            cleanTag(imgNode);
+          } else {
             promises.push(transformTag(context, imgNode, pictureNode, opts));
           }
 
