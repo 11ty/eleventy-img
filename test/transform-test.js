@@ -517,3 +517,19 @@ test("Using imgAttributes/pictureAttributes alongside defaultAttributes (removin
   let results = await elev.toJSON();
   t.is(results[0].content, `<picture class="outer"><source type="image/webp" srcset="/virtual/KkPMmHd3hP-1280.webp 1280w"><img class="inner" src="/virtual/KkPMmHd3hP-1280.jpeg" alt="My ugly mug" width="1280" height="853"></picture>`);
 });
+
+test("#276 Strip eleventy:ignore attribute from img elements inside picture elements", async t => {
+  let elev = new Eleventy( "test", "test/_site", {
+    config: eleventyConfig => {
+      eleventyConfig.addTemplate("virtual.html", `<picture><img eleventy:ignore src="./bio-2017.jpg" alt="My ugly mug"></picture>`);
+
+      eleventyConfig.addPlugin(eleventyImageTransformPlugin, {
+        dryRun: true, // don’t write image files!
+      });
+    }
+  });
+  elev.disableLogger();
+
+  let results = await elev.toJSON();
+  t.is(results[0].content, `<picture><img src="./bio-2017.jpg" alt="My ugly mug"></picture>`);
+});
