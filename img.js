@@ -144,10 +144,5 @@ Object.assign(queueImage, {
 });
 
 // Eleventy Plugins (named exports only)
-export {
-  eleventyWebcOptionsPlugin as eleventyImagePlugin,
-  eleventyWebcOptionsPlugin as eleventyImageWebcOptionsPlugin,
-} from "./src/webc-options-plugin.js";
-
 export { eleventyImageTransformPlugin } from "./src/transform-plugin.js";
 export { eleventyImageOnRequestDuringServePlugin } from "./src/on-request-during-serve-plugin.js";

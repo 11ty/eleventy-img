@@ -29,14 +29,12 @@ export function eleventyImageOnRequestDuringServePlugin(eleventyConfig, options 
         let via = url.searchParams.get("via");
 
         let defaultOptions;
-        if(via === "webc") {
-          defaultOptions = eleventyConfig.getFilter("__private_eleventyImageConfigurationOptions")();
-        } else if(via === "transform") {
+        if(via === "transform") {
           defaultOptions = eleventyConfig.getFilter("__private_eleventyImageTransformConfigurationOptions")();
         }
-        // if using this plugin directly (not via webc or transform), global default options will need to be passed in to the `addPlugin` call directly
+        // if using this plugin directly (not via  transform), global default options will need to be passed in to the `addPlugin` call directly
 
-        // Prefer options passed to this plugin, fallback to Transform plugin or WebC options if the image source was generated via those options.
+        // Prefer options passed to this plugin, fallback to Transform plugin options if the image source was generated via those options.
         let opts = Object.assign({}, defaultOptions, options, {
           widths: [width || "auto"],
           formats: [imageFormat || "auto"],
