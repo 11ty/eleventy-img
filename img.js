@@ -6,7 +6,7 @@ import BuildLogger from "./src/build-logger.js";
 import Util from "./src/util.js";
 import Image from "./src/image.js";
 import DirectoryManager from "./src/directory-manager.js";
-import { DEFAULTS as GLOBAL_OPTIONS } from "./src/global-options.js";
+import { getDefaults } from "./src/global-options.js";
 import { memCache, diskCache } from "./src/caches.js";
 
 const debug = debugUtil("Eleventy:Image");
@@ -17,7 +17,7 @@ let directoryManager = new DirectoryManager();
 
 /* Queue */
 let processingQueue = new PQueue({
-  concurrency: GLOBAL_OPTIONS.concurrency
+  concurrency: getDefaults().concurrency
 });
 processingQueue.on("active", () => {
   debug( `Concurrency: ${processingQueue.concurrency}, Size: ${processingQueue.size}, Pending: ${processingQueue.pending}` );

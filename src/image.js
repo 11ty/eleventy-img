@@ -12,7 +12,7 @@ import Util from "./util.js";
 import ImagePath from "./image-path.js";
 import { generateHTML } from "./generate-html.js";
 
-import { DEFAULTS as GLOBAL_OPTIONS } from "./global-options.js";
+import { getDefaults } from "./global-options.js";
 import { existsCache, memCache, diskCache } from "./caches.js";
 
 const debug = debugUtil("Eleventy:Image");
@@ -70,7 +70,7 @@ export default class Image {
     this.isRemoteUrl = typeof src === "string" && Util.isRemoteUrl(src);
 
     this.rawOptions = options;
-    this.options = Object.assign({}, GLOBAL_OPTIONS, options);
+    this.options = Object.assign({}, getDefaults(), options);
 
     // Compatible with eleventy-dev-server and Eleventy 3.0.0-alpha.7+ in serve mode.
     if(this.options.transformOnRequest && !this.options.urlFormat) {
