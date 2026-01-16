@@ -1277,3 +1277,14 @@ test("#105 Transparent format output filtering (no minimum transparency formats 
   // must include one of: svg, png, or gif
   t.deepEqual(Object.keys(stats), ["webp", "jpeg"]);
 });
+
+test("Buffer should be stripped after writing to disk", async t => {
+  let stats = await eleventyImage("./test/bio-2017.jpg", {
+    formats: ["jpeg"],
+    outputDir: "./test/img/"
+  });
+
+  t.truthy(stats.jpeg[0].width);
+  t.truthy(stats.jpeg[0].outputPath);
+  t.falsy(stats.jpeg[0].buffer);
+});

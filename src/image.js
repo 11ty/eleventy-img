@@ -854,10 +854,25 @@ export default class Image {
           throw e;
         }
       }
+    }).then(results => {
+      // Strip buffers to free memory (only if file was written to disk)
+      if(results) {
+        for(let format in results) {
+          if(Array.isArray(results[format])) {
+            for(let stat of results[format]) {
+              if(stat.outputPath && stat.buffer && !this.options.dryRun) {
+                delete stat.buffer;
+              }
+            }
+          }
+        }
+      }
+      return results;
     });
 
     return this.#queuePromise;
   }
+
 
   // Factory to return from cache if available
   static create(src, options = {}) {
