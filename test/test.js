@@ -1277,3 +1277,24 @@ test("#105 Transparent format output filtering (no minimum transparency formats 
   // must include one of: svg, png, or gif
   t.deepEqual(Object.keys(stats), ["webp", "jpeg"]);
 });
+
+import { memCache } from "../src/caches.js";
+
+test("#106 Production run should NOT load buffer into memory", async t => {
+  // Use unique width to avoid hitting cache from other tests
+  await eleventyImage("./test/bio-2017.jpg", {
+    widths: [347],
+    formats: ["jpeg"],
+    outputDir: "./test/img/",
+  });
+  
+  for (let key of Object.keys(memCache.cache)) {
+    let img = memCache.cache[key].results;
+    if (key.includes("347") && img.hasLoadedBuffer !== undefined) {
+      t.false(img.hasLoadedBuffer, "Should not have loaded buffer");
+      return;
+    }
+  }
+  t.pass();
+});
+

@@ -14,6 +14,9 @@ import { generateHTML } from "./generate-html.js";
 
 import { DEFAULTS as GLOBAL_OPTIONS } from "./global-options.js";
 import { existsCache, memCache, diskCache } from "./caches.js";
+import ManifestCache from "./manifest-cache.js";
+
+let manifestCache = new ManifestCache();
 
 const debug = debugUtil("Eleventy:Image");
 const debugAssets = debugUtil("Eleventy:Assets");
@@ -382,7 +385,7 @@ export default class Image {
     let hashContents = [];
 
     if(existsCache.exists(this.src)) {
-      let fileContents = this.getFileContents();
+      let fileContents = fs.readFileSync(this.src);
 
       // If the file starts with whitespace or the '<' character, it might be SVG.
       // Otherwise, skip the expensive buffer.toString() call
@@ -842,11 +845,34 @@ export default class Image {
           return this.getStatsOnly();
         }
 
+        // For production local files, check manifest cache first
+        if (this.#canSkipBuffer()) {
+          const fileStat = fs.statSync(this.src);
+          const optionsHash = ManifestCache.hashOptions(this.options);
+          const cached = manifestCache.get(
+            this.src,
+            fileStat.mtimeMs,
+            fileStat.size,
+            optionsHash
+          );
+          
+          if (cached && this.#outputFilesExist(cached)) {
+            return cached;
+          }
+          
+          this.buildLogger.log(`Processing ${this.buildLogger.getFriendlyImageSource(this.src)}`, this.options);
+          const stats = await this.resize(this.src);
+          manifestCache.set(this.src, fileStat.mtimeMs, fileStat.size, optionsHash, stats);
+          return stats;
+        }
+
+        // Dev mode / dryRun / remote URLs - need the buffer
         this.buildLogger.log(`Processing ${this.buildLogger.getFriendlyImageSource(this.src)}`, this.options);
 
         let input = await this.getInput();
 
         return this.resize(input);
+
       } catch(e) {
         this.buildLogger.error(`Error: ${e.message} (via ${this.buildLogger.getFriendlyImageSource(this.src)})`, this.options);
 
@@ -924,5 +950,30 @@ export default class Image {
     let img = Image.create(src, opts);
     return img.statsByDimensionsSync(width, height);
   }
-}
 
+  #canSkipBuffer() {
+    return typeof this.src === "string"
+      && !this.isRemoteUrl 
+      && !this.options.dryRun 
+      && !this.options.statsOnly 
+      && !this.options.transformOnRequest
+      && !this.src.toLowerCase().endsWith(".svg")
+      && this.options.outputDir;  // Must be writing to disk
+  }
+
+  #outputFilesExist(stats) {
+    for (const format of Object.keys(stats)) {
+      for (const stat of stats[format]) {
+        if (stat.outputPath && !fs.existsSync(stat.outputPath)) {
+          return false;
+        }
+      }
+    }
+    return true;
+  }
+
+  get hasLoadedBuffer() {
+    return this.#input !== undefined;
+  }
+
+}
