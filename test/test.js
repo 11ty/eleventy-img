@@ -1280,7 +1280,7 @@ test("#105 Transparent format output filtering (no minimum transparency formats 
 
 import { memCache } from "../src/caches.js";
 
-test("Production run should not load source buffer into memory", async t => {
+test("#106 Production run should not load source buffer into memory", async t => {
   // Use unique width to avoid cache collision with other tests
   await eleventyImage("./test/bio-2017.jpg", {
     widths: [347],
