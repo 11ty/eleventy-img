@@ -847,32 +847,28 @@ export default class Image {
 
         // For production local files, check manifest cache first
         if (this.#canSkipBuffer()) {
-          const fileStat = fs.statSync(this.src);
-          const optionsHash = ManifestCache.hashOptions(this.options);
-          const cached = manifestCache.get(
-            this.src,
-            fileStat.mtimeMs,
-            fileStat.size,
-            optionsHash
-          );
+          let contentHash = this.getHash();
+          let optionsHash = this.#getOptionsHash();
+          let cacheKey = `${this.src}::${optionsHash}`;
+
+          let cached = manifestCache.get(cacheKey, contentHash);
           
           if (cached && this.#outputFilesExist(cached)) {
             return cached;
           }
           
           this.buildLogger.log(`Processing ${this.buildLogger.getFriendlyImageSource(this.src)}`, this.options);
-          const stats = await this.resize(this.src);
-          manifestCache.set(this.src, fileStat.mtimeMs, fileStat.size, optionsHash, stats);
+          let stats = await this.resize(this.src);
+          manifestCache.set(cacheKey, contentHash, stats);
           return stats;
         }
 
-        // Dev mode / dryRun / remote URLs - need the buffer
+        // Dev mode, dryRun and remote URLs need the buffer
         this.buildLogger.log(`Processing ${this.buildLogger.getFriendlyImageSource(this.src)}`, this.options);
 
         let input = await this.getInput();
 
         return this.resize(input);
-
       } catch(e) {
         this.buildLogger.error(`Error: ${e.message} (via ${this.buildLogger.getFriendlyImageSource(this.src)})`, this.options);
 
@@ -957,13 +953,14 @@ export default class Image {
       && !this.options.dryRun 
       && !this.options.statsOnly 
       && !this.options.transformOnRequest
+      && !this.options.urlFormat
       && !this.src.toLowerCase().endsWith(".svg")
-      && this.options.outputDir;  // Must be writing to disk
+      && this.options.outputDir;
   }
 
   #outputFilesExist(stats) {
-    for (const format of Object.keys(stats)) {
-      for (const stat of stats[format]) {
+    for (let format of Object.keys(stats)) {
+      for (let stat of stats[format]) {
         if (stat.outputPath && !fs.existsSync(stat.outputPath)) {
           return false;
         }
@@ -972,8 +969,20 @@ export default class Image {
     return true;
   }
 
+  #getOptionsHash() {
+    let relevant = {
+      widths: this.options.widths,
+      formats: this.options.formats,
+      sharpOptions: this.options.sharpOptions,
+      sharpWebpOptions: this.options.sharpWebpOptions,
+      sharpPngOptions: this.options.sharpPngOptions,
+      sharpJpegOptions: this.options.sharpJpegOptions,
+      sharpAvifOptions: this.options.sharpAvifOptions,
+    };
+    return createHashSync(JSON.stringify(relevant));
+  }
+
   get hasLoadedBuffer() {
     return this.#input !== undefined;
   }
-
 }

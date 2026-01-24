@@ -1,6 +1,5 @@
 import fs from "node:fs";
 import path from "node:path";
-import { createHashSync } from "@11ty/eleventy-utils";
 
 export default class ManifestCache {
   #manifest = {};
@@ -15,14 +14,14 @@ export default class ManifestCache {
 
   load() {
     if (this.#loaded) return;
-    
+
     try {
       if (fs.existsSync(this.#filepath)) {
-        const content = fs.readFileSync(this.#filepath, "utf8");
+        let content = fs.readFileSync(this.#filepath, "utf8");
         this.#manifest = JSON.parse(content);
       }
     } catch {
-      // Corrupted or unreadable - start fresh
+      // Corrupted or unreadable, start fresh
       this.#manifest = {};
     }
     this.#loaded = true;
@@ -35,51 +34,30 @@ export default class ManifestCache {
     fs.writeFileSync(this.#filepath, JSON.stringify(this.#manifest, null, 2));
   }
 
-  #getKey(src, optionsHash) {
-    return `${src}::${optionsHash}`;
-  }
-
-  get(src, mtime, size, optionsHash) {
+  get(key, hash) {
     this.load();
-    
-    const key = this.#getKey(src, optionsHash);
-    const entry = this.#manifest[key];
-    
+
+    let entry = this.#manifest[key];
     if (!entry) return null;
-    if (entry.mtime !== mtime || entry.size !== size) return null;
-    
+    if (entry.hash !== hash) return null;
+
     return entry.stats;
   }
 
-  set(src, mtime, size, optionsHash, stats) {
+  set(key, hash, stats) {
     this.load();
-    
+
     // Strip buffers before storing
-    const cleanStats = {};
-    for (const format of Object.keys(stats)) {
+    let cleanStats = {};
+    for (let format of Object.keys(stats)) {
       cleanStats[format] = stats[format].map(stat => {
-        const copy = { ...stat };
+        let copy = { ...stat };
         delete copy.buffer;
         return copy;
       });
     }
-    
-    const key = this.#getKey(src, optionsHash);
-    this.#manifest[key] = { mtime, size, stats: cleanStats };
-    this.save();
-  }
 
-  // Hash relevant options that affect output
-  static hashOptions(options) {
-    const relevant = {
-      widths: options.widths,
-      formats: options.formats,
-      sharpOptions: options.sharpOptions,
-      sharpWebpOptions: options.sharpWebpOptions,
-      sharpPngOptions: options.sharpPngOptions,
-      sharpJpegOptions: options.sharpJpegOptions,
-      sharpAvifOptions: options.sharpAvifOptions,
-    };
-    return createHashSync(JSON.stringify(relevant));
+    this.#manifest[key] = { hash, stats: cleanStats };
+    this.save();
   }
 }
