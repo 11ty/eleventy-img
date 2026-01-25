@@ -954,8 +954,7 @@ export default class Image {
       && !this.options.statsOnly 
       && !this.options.transformOnRequest
       && !this.options.urlFormat
-      && !this.src.toLowerCase().endsWith(".svg")
-      && this.options.outputDir;
+      && !this.src.toLowerCase().endsWith(".svg");
   }
 
   #outputFilesExist(stats) {
