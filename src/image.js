@@ -960,7 +960,7 @@ export default class Image {
   #outputFilesExist(stats) {
     for (let format of Object.keys(stats)) {
       for (let stat of stats[format]) {
-        if (stat.outputPath && !fs.existsSync(stat.outputPath)) {
+        if (stat.outputPath && !diskCache.isCached(stat.outputPath, this.src)) {
           return false;
         }
       }
