@@ -1,6 +1,6 @@
 import { defineConfig } from "eslint/config";
 import pluginJs from "@eslint/js";
-import pluginStylistic from "@stylistic/eslint-plugin-js";
+import pluginStylistic from "@stylistic/eslint-plugin";
 import globals from "globals";
 
 const GLOB_JS = '**/*.?([cm])js';
