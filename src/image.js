@@ -820,7 +820,9 @@ export default class Image {
         format: type // only required if you want to use the "auto" format
       });
     } catch(e) {
-      throw new Error(`Eleventy Image error (statsOnly): \`image-size\` on "${this.src}" failed. Original error: ${e.message}`);
+      throw new Error(`Eleventy Image error (statsOnly): \`image-size\` on "${this.src}" failed. Original error: ${e.message}`, {
+        cause: e
+      });
     }
   }
 
