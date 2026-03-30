@@ -14,6 +14,9 @@ import { generateHTML } from "./generate-html.js";
 
 import { DEFAULTS as GLOBAL_OPTIONS } from "./global-options.js";
 import { existsCache, memCache, diskCache } from "./caches.js";
+import ManifestCache from "./manifest-cache.js";
+
+let manifestCache = new ManifestCache();
 
 const debug = debugUtil("Eleventy:Image");
 const debugAssets = debugUtil("Eleventy:Assets");
@@ -382,7 +385,7 @@ export default class Image {
     let hashContents = [];
 
     if(existsCache.exists(this.src)) {
-      let fileContents = this.getFileContents();
+      let fileContents = fs.readFileSync(this.src);
 
       // If the file starts with whitespace or the '<' character, it might be SVG.
       // Otherwise, skip the expensive buffer.toString() call
@@ -844,6 +847,25 @@ export default class Image {
           return this.getStatsOnly();
         }
 
+        // For production local files, check manifest cache first
+        if (this.#canSkipBuffer()) {
+          let contentHash = this.getHash();
+          let optionsHash = this.#getOptionsHash();
+          let cacheKey = `${this.src}::${optionsHash}`;
+
+          let cached = manifestCache.get(cacheKey, contentHash);
+          
+          if (cached && this.#outputFilesExist(cached)) {
+            return cached;
+          }
+          
+          this.buildLogger.log(`Processing ${this.buildLogger.getFriendlyImageSource(this.src)}`, this.options);
+          let stats = await this.resize(this.src);
+          manifestCache.set(cacheKey, contentHash, stats);
+          return stats;
+        }
+
+        // Dev mode, dryRun and remote URLs need the buffer
         this.buildLogger.log(`Processing ${this.buildLogger.getFriendlyImageSource(this.src)}`, this.options);
 
         let input = await this.getInput();
@@ -926,5 +948,42 @@ export default class Image {
     let img = Image.create(src, opts);
     return img.statsByDimensionsSync(width, height);
   }
-}
 
+  #canSkipBuffer() {
+    return typeof this.src === "string"
+      && !this.isRemoteUrl 
+      && !this.options.dryRun 
+      && !this.options.statsOnly 
+      && !this.options.transformOnRequest
+      && !this.options.urlFormat
+      && !this.src.toLowerCase().endsWith(".svg");
+  }
+
+  #outputFilesExist(stats) {
+    for (let format of Object.keys(stats)) {
+      for (let stat of stats[format]) {
+        if (stat.outputPath && !diskCache.isCached(stat.outputPath, this.src)) {
+          return false;
+        }
+      }
+    }
+    return true;
+  }
+
+  #getOptionsHash() {
+    let relevant = {
+      widths: this.options.widths,
+      formats: this.options.formats,
+      sharpOptions: this.options.sharpOptions,
+      sharpWebpOptions: this.options.sharpWebpOptions,
+      sharpPngOptions: this.options.sharpPngOptions,
+      sharpJpegOptions: this.options.sharpJpegOptions,
+      sharpAvifOptions: this.options.sharpAvifOptions,
+    };
+    return createHashSync(JSON.stringify(relevant));
+  }
+
+  get hasLoadedBuffer() {
+    return this.#input !== undefined;
+  }
+}
