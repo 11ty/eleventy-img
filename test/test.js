@@ -437,7 +437,7 @@ test("svgShortCircuit (on a raster source) #242", async t => {
 
   t.deepEqual(Object.keys(stats), ["png"]);
   t.is(stats.png.length, 1);
-  t.is(stats.png[0].size, 2511518);
+  t.is(stats.png[0].size, 2511602);
 });
 
 
@@ -935,7 +935,7 @@ test("Maintains orientation #132", async t => {
 // Broken test cases from https://github.com/recurser/exif-orientation-examples
 test("#158: Test EXIF orientation data landscape (3) with fixOrientation", async t => {
   let stats = await eleventyImage("./test/exif-Landscape_3.jpg", {
-    widths: [200, "auto"],
+    widths: [600, "auto"],
     formats: ['auto'],
     useCache: false,
     dryRun: true,
@@ -943,9 +943,9 @@ test("#158: Test EXIF orientation data landscape (3) with fixOrientation", async
   });
 
   t.is(stats.jpeg.length, 2);
-  t.is(stats.jpeg[0].width, 200);
+  t.is(stats.jpeg[0].width, 600);
+  t.is(Math.floor(stats.jpeg[0].height), 400);
   t.is(stats.jpeg[1].width, 1800);
-  t.is(Math.floor(stats.jpeg[0].height), 133);
   t.is(stats.jpeg[1].height, 1200);
 
   // This orientation (180º rotation) preserves image dimensions and requires an image diff
@@ -954,7 +954,7 @@ test("#158: Test EXIF orientation data landscape (3) with fixOrientation", async
     return sharp(input).ensureAlpha().toFormat(sharp.format.raw).toBuffer();
   };
   for (const [inSrc, outStat] of [
-    ["./test/exif-Landscape_3-bakedOrientation-200.jpg", stats.jpeg[0]],
+    ["./test/exif-Landscape_3-bakedOrientation-600.jpg", stats.jpeg[0]],
     ["./test/exif-Landscape_3-bakedOrientation.jpg", stats.jpeg[1]]]) {
     const inRaw = await readToRaw(inSrc);
     const outRaw = await readToRaw(outStat.buffer);

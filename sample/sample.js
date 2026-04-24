@@ -1,4 +1,4 @@
-import eleventyImage, { statsSync } from "../img.js";
+import eleventyImage, { Image } from "../img.js";
 
 // upscale svg issue #32
 let leaves1 = await eleventyImage(`https://www.netlify.com/v3/img/components/leaves.svg`, {
@@ -23,11 +23,11 @@ let possum = await eleventyImage(`https://www.11ty.dev/img/possum-balloon-origin
 console.log( "https://www.11ty.dev/img/possum-balloon-original-sm.png" );
 console.dir( possum );
 
-// let possumStats = statsSync("https://www.11ty.dev/img/possum-balloon-original-sm.png", {
+// let possumStats = Image.statsSync("https://www.11ty.dev/img/possum-balloon-original-sm.png", {
 //   formats: ["avif", "jpeg"],
 //   widths: [400, 1280],
 // });
-// console.log( "https://www.11ty.dev/img/possum-balloon-original-sm.png (statsSync)" );
+// console.log( "https://www.11ty.dev/img/possum-balloon-original-sm.png (Image.statsSync)" );
 // console.dir( possumStats );
 
 
@@ -47,11 +47,11 @@ let bioImage = await eleventyImage("../test/bio-2017.jpg", {
 console.log( "./test/bio-2017.jpg" );
 console.dir( bioImage );
 
-let bioImageStats = statsSync("../test/bio-2017.jpg", {
+let bioImageStats = Image.statsSync("../test/bio-2017.jpg", {
   formats: ["avif", "jpeg"],
   widths: [400, 1280],
 });
-console.log( "./test/bio-2017.jpg (statsSync)" );
+console.log( "./test/bio-2017.jpg (Image.statsSync)" );
 console.dir( bioImageStats );
 
 let bioImageDryRun = await eleventyImage("../test/bio-2017.jpg", {
