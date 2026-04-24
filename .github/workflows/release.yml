@@ -10,12 +10,12 @@ jobs:
       contents: read
       id-token: write
     steps:
-      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # 4.1.7
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # 6.0.2
       - uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # 6.3.0
         with:
           node-version: "22"
           registry-url: 'https://registry.npmjs.org'
-      - run: npm install -g npm@latest
+      - run: npm install -g npm@11.11.1
       - run: npm ci
       - run: npm test
       - if: ${{ github.event.release.tag_name != '' && env.NPM_PUBLISH_TAG != '' }}
