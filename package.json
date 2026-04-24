@@ -43,7 +43,7 @@
     "@11ty/eleventy-utils": "^2.0.7",
     "brotli-size": "^4.0.0",
     "debug": "^4.4.3",
-    "entities": "^6.0.1",
+    "entities": "^8.0.0",
     "image-size": "^1.2.1",
     "p-queue": "^8.1.0",
     "sharp": "^0.34.5"
