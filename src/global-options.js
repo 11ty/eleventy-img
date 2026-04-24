@@ -28,7 +28,6 @@ export const getDefaults = () => ({
   sharpPngOptions: {}, // options passed to the Sharp png output method
   sharpJpegOptions: {}, // options passed to the Sharp jpeg output method
   sharpAvifOptions: {}, // options passed to the Sharp avif output method
-  sharpResizeOptions: {}, // options passed to the Sharp resize method
 
   formatHooks: {
     svg: svgHook,

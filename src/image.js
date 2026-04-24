@@ -415,8 +415,7 @@ export default class Image {
       "sharpWebpOptions",
       "sharpPngOptions",
       "sharpJpegOptions",
-      "sharpAvifOptions",
-      "sharpResizeOptions"
+      "sharpAvifOptions"
     ].sort();
 
     let hashObject = {};
@@ -711,9 +710,9 @@ export default class Image {
 
         if(!isTransformResize) {
           if(stat.width < sharpMetadata.width || (this.options.svgAllowUpscale && sharpMetadata.format === "svg")) {
-            let resizeOptions = Object.assign({
-              width: stat.width,
-            }, this.options.sharpResizeOptions);
+            let resizeOptions = {
+              width: stat.width
+            };
 
             if(sharpMetadata.format !== "svg" || !this.options.svgAllowUpscale) {
               resizeOptions.withoutEnlargement = true;
