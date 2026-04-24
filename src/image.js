@@ -844,7 +844,7 @@ export default class Image {
           return this.getStatsOnly();
         }
 
-        this.buildLogger.log(`Processing ${this.buildLogger.getFriendlyImageSource(this.src)}`, this.options);
+        this.buildLogger.log(`Processing ${this.options.loggedSourceName || this.buildLogger.getFriendlyImageSource(this.src)}`, this.options);
 
         let input = await this.getInput();
 
