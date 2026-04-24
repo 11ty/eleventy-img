@@ -471,6 +471,23 @@ test("#234 Use existing `width` attribute for `widths` config (comma separated w
   t.is(results[0].content, `<picture><source type="image/webp" srcset="/virtual/KkPMmHd3hP-1280.webp 1280w"><img src="/virtual/KkPMmHd3hP-1280.jpeg" alt="My ugly mug" width="1280" height="853"></picture>`);
 });
 
+test("#314 Prefer `eleventy:widths` over `width` attribute", async t => {
+  let elev = new Eleventy( "test", "test/_site", {
+    config: eleventyConfig => {
+      eleventyConfig.addTemplate("virtual.html", `<img src="./bio-2017.jpg" alt="My ugly mug" eleventy:widths="100" width="200">`);
+
+      eleventyConfig.addPlugin(eleventyImageTransformPlugin, {
+        dryRun: true, // don’t write image files!
+      });
+    }
+  });
+  elev.disableLogger();
+
+  let results = await elev.toJSON();
+  t.is(results[0].content, `<picture><source type="image/webp" srcset="/virtual/KkPMmHd3hP-100.webp 100w"><img src="/virtual/KkPMmHd3hP-100.jpeg" alt="My ugly mug" width="100" height="66"></picture>`);
+});
+
+
 test("#236 Use with permalink with file name", async t => {
   let elev = new Eleventy( "test", "test/_site", {
     config: eleventyConfig => {

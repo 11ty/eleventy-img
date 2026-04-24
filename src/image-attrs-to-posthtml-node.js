@@ -78,7 +78,10 @@ export async function imageAttributesToPosthtmlNode(attributes, instanceOptions,
   if(attributes.width && isValidSimpleWidthAttribute(attributes.width)) {
     // Support `width` but only single value
     instanceOptions.widths = [ parseInt(attributes.width, 10) ];
-  } else if(attributes[ATTR.WIDTHS] && typeof attributes[ATTR.WIDTHS] === "string") {
+  }
+
+  // Breaking in v7 (Issue #314): eleventy:width now overrides `width` attribute
+  if(attributes[ATTR.WIDTHS] && typeof attributes[ATTR.WIDTHS] === "string") {
     instanceOptions.widths = attributes[ATTR.WIDTHS].split(",").map(entry => parseInt(entry, 10));
   }
 
