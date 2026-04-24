@@ -5,7 +5,7 @@ import eleventyImage from "../img.js";
 import Util from "./util.js";
 import svgHook from "./format-hooks/svg.js";
 
-export const DEFAULTS = {
+export const getDefaults = () => ({
   widths: ["auto"],
   formats: ["webp", "jpeg"], // "png", "svg", "avif"
 
@@ -96,7 +96,7 @@ export const DEFAULTS = {
 
   // v5.0.0 Removed `extensions`, option to override output format with new file extension. It wasn’t being used anywhere or documented.
   // v6.0.0, removed `useCacheValidityInHash: true` see https://github.com/11ty/eleventy-img/issues/146#issuecomment-2555741376
-};
+});
 
 export function getGlobalOptions(eleventyConfig, options, via) {
   let directories = eleventyConfig.directories;

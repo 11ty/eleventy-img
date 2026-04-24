@@ -511,6 +511,17 @@ test("Keep a cache, reuse with same file names and options", async t => {
   t.deepEqual(stats1, stats2);
 });
 
+test("Keep a cache, reuse even after an image transform is completed (issue #312)", async t => {
+  // await the promises to allow the process to complete, which in issue #312 unexpectedly mutated an object used as a cache key
+  let promise1 = await eleventyImage("./test/bio-2017.jpg", { dryRun: true });
+  let promise2 = await eleventyImage("./test/bio-2017.jpg", { dryRun: true });
+  t.is(promise1, promise2);
+
+  let stats1 = await promise1;
+  let stats2 = await promise2;
+  t.deepEqual(stats1, stats2);
+});
+
 test("Keep a cache, reuse with same remote url and options", async t => {
   let promise1 = eleventyImage("https://www.zachleat.com/img/avatar-2017-big.png", { dryRun: true });
   let promise2 = eleventyImage("https://www.zachleat.com/img/avatar-2017-big.png", { dryRun: true });
